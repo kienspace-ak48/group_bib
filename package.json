@@ -1,0 +1,33 @@
+{
+  "name": "group_bib",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon --inspect src/server.js",
+    "tailwind": "npx @tailwindcss/cli -i src/main.css -o public/css/main.css --watch",
+    "swagger": "node src/swagger.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "bootstrap-icons": "^1.13.1",
+    "dotenv": "^17.2.3",
+    "ejs": "^3.1.10",
+    "express": "^5.1.0",
+    "express-ejs-layouts": "^2.5.1",
+    "mongoose": "^8.19.3",
+    "multer": "^2.0.2",
+    "slugify": "^1.6.6",
+    "swagger-autogen": "^2.23.7",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.17",
+    "nodemon": "^3.1.10",
+    "tailwindcss": "^4.1.17"
+  }
+}

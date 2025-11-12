@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nút Zalo & Gọi điện - Hiệu ứng đổ chuông</title>
+<style>
+  body {
+    background: #e9f9f1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    gap: 30px;
+  }
+
+  .pulse-button {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    cursor: pointer;
+    animation: pulse-ring 1.5s infinite;
+  }
+
+  /* Icon bên trong */
+  .pulse-button img {
+    width: 45px;
+    height: 45px;
+    z-index: 2;
+    animation: ring-shake 1.2s infinite ease-in-out;
+  }
+
+  /* Hiệu ứng lan tỏa */
+  @keyframes pulse-ring {
+    0% { box-shadow: 0 0 0 0 rgba(0, 195, 255, 0.6); }
+    70% { box-shadow: 0 0 0 25px rgba(0, 195, 255, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(0, 195, 255, 0); }
+  }
+
+  /* Hiệu ứng rung nhẹ giống chuông */
+  @keyframes ring-shake {
+    0% { transform: rotate(0deg) scale(1); }
+    10% { transform: rotate(15deg) scale(1.05); }
+    20% { transform: rotate(-10deg) scale(1.05); }
+    30% { transform: rotate(8deg) scale(1.05); }
+    40% { transform: rotate(-6deg) scale(1.05); }
+    50% { transform: rotate(4deg) scale(1.05); }
+    60% { transform: rotate(-3deg) scale(1.05); }
+    70% { transform: rotate(2deg) scale(1.05); }
+    80% { transform: rotate(-1deg) scale(1.05); }
+    100% { transform: rotate(0deg) scale(1); }
+  }
+
+  /* Màu riêng cho từng nút */
+  .zalo { animation: pulse-zalo 1.5s infinite; }
+  .call { animation: pulse-call 1.5s infinite; }
+
+  @keyframes pulse-zalo {
+    0% { box-shadow: 0 0 0 0 rgba(0, 132, 255, 0.6); }
+    70% { box-shadow: 0 0 0 25px rgba(0, 132, 255, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(0, 132, 255, 0); }
+  }
+
+  @keyframes pulse-call {
+    0% { box-shadow: 0 0 0 0 rgba(0, 200, 0, 0.6); }
+    70% { box-shadow: 0 0 0 25px rgba(0, 200, 0, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(0, 200, 0, 0); }
+  }
+</style>
+</head>
+<body>
+
+<!-- Nút Zalo -->
+<a href="https://zalo.me/so_zalo_cua_ban" target="_blank" class="pulse-button zalo">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/9/91/Icon_of_Zalo.svg" alt="Zalo">
+</a>
+
+<!-- Nút gọi điện -->
+<a href="tel:0123456789" class="pulse-button call">
+  <img src="https://cdn-icons-png.flaticon.com/512/724/724664.png" alt="Gọi điện">
+</a>
+
+</body>
+</html>
+<!-- v2 -->
+ <!-- <!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nút Zalo & Gọi điện - Hiệu ứng nhiều vòng đổ chuông</title>
+<style>
+  body {
+    background: #e9f9f1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    gap: 40px;
+  }
+
+  /* Vùng nút tổng */
+  .pulse-button {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    cursor: pointer;
+    overflow: visible;
+  }
+
+  /* Các vòng lan tỏa (3 vòng) */
+  .pulse-button::before,
+  .pulse-button::after,
+  .pulse-ring {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    top: 0;
+    left: 0;
+    z-index: 0;
+  }
+
+  /* Vòng 1 */
+  .pulse-button::before {
+    animation: pulse-ring 1.8s infinite;
+    animation-delay: 0s;
+  }
+
+  /* Vòng 2 */
+  .pulse-button::after {
+    animation: pulse-ring 1.8s infinite;
+    animation-delay: 0.6s;
+  }
+
+  /* Vòng 3 (bổ sung phần tử riêng) */
+  .pulse-ring {
+    animation: pulse-ring 1.8s infinite;
+    animation-delay: 1.2s;
+  }
+
+  /* Icon chính */
+  .pulse-button img {
+    width: 45px;
+    height: 45px;
+    z-index: 5;
+    animation: ring-shake 1.3s infinite ease-in-out;
+  }
+
+  /* Hiệu ứng vòng lan tỏa */
+  @keyframes pulse-ring {
+    0% {
+      transform: scale(1);
+      opacity: 0.6;
+    }
+    70% {
+      transform: scale(2);
+      opacity: 0;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 0;
+    }
+  }
+
+  /* Rung lắc như đổ chuông */
+  @keyframes ring-shake {
+    0% { transform: rotate(0deg) scale(1); }
+    10% { transform: rotate(15deg) scale(1.05); }
+    20% { transform: rotate(-10deg) scale(1.05); }
+    30% { transform: rotate(8deg) scale(1.05); }
+    40% { transform: rotate(-6deg) scale(1.05); }
+    50% { transform: rotate(4deg) scale(1.05); }
+    60% { transform: rotate(-3deg) scale(1.05); }
+    70% { transform: rotate(2deg) scale(1.05); }
+    80% { transform: rotate(-1deg) scale(1.05); }
+    100% { transform: rotate(0deg) scale(1); }
+  }
+
+  /* Tùy màu cho từng nút */
+  .zalo::before, .zalo::after, .zalo .pulse-ring {
+    background: rgba(0, 132, 255, 0.4);
+  }
+
+  .call::before, .call::after, .call .pulse-ring {
+    background: rgba(0, 200, 0, 0.4);
+  }
+
+</style>
+</head>
+<body>
+
+
+<a href="https://zalo.me/so_zalo_cua_ban" target="_blank" class="pulse-button zalo">
+  <span class="pulse-ring"></span>
+  <img src="https://upload.wikimedia.org/wikipedia/commons/9/91/Icon_of_Zalo.svg" alt="Zalo">
+</a>
+
+
+<a href="tel:0123456789" class="pulse-button call">
+  <span class="pulse-ring"></span>
+  <img src="https://cdn-icons-png.flaticon.com/512/724/724664.png" alt="Gọi điện">
+</a>
+
+</body>
+</html> -->
+
+<!-- /* #swagger.parameters['id'] = { description: 'Event ID', type: 'integer', required: true } */ -->
+
+
