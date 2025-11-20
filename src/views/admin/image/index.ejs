@@ -1,0 +1,86 @@
+<style>
+    .image-card {
+    border-radius: 12px;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  
+  .image-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+  }
+  
+  .image-card .img-wrapper {
+    width: 100%;
+    height: 180px;              /* Đặt chiều cao đồng đều */
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+  }
+  
+  .image-card .img-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;          /* Cắt ảnh vừa khung */
+    transition: transform 0.3s ease;
+  }
+  
+  .image-card:hover .img-wrapper img {
+    transform: scale(1.05);
+  }
+  
+  .image-card .card-body {
+    padding: 0.75rem;
+  }
+  
+  .image-card .btn {
+    border-radius: 20px;
+    transition: all 0.2s;
+  }
+  
+  .image-card .btn:hover {
+    background-color: #dc3545;
+    color: #fff;
+    transform: scale(1.05);
+  }
+  
+  </style>
+  <div class="my-card container py-4">
+    <h2 class="mb-4 text-center">📸 Image Manager</h2>
+  
+    <form action="/admin/image" method="POST" enctype="multipart/form-data" class="mb-4">
+      <div class="input-group">
+        <input type="file" name="file" class="form-control" required>
+        <button class="btn btn-primary" type="submit">Upload</button>
+      </div>
+    </form>
+  
+    <div class="row g-4">
+      <% if (files.length === 0) { %>
+        <p class="text-center text-muted">No images found.</p>
+      <% } else { %>
+        <% files.forEach(file => { %>
+          <div class="col-6 col-md-3">
+            <div class="card image-card shadow-sm border-0">
+              <div class="img-wrapper">
+                <img src="/<%= file.path %>" alt="<%= file.name %>" />
+              </div>
+              <div class="card-body text-center">
+                <a href="/admin/image/delete/<%= file.name %>" class="btn btn-outline-danger btn-sm w-75">
+                  <i class="fa fa-trash"></i> Delete
+                </a>
+              </div>
+            </div>
+          </div>
+        <% }) %>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- =====SCRIPT Here======= -->
+   <script>
+    
+   </script>
+  

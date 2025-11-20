@@ -4,162 +4,54 @@
 
     <div class="event-carousel grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- card 1 -->
-        <div class="card flex flex-row border border-[#ddd] w-full rounded-lg">
-            <div class="h-[210px] w-[210px] basis-1/3">
-                <img
-                    src="https://pace8.vn/uploads/2025/11/1-avatar.webp?ver=1.5.30"
-                    alt="img"
-                    class="w-full h-full object-cover rounded-lg"
-                />
-            </div>
-            <!--  -->
-            <div class="content basis-2/3 p-3 flex flex-col justify-around">
-                
-                    <div class="info">
-                        <p class="title text-[18px] font-bold">TIỀN PHONG HALF MARATHON 2025</p>
-                        <div class="date-time text-[14px] text-[#666] font-medium pt-3 " ><i class="bi bi-calendar-event mr-1.5"></i> 21-22 tháng 03, 2026</div>
-                        <div class="location text-[14px] text-[#666] font-medium">
-                            <i class="bi bi-geo-alt mr-1.5"></i>Vườn quốc gia Gia Kon Ka Kinh
-                        </div>
+        <% if(events && events.length >0){%>
+            <% events.forEach((e,i)=>{%>
+                <div class="card flex flex-row border border-[#ddd] w-full rounded-lg">
+                    <div class="h-[210px] w-[210px] basis-1/3">
+                        <a href="/event/event-detail/<%=e.slug%>">
+                            <img
+                            src="https://pace8.vn/uploads/2025/11/1-avatar.webp?ver=1.5.30"
+                            alt="img"
+                            class="w-full h-full object-cover rounded-lg"
+                        />
+                        </a>
                     </div>
-                    <ul class="distance flex gap-1 mt-2 flex-wrap mt-auto" >
-                      <li class="text-[12px] font-medium rounded-sm border border-[#ddd] bg-[rgba(164,174,198,0.2)] p-1 text-center">ROAD</li>
-                      <li class="text-[12px] font-medium rounded-sm border border-[#ddd] bg-[rgba(164,174,198,0.2)] p-1 text-center">5KM</li>
-                      <li  class="text-[12px] font-medium rounded-sm border border-[#ddd] bg-[rgba(164,174,198,0.2)] p-1 text-center">10KM</li>
-                      <li class="text-[12px] font-medium rounded-sm border border-[#ddd] bg-[rgba(164,174,198,0.2)] p-1 text-center">21KM</li>
-                    </ul>
-                    <div class="link flex justify-between mt-auto">
-                        <div class="link-groups space-x-2">
-                            <a href="#!">
-                                <i class="bi bi-facebook"></i>
-                            </a>
-                            <a href="#!">
-                                <i class="bi bi-browser-edge"></i>
-                            </a>
-                        </div>
-                        <button class="cta bg-blue-500 text-white px-3 py-1 rounded">Đăng ký</button>
+                    <!--  -->
+                    <div class="content basis-2/3 p-3 flex flex-col justify-around">
+                        
+                            <div class="info">
+                                <a href="/event/event-detail/<%=e.slug%>"><p class="title text-[18px] font-bold"><%=e.name%></p></a>
+                                <div class="date-time text-[14px] text-[#666] font-medium pt-3 " ><i class="bi bi-calendar-event mr-1.5"></i> 21-22 tháng 03, 2026</div>
+                                <div class="location text-[14px] text-[#666] font-medium">
+                                    <i class="bi bi-geo-alt mr-1.5"></i>Vườn quốc gia Gia Kon Ka Kinh
+                                </div>
+                            </div>
+                            <ul class="distance flex gap-1 mt-2 flex-wrap mt-auto" >
+                              <li class="text-[12px] font-medium rounded-sm border border-[#ddd] bg-[rgba(164,174,198,0.2)] p-1 text-center">ROAD</li>
+                              <li class="text-[12px] font-medium rounded-sm border border-[#ddd] bg-[rgba(164,174,198,0.2)] p-1 text-center">5KM</li>
+                              <li  class="text-[12px] font-medium rounded-sm border border-[#ddd] bg-[rgba(164,174,198,0.2)] p-1 text-center">10KM</li>
+                              <li class="text-[12px] font-medium rounded-sm border border-[#ddd] bg-[rgba(164,174,198,0.2)] p-1 text-center">21KM</li>
+                            </ul>
+                            <div class="link flex justify-between mt-auto">
+                                <div class="link-groups space-x-2">
+                                    <a href="#!">
+                                        <i class="bi bi-facebook"></i>
+                                    </a>
+                                    <a href="#!">
+                                        <i class="bi bi-browser-edge"></i>
+                                    </a>
+                                </div>
+                                <a href="/event/event-detail/<%=e.slug%>" class="cta bg-blue-500 text-white px-3 py-1 rounded">Đăng ký</a>
+                            </div>
+                        
                     </div>
-                
-            </div>
-        </div>
+                </div>
+            <%})%>
+        <%}else{%>
+
+        <%}%>
 
         <!-- card 2 -->
-         <!-- card 1 -->
-        <div class="card flex flex-row border border-[#ddd] w-full rounded-lg">
-            <div class="h-[210px] w-[210px] basis-1/3">
-                <img
-                    src="https://pace8.vn/uploads/2025/11/1-avatar.webp?ver=1.5.30"
-                    alt="img"
-                    class="w-full h-full object-cover rounded-lg"
-                />
-            </div>
-            <!--  -->
-            <div class="content basis-2/3 p-3 flex flex-col justify-around">
-                
-                    <div class="info">
-                        <p class="title text-[18px] font-bold">TIỀN PHONG HALF MARATHON 2025</p>
-                        <div class="date-time text-[14px] text-[#666] font-medium pt-3 " ><i class="bi bi-calendar-event mr-1.5"></i> 21-22 tháng 03, 2026</div>
-                        <div class="location text-[14px] text-[#666] font-medium">
-                            <i class="bi bi-geo-alt mr-1.5"></i>Vườn quốc gia Gia Kon Ka Kinh
-                        </div>
-                    </div>
-                    <ul class="distance flex gap-1 mt-2 flex-wrap mt-auto" >
-                      <li class="text-[12px] font-medium rounded-sm border border-[#ddd] bg-[rgba(164,174,198,0.2)] p-1 text-center">ROAD</li>
-                      <li class="text-[12px] font-medium rounded-sm border border-[#ddd] bg-[rgba(164,174,198,0.2)] p-1 text-center">5KM</li>
-                      <li  class="text-[12px] font-medium rounded-sm border border-[#ddd] bg-[rgba(164,174,198,0.2)] p-1 text-center">10KM</li>
-                      <li class="text-[12px] font-medium rounded-sm border border-[#ddd] bg-[rgba(164,174,198,0.2)] p-1 text-center">21KM</li>
-                    </ul>
-                    <div class="link flex justify-between mt-auto">
-                        <div class="link-groups space-x-2">
-                            <a href="#!">
-                                <i class="bi bi-facebook"></i>
-                            </a>
-                            <a href="#!">
-                                <i class="bi bi-browser-edge"></i>
-                            </a>
-                        </div>
-                        <button class="cta bg-blue-500 text-white px-3 py-1 rounded">Đăng ký</button>
-                    </div>
-                
-            </div>
-        </div>
-        <!-- card 1 -->
-        <div class="card flex flex-row border border-[#ddd] w-full rounded-lg">
-            <div class="h-[210px] w-[210px] basis-1/3">
-                <img
-                    src="https://pace8.vn/uploads/2025/11/1-avatar.webp?ver=1.5.30"
-                    alt="img"
-                    class="w-full h-full object-cover rounded-lg"
-                />
-            </div>
-            <!--  -->
-            <div class="content basis-2/3 p-3 flex flex-col justify-around">
-                
-                    <div class="info">
-                        <p class="title text-[18px] font-bold">TIỀN PHONG HALF MARATHON 2025</p>
-                        <div class="date-time text-[14px] text-[#666] font-medium pt-3 " ><i class="bi bi-calendar-event mr-1.5"></i> 21-22 tháng 03, 2026</div>
-                        <div class="location text-[14px] text-[#666] font-medium">
-                            <i class="bi bi-geo-alt mr-1.5"></i>Vườn quốc gia Gia Kon Ka Kinh
-                        </div>
-                    </div>
-                    <ul class="distance flex gap-1 mt-2 flex-wrap mt-auto" >
-                      <li class="text-[12px] font-medium rounded-sm border border-[#ddd] bg-[rgba(164,174,198,0.2)] p-1 text-center">ROAD</li>
-                      <li class="text-[12px] font-medium rounded-sm border border-[#ddd] bg-[rgba(164,174,198,0.2)] p-1 text-center">5KM</li>
-                      <li  class="text-[12px] font-medium rounded-sm border border-[#ddd] bg-[rgba(164,174,198,0.2)] p-1 text-center">10KM</li>
-                      <li class="text-[12px] font-medium rounded-sm border border-[#ddd] bg-[rgba(164,174,198,0.2)] p-1 text-center">21KM</li>
-                    </ul>
-                    <div class="link flex justify-between mt-auto">
-                        <div class="link-groups space-x-2">
-                            <a href="#!">
-                                <i class="bi bi-facebook"></i>
-                            </a>
-                            <a href="#!">
-                                <i class="bi bi-browser-edge"></i>
-                            </a>
-                        </div>
-                        <button class="cta bg-blue-500 text-white px-3 py-1 rounded">Đăng ký</button>
-                    </div>
-                
-            </div>
-        </div>
-        <!-- card 1 -->
-        <div class="card flex flex-row border border-[#ddd] w-full rounded-lg">
-            <div class="h-[210px] w-[210px] basis-1/3">
-                <img
-                    src="https://pace8.vn/uploads/2025/11/1-avatar.webp?ver=1.5.30"
-                    alt="img"
-                    class="w-full h-full object-cover rounded-lg"
-                />
-            </div>
-            <!--  -->
-            <div class="content basis-2/3 p-3 flex flex-col justify-around">
-                
-                    <div class="info">
-                        <p class="title text-[18px] font-bold">TIỀN PHONG HALF MARATHON 2025</p>
-                        <div class="date-time text-[14px] text-[#666] font-medium pt-3 " ><i class="bi bi-calendar-event mr-1.5"></i> 21-22 tháng 03, 2026</div>
-                        <div class="location text-[14px] text-[#666] font-medium">
-                            <i class="bi bi-geo-alt mr-1.5"></i>Vườn quốc gia Gia Kon Ka Kinh
-                        </div>
-                    </div>
-                    <ul class="distance flex gap-1 mt-2 flex-wrap mt-auto" >
-                      <li class="text-[12px] font-medium rounded-sm border border-[#ddd] bg-[rgba(164,174,198,0.2)] p-1 text-center">ROAD</li>
-                      <li class="text-[12px] font-medium rounded-sm border border-[#ddd] bg-[rgba(164,174,198,0.2)] p-1 text-center">5KM</li>
-                      <li  class="text-[12px] font-medium rounded-sm border border-[#ddd] bg-[rgba(164,174,198,0.2)] p-1 text-center">10KM</li>
-                      <li class="text-[12px] font-medium rounded-sm border border-[#ddd] bg-[rgba(164,174,198,0.2)] p-1 text-center">21KM</li>
-                    </ul>
-                    <div class="link flex justify-between mt-auto">
-                        <div class="link-groups space-x-2">
-                            <a href="#!">
-                                <i class="bi bi-facebook"></i>
-                            </a>
-                            <a href="#!">
-                                <i class="bi bi-browser-edge"></i>
-                            </a>
-                        </div>
-                        <button class="cta bg-blue-500 text-white px-3 py-1 rounded">Đăng ký</button>
-                    </div>
-                
-            </div>
-        </div>
+
     </div>
 </div>

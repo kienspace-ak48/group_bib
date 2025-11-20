@@ -1,28 +1,28 @@
-const EventEntity = require('../areas/admin/model/event');
+const EventEntity = require('../areas/admin/model/Event');
 const CNAME = 'event.service.js ';
-const eventDTO = {
-    name: 'Hanoi Marathon 2025',
-    slug: 'mot-ngay-dep-troi',
-    desc: 'Hanoi Marathon là giải chạy thường niên lớn nhất miền Bắc, thu hút hàng ngàn vận động viên trong và ngoài nước.',
-    img_thumb: 'https://example.com/images/hanoi_marathon_thumb.jpg',
-    img_banner: 'https://example.com/images/hanoi_marathon_banner.jpg',
-    location: 'Hà Nội, Việt Nam',
-    start_date: '2025-04-10T06:00:00.000Z',
-    end_date: '2025-04-10T12:00:00.000Z',
-    isShow: true,
-    status: 'upcoming',
-    race_type: 'marathon',
-    organizer_name: 'Hanoi Sports Club',
-    organizer_web: 'https://hanoisportsclub.vn',
-    organizer_fanpage: 'https://facebook.com/hanoisportsclub',
-    organizer_zalo: 'https://zalo.me/123456789',
-};
 
 class EventService {
     constructor(parameters) {
         console.log('Initail event.service.js');
     }
-    Get() {}
+    async GetAll() {
+        try {
+            const result = await EventEntity.find({}).select('-_id -__v').lean();
+            return result;
+        } catch (error) {
+            console.log(CNAME, error.message);
+            return [];
+        }
+    }
+    async GetBySlug(slug) {
+        try {
+            const result = await EventEntity.findOne({ slug: slug }).select('-_id').lean();
+            return result;
+        } catch (error) {
+            console.log(CNAME, error.message);
+            return {};
+        }
+    }
     GetById() {}
     async Create(data) {
         try {

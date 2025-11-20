@@ -1,24 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Group Bib</title>
-    <link rel="stylesheet" href="/css/main.css">
-    <link rel="stylesheet" href="/css/style.css">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Group Bib</title>
+        <link rel="stylesheet" href="/css/main.css" />
+        <link rel="stylesheet" href="/css/style.css" />
 
-    <!-- gg icon -->
-     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
-     <!-- bootstrap icon -->
-      <link rel="stylesheet" href="/libs/bootstrap-icons/bootstrap-icons.min.css">
-
-     
-</head>
-<body>
-    <%- include('../partials/header.ejs') %>
-    <main>
-        <%- body %>
-    </main>
-    <%- include('../partials/footer.ejs') %>
-</body>
+        <!-- gg icon -->
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+        <!-- bootstrap icon -->
+        <link rel="stylesheet" href="/libs/bootstrap-icons/bootstrap-icons.min.css" />
+        <!-- jquey -->
+        <script src="/libs/js/jquery-3.7.1.js"></script>
+        <style>
+            body {
+                background-color: #f0f0f8;
+            }
+            .my-card {
+                background-color: #fff;
+                margin: 20px 0;
+            }
+        </style>
+    </head>
+    <body>
+        <%- include('../partials/header.ejs') %>
+        <main><%- body %></main>
+        <%- include('../partials/footer.ejs') %>
+    </body>
 </html>

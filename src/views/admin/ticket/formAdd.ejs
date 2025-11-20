@@ -1,0 +1,179 @@
+<style>
+    h2 {
+        margin-top: 0;
+        font-size: 22px;
+        font-weight: 700;
+        color: #1f2937;
+        letter-spacing: -0.3px;
+    }
+
+    .section-title {
+        margin-top: 20px;
+        margin-bottom: 10px;
+        font-size: 15px;
+        font-weight: 600;
+        color: #374151;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+        border-color: #ff6b00;
+        background: #ffffff;
+        box-shadow: 0 0 0 2px rgba(255, 107, 0, 0.15);
+        outline: none;
+    }
+</style>
+<div class="page-header">
+    <div class="page-block">
+        <div class="row align-items-center">
+            <div class="col-md-12">
+                <div class="page-header-title">
+                    <h5 class="m-b-10">Event</h5>
+                </div>
+                <ul class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="#!">Post</a></li>
+                    <li class="breadcrumb-item"><a href="#!">create new post</a></li>
+                    <!-- <li class="breadcrumb-item" aria-current="page">Home</li> -->
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- breack-crum -->
+
+<div class="card">
+    <!-- <div class="card-header">
+        <h2>Event List</h2>
+        <a class="btn btn-primary" href="/admin/event/form-add-event">New event</a>
+    </div> -->
+    <div class="card-body">
+        <h2>Tạo Loại Vé</h2>
+
+        <!-- Thông tin cơ bản -->
+        <div class="row">
+            <div class="col-6">
+                <label for="name">Tên vé</label>
+                <input class="form-control" type="text" id="name" placeholder="Ví dụ: 5KM – Early Bird" />
+
+                <label for="desc">Mô tả</label>
+                <textarea class="form-control" id="desc" rows="3" placeholder="Mô tả chi tiết về loại vé..."></textarea>
+                <!-- Giá & Số lượng -->
+                <div class="section">
+                    <div class="section-title">Giá & Số lượng</div>
+                    <div class="row">
+                        <div class="col">
+                            <label for="price">Giá vé (₫)</label>
+                            <input class="form-control" type="number" id="price" min="0" />
+                        </div>
+
+                        <div class="col">
+                            <label for="quantity">Số lượng vé</label>
+                            <input class="form-control" type="number" id="quantity" min="0" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6">
+                <!-- Thời gian đăng ký -->
+                <div class="section">
+                    <div class="row">
+                        <div class="col">
+                            <label for="start">Ngày mở đăng ký</label>
+                            <input class="form-control" type="datetime-local" id="start" />
+                        </div>
+
+                        <div class="col">
+                            <label for="end">Ngày đóng đăng ký</label>
+                            <input class="form-control" type="datetime-local" id="end" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Thuộc sự kiện -->
+                <div class="section">
+                    <div class="section-title">Thuộc sự kiện</div>
+
+                    <label for="event">Chọn sự kiện</label>
+                    <select class="form-select" id="event">
+                        <option value="">-- Chọn sự kiện --</option>
+                        <option value="1">Event 1</option>
+                        <option value="2">Event 2</option>
+                    </select>
+                </div>
+                <!--  -->
+                <!-- Buttons -->
+                <div class="btn-row mt-3">
+                    <button class="btn btn-danger">Hủy</button>
+                    <button class="btn btn-primary" id="cta-tciket-submit">Lưu loại vé</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- secction 2 -->
+<div class="card">
+    <div class="card-body">
+        <table class="table table-stripped">
+            <thead>
+                <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Quantity</th>
+                <th>Price</th>
+                <th>Start</th>
+                <th>End</th>
+            </tr>
+            </thead>
+            <tbody>
+                <%tickets.forEach((t,i)=>{%>
+                    <tr>
+                        <td><%=i+1%></td>
+                        <td><%=t.name%></td>
+                        <td><%=t.quantity%></td>
+                        <td><%=t.price%></td>
+                        <td><%= new Date(t.register_start).toLocaleDateString('vi-VN') %></td>
+                        <td><%= new Date(t.register_end).toLocaleDateString('vi-VN')%></td>
+                    </tr>
+                <%})%>
+
+            </tbody>
+        </table>
+    </div>
+</div>
+<!-- =============SCRIPT Here ================= -->
+<script>
+    // global
+    const btnTicketSubmit = document.querySelector('#cta-tciket-submit');
+
+    //
+    btnTicketSubmit.addEventListener('click', () => {
+        //
+        const data = {
+            name: document.querySelector('#name').value,
+            desc: document.querySelector('#desc').value,
+            price: document.querySelector('#price').value,
+            start: document.querySelector('#start').value,
+            end: document.querySelector('#end').value,
+            quantity: document.querySelector('#quantity').value,
+            event_id: document.querySelector('#event').value,
+        };
+        console.log(data);
+        $.ajax({
+            url: '/admin/ticket/create',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            success: (res) => {
+                console.log(res);
+            },
+            error: (xhr, status, err) => {
+                console.log(xhr?.responseJSON?.mess);
+                console.log('Server error');
+            },
+        });
+    });
+</script>

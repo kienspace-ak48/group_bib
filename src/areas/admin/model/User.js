@@ -1,0 +1,26 @@
+const mongoose = require('mongoose');
+const slugify = require('slugify');
+const bcrypt = requi
+
+const UserSchema = new mongoose.Schema({
+    fullname: {type: String, length: 50},
+    username: {type: String, length: 50},
+    password: {type: String, length: 200},
+    email: {type: String, length: 100},
+    phone: {type: String, length: 20},
+    role_id: String,
+    avatar: String
+}, {timestamps: true})
+
+//pre save
+// UserSchema.pre('save', async function(next){
+//     if(!this.isModified('password')) return next();
+//     this.password = await bcrypt.hash(this.password, 10);
+//     next();
+// })
+// func compare
+UserSchema.methods.comparePassword = function(password){
+    return bcrypt.compare(password, this.password);
+}
+
+module.exports = mongoose.model('user', UserSchema);

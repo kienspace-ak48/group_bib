@@ -9,3 +9,86 @@
     --breakpoint-xl: 87.5rem; /* 1400px */
     --breakpoint-2xl: 96rem; /* 1536px */
 }
+@layer components {
+    /* Tạo lớp reusable giống Bootstrap */
+    /* Label */
+    .form-label {
+        @apply inline-block mb-1 text-sm font-medium text-gray-700;
+    }
+
+    /* Input, Textarea */
+    .form-control {
+        @apply block w-full px-3 py-2 text-sm font-normal text-gray-700 bg-white
+           border border-gray-300 rounded transition ease-in-out
+           focus:border-blue-500 focus:ring focus:ring-blue-200 focus:outline-none;
+    }
+
+    .form-textarea {
+        @apply block w-full px-3 py-2 text-sm font-normal text-gray-700 bg-white
+           border border-gray-300 rounded transition ease-in-out
+           focus:border-blue-500 focus:ring focus:ring-blue-200 focus:outline-none;
+    }
+
+    /* Select */
+    .form-select {
+        @apply block w-full px-3 py-2 text-sm font-normal text-gray-700 bg-white
+           border border-gray-300 rounded transition ease-in-out
+           focus:border-blue-500 focus:ring focus:ring-blue-200 focus:outline-none;
+    }
+
+    /* Checkbox & Radio */
+    .form-checkbox,
+    .form-radio {
+        @apply h-4 w-4 text-blue-600 border-gray-300 rounded transition ease-in-out
+           focus:ring focus:ring-blue-200 focus:outline-none;
+    }
+
+    /* Button */
+    .btn {
+        @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded
+           shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500
+           focus:ring-offset-1 transition ease-in-out text-center ;
+    }
+    .btn-outline-indigo {
+        @apply border border-[#4f46e5] text-[#4f46e5] hover:bg-[#4f46e5] hover:text-white;
+    }
+    /* input group */
+    /* Input Group Wrapper */
+  .input-group {
+    @apply flex w-full;
+  }
+
+  /* Input Group Prepend/Append */
+  .input-group-text {
+    @apply inline-flex items-center px-3 py-2 text-sm font-normal text-gray-700 bg-gray-200
+           border border-gray-300 rounded-none;
+  }
+
+  /* Input nằm trong input-group */
+  .input-group > .form-control {
+    @apply rounded-none border-l-0 border-r-0; /* bỏ bo góc giữa */
+  }
+
+  /* Nếu là input-group đầu tiên */
+  .input-group > .form-control:first-child {
+    @apply rounded-l-md border-l border-l-gray-300;
+  }
+
+  /* Nếu là input-group cuối cùng */
+  .input-group > .form-control:last-child {
+    @apply rounded-r-md border-r border-r-gray-300;
+  }
+
+  /* Button trong input-group */
+  .input-group > .btn {
+    @apply rounded-none border-l-0;
+  }
+
+  .input-group > .btn:first-child {
+    @apply rounded-l-md;
+  }
+
+  .input-group > .btn:last-child {
+    @apply rounded-r-md;
+  }
+}

@@ -1,0 +1,177 @@
+<div class="page-header">
+    <div class="page-block">
+        <div class="row align-items-center">
+            <div class="col-md-12">
+                <div class="page-header-title">
+                    <h5 class="m-b-10">Event</h5>
+                </div>
+                <ul class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="#!">Post</a></li>
+                    <li class="breadcrumb-item"><a href="#!">create new post</a></li>
+                    <!-- <li class="breadcrumb-item" aria-current="page">Home</li> -->
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- breack-crum -->
+
+<form id="eventForm" class="container mt-4">
+    <div class="row">
+        <!-- col-right -->
+        <div class="col-8">
+            <div class="card">
+                <div class="card-body">
+                    <!--  -->
+
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <div>
+                                <label class="form-label">Name</label>
+                                <input type="text" name="name" value="<%=event?.name%>" class="form-control" />
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <label for="" class="form-label">Slug</label>
+                            <input type="text" disabled name="slug" value="<%=event?.slug %>" class="form-control">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea name="description"   class="form-control" rows="4"><%=event?.desc%></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Location</label>
+                        <input type="text" value="<%=event?.location%>"  name="location" class="form-control" />
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col">
+                            <label class="form-label">Start Date</label>
+                            <input type="date" value="<%=event?.start_date?event.start_date.toISOString().slice(0,10):''%>"  name="start_date" class="form-control" />
+                        </div>
+                        <div class="col">
+                            <label class="form-label">End Date</label>
+                            <input type="date" value="<%=event?.end_date?event.end_date.toISOString().slice(0,10):''%>"  name="end_date" class="form-control" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="mb-3">
+                                <label class="form-label">Status</label>
+                                <select name="status" class="form-select">
+                                    <option value="draft"  <%= event?.status === 'draft' ? 'selected' : '' %>>Draft</option>
+                                    <option value="active" <%= event?.status === 'active' ? 'selected' : '' %>>Active</option>
+                                    <option value="closed" <%= event?.status === 'closed' ? 'selected' : '' %>>Closed</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="mb-3">
+                                <label class="form-label">Race Type</label>
+                                <select name="race_type" value="<%=event?.race_type%>"  class="form-select">
+                                    <option value="marathon" <%= event?.race_type ==='marathon'?'selected': '' %>>Marathon</option>
+                                    <option value="marathon" <%= event?.race_type=== 'trail' ? 'selected':'' %> >Trail</option>
+                                    <option value="virtual" <%= event?.race_type==='virtual'?'selected':'' %>>Virtual</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <fieldset class="border p-3 mb-3">
+                        <legend class="w-auto px-2">Organizer Info</legend>
+                        <div class="mb-2">
+                            <label class="form-label">Name</label>
+                            <input type="text" value="<%=event?.organizer_name%>" name="organizer_name" class="form-control" />
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Website</label>
+                            <input type="text" value="<%=event?.organizer_web%>" name="organizer_website" class="form-control" />
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Fanpage</label>
+                            <input type="text" value="<%=event?.organizer_fanpage%>" name="organizer_fanpage" class="form-control" />
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Zalo</label>
+                            <input type="text" value="<%=event?.organizer_zalo%>" name="organizer_zalo" class="form-control" />
+                        </div>
+                    </fieldset>
+                    <!-- <div class="text-end">
+                        <button type="reset" class="btn btn-secondary">Reset</button>
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                    </div> -->
+
+                    <!--  -->
+                </div>
+            </div>
+        </div>
+        <!-- col-left -->
+        <div class="col-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" value="<%=event?.is_show%>" name="is_show" type="checkbox" role="switch" id="switchCheckDefault" />
+                            <label class="form-check-label" for="switchCheckDefault">Show on website</label>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Img Thumbnail (URL)</label>
+                        <input type="text" value="<%=event?.img_thumb%>" name="img_thumb" class="form-control" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Img Banner (URL)</label>
+                        <input type="text" value="<%=event?.img_banner%>" name="img_banner" class="form-control" />
+                    </div>
+                    <!-- submit 2 -->
+                    <div class="text-end">
+                        <!-- <button type="reset" class="btn btn-secondary">Reset</button> -->
+                        <button type="submit" class="btn btn-primary">Update</button>
+                        <input type="hidden" name="slug_hidden" value="<%=event?.slug%>">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<!-- =======Script here====== -->
+<script src="/admin/assets/js/plugins/tinymce/tinymce.min.js"></script>
+<!-- tagify -->
+<script>
+    tinymce.init({
+        height: '300',
+        selector: '#event-tinymce-4',
+        content_style: 'body { font-family: "Inter", sans-serif; }',
+        menubar: false,
+        toolbar: [
+            'styleselect fontselect fontsizeselect',
+            'undo redo | cut copy paste | bold italic | link image | alignleft aligncenter alignright alignjustify',
+            'bullist numlist | outdent indent | blockquote subscript superscript | advlist | autolink | lists charmap | print preview |  code',
+        ],
+        plugins: 'advlist autolink link image lists charmap print preview code',
+    });
+    // global scope
+    document.querySelector('#eventForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        formData.set('is_show', document.getElementById('switchCheckDefault').checked? true: false)
+        const data = Object.fromEntries(formData.entries());
+        const slug = document.querySelector('input[name="slug_hidden"]').value;
+        $.ajax({
+          url: `/admin/event/form-edit/${slug}`,
+          method: 'PUT',
+          contentType: 'application/json',
+          data: JSON.stringify(data),
+          success: (res)=>{
+            if(res.success){
+              document.location.href=res?res.redirect:"/admin/event"
+            }
+          },
+          error: (xhr, status, err)=>{
+            console.log(xhr.responseJSON?.mess||'Server error')
+          }
+        })
+    });
+</script>

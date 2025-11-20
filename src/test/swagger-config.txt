@@ -1,0 +1,29 @@
+// #swagger.parameters['id'] = {
+//       in: 'query',
+//       description: 'Event ID',
+//       required: true,
+//       schema: { type: 'string }
+// }
+/* #swagger.requestBody = {
+      required: true,
+      content: {
+        "application/json": {
+          schema: {
+            type: "object",
+            properties: {
+              id: {
+                type: "string",
+                description: "Event ID cần update"
+              },
+              data: {
+                type: "object",
+                description: "Object dữ liệu update (các field tuỳ ý)",
+                additionalProperties: true
+              }
+            },
+            required: ["id", "data"]
+          }
+        }
+      }
+} */
+// test

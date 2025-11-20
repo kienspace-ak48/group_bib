@@ -1,0 +1,316 @@
+<style>
+    hr {
+        margin: 1rem 0;
+        color: rgba(164, 174, 198, 0.2);
+        border: 0;
+        opacity: 1;
+        clear: both;
+        height: 1px;
+        background-image: linear-gradient(to right, transparent, #4f46e5, transparent) !important;
+    }
+</style>
+<div class="main-container">
+    <h2>Page event detail</h2>
+
+    <section class="event-detail">
+        <div class="grid grid-cols-12 gap-10">
+            <!-- =============== left =========== -->
+            <div class="col-left col-span-8">
+                <!-- ===== overview -->
+                <div class="main-content rounded-lg" style="background-color: #fff">
+                    <!-- img -->
+                    <div>
+                        <img
+                            src="https://pace8.vn/uploads/2025/11/1-cover-tphm-2025.webp"
+                            class="rounded-tl-lg rounded-tr-lg"
+                            alt=""
+                        />
+                    </div>
+                    <div class="main-info p-4">
+                        <div class="distances">
+                            <ul class="distance flex gap-3 mt-2 flex-wrap mt-auto">
+                                <li
+                                    class="text-[12px] font-medium rounded-sm border border-[#ddd] bg-[rgba(164,174,198,0.2)] p-2 text-center"
+                                >
+                                    ROAD
+                                </li>
+                                <li
+                                    class="text-[12px] font-medium rounded-sm border border-[#ddd] bg-[rgba(164,174,198,0.2)] p-2 text-center"
+                                >
+                                    5KM
+                                </li>
+                                <li
+                                    class="text-[12px] font-medium rounded-sm border border-[#ddd] bg-[rgba(164,174,198,0.2)] p-2 text-center"
+                                >
+                                    10KM
+                                </li>
+                                <li
+                                    class="text-[12px] font-medium rounded-sm border border-[#ddd] bg-[rgba(164,174,198,0.2)] p-2 text-center"
+                                >
+                                    21KM
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="info mt-2 relative">
+                            <h2 class="title text-[29px] font-semibold line-clamp-2"><%=event?.name%></h2>
+                            <div class="date-time text-[14px] text-[#666] font-medium pt-3">
+                                <i class="bi bi-calendar-event mr-1.5"></i> <%=event?.start_date%>
+                            </div>
+                            <div class="location text-[14px] text-[#666] font-medium">
+                                <i class="bi bi-geo-alt mr-1.5"></i> <%=event?.location%>
+                            </div>
+                            <div
+                                class="btn-cta-share text-[14px] bg-[#4f46e5] inline-block absolute bottom-1 right-2 rounded-[20px] text-white px-4 py-3"
+                            >
+                                <i class="bi bi-share text-[14px]"></i>
+                                <span class="text-[14px] space-x-3">Chia sẻ</span>
+                            </div>
+                        </div>
+                        <!--  -->
+                        <hr />
+                        <div class="organizer">
+                            <h3 class="title">Ban tổ chức</h3>
+                            <a href="#!">
+                                <p>Báo tiền phong</p>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <!-- ===== list section -->
+                <!-- Thoong tin sự kiện -->
+                <section class="my-card border border-[#ddd] shadow-md rounded-lg px-4 py-3">
+                    <div class=" ">
+                        <div class="flex justify-between items-center cursor-pointer select-none collapse-header">
+                            <h5 class="text-lg font-semibold">⚙️ Solution</h5>
+                            <span class="text-gray-500 transition-transform duration-300"
+                                ><i class="bi bi-chevron-down"></i
+                            ></span>
+                        </div>
+
+                        <div class="collapse-body overflow-hidden transition-all duration-300 max-h-0">
+                            <div class="pt-4 text-gray-700">Đây là phần nội dung có thể thu gọn hoặc mở rộng.</div>
+                        </div>
+                    </div>
+                </section>
+                <!-- Bảng giá vé -->
+                <section class="my-card border border-[#ddd] shadow-md rounded-lg px-4 py-3">
+                    <div class=" ">
+                        <div class="flex justify-between items-center cursor-pointer select-none collapse-header">
+                            <h5 class="text-lg font-semibold">⚙️ Solution</h5>
+                            <span class="text-gray-500 transition-transform duration-300"
+                                ><i class="bi bi-chevron-down"></i
+                            ></span>
+                        </div>
+
+                        <div class="collapse-body overflow-hidden transition-all duration-300 max-h-0">
+                            <div class="pt-4 text-gray-700">Đây là phần nội dung có thể thu gọn hoặc mở rộng.</div>
+                        </div>
+                    </div>
+                </section>
+                <!-- Chính sách hủy - chuyển nhượng - Thay đổi thông tin các nhân/cự ly -->
+                <section class="my-card border border-[#ddd] shadow-md rounded-lg px-4 py-3">
+                    <div class=" ">
+                        <div class="flex justify-between items-center cursor-pointer select-none collapse-header">
+                            <h5 class="text-lg font-semibold">⚙️ Solution</h5>
+                            <span class="text-gray-500 transition-transform duration-300"
+                                ><i class="bi bi-chevron-down"></i
+                            ></span>
+                        </div>
+
+                        <div class="collapse-body overflow-hidden transition-all duration-300 max-h-0">
+                            <div class="pt-4 text-gray-700">Đây là phần nội dung có thể thu gọn hoặc mở rộng.</div>
+                        </div>
+                    </div>
+                </section>
+                <!-- Lịch trình sự kiện -->
+                <section class="my-card border border-[#ddd] shadow-md rounded-lg px-4 py-3">
+                    <div class=" ">
+                        <div class="flex justify-between items-center cursor-pointer select-none collapse-header">
+                            <h5 class="text-lg font-semibold">⚙️ Solution</h5>
+                            <span class="text-gray-500 transition-transform duration-300"
+                                ><i class="bi bi-chevron-down"></i
+                            ></span>
+                        </div>
+
+                        <div class="collapse-body overflow-hidden transition-all duration-300 max-h-0">
+                            <div class="pt-4 text-gray-700">Đây là phần nội dung có thể thu gọn hoặc mở rộng.</div>
+                        </div>
+                    </div>
+                </section>
+                <!-- Racekit -->
+                <section class="my-card border border-[#ddd] shadow-md rounded-lg px-4 py-3">
+                    <div class=" ">
+                        <div class="flex justify-between items-center cursor-pointer select-none collapse-header">
+                            <h5 class="text-lg font-semibold">⚙️ Solution</h5>
+                            <span class="text-gray-500 transition-transform duration-300"
+                                ><i class="bi bi-chevron-down"></i
+                            ></span>
+                        </div>
+
+                        <div class="collapse-body overflow-hidden transition-all duration-300 max-h-0">
+                            <div class="pt-4 text-gray-700">Đây là phần nội dung có thể thu gọn hoặc mở rộng.</div>
+                        </div>
+                    </div>
+                </section>
+                <!-- Bản đồ đường chạy -->
+                <section class="my-card border border-[#ddd] shadow-md rounded-lg px-4 py-3">
+                    <div class=" ">
+                        <div class="flex justify-between items-center cursor-pointer select-none collapse-header">
+                            <h5 class="text-lg font-semibold">⚙️ Solution</h5>
+                            <span class="text-gray-500 transition-transform duration-300"
+                                ><i class="bi bi-chevron-down"></i
+                            ></span>
+                        </div>
+
+                        <div class="collapse-body overflow-hidden transition-all duration-300 max-h-0">
+                            <div class="pt-4 text-gray-700">Đây là phần nội dung có thể thu gọn hoặc mở rộng.</div>
+                        </div>
+                    </div>
+                </section>
+                <!-- Giải thưởng -->
+                <section class="my-card border border-[#ddd] shadow-md rounded-lg px-4 py-3">
+                    <div class=" ">
+                        <div class="flex justify-between items-center cursor-pointer select-none collapse-header">
+                            <h5 class="text-lg font-semibold">⚙️ Solution</h5>
+                            <span class="text-gray-500 transition-transform duration-300"
+                                ><i class="bi bi-chevron-down"></i
+                            ></span>
+                        </div>
+
+                        <div class="collapse-body overflow-hidden transition-all duration-300 max-h-0">
+                            <div class="pt-4 text-gray-700">Đây là phần nội dung có thể thu gọn hoặc mở rộng.</div>
+                        </div>
+                    </div>
+                </section>
+                <!-- Quy định tham dự -->
+                <section class="my-card border border-[#ddd] shadow-md rounded-lg px-4 py-3">
+                    <div class=" ">
+                        <div class="flex justify-between items-center cursor-pointer select-none collapse-header">
+                            <h5 class="text-lg font-semibold">⚙️ Solution</h5>
+                            <span class="text-gray-500 transition-transform duration-300"
+                                ><i class="bi bi-chevron-down"></i
+                            ></span>
+                        </div>
+
+                        <div class="collapse-body overflow-hidden transition-all duration-300 max-h-0">
+                            <div class="pt-4 text-gray-700">Đây là phần nội dung có thể thu gọn hoặc mở rộng.</div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            <!-- =============== right===========  -->
+            <div class="col-right col-span-4">
+                <section id="countdown" class="bg-white rounded-lg text-center p-5">
+                    <div class="flex justify-center p-5">
+                        <div class="flex justify-center flex-nowrap gap-3 text-center lg:justify-start">
+                            <div class="w-[50px] h-[50px] bg-[#f5841f] flex justify-center items-center flex-col text-center rounded-[10px] shadow-md p-1">
+                                <p class="px-3 font-bold text-white text-[20px] " id="countdown_date">21</p>
+                                <p class="text-[12px] font-medium  text-white">Ngày</p>
+                            </div>
+                            <div class="w-[50px] h-[50px] bg-[#f5841f] flex justify-center items-center flex-col text-center rounded-[10px] shadow-md p-1">
+                                <p class="px-3 font-bold text-white text-[20px] " id="countdown_hour">05</p>
+                                <p class="text-[12px] font-medium  text-white">Giờ</p>
+                            </div>
+                            <div class="w-[50px] h-[50px] bg-[#f5841f] flex justify-center items-center flex-col text-center rounded-[10px] shadow-md p-1">
+                                <p class="px-3 font-bold text-white text-[20px] " id="countdown_minute">51</p>
+                                <p class="text-[12px] font-medium  text-white">Phút</p>
+                            </div>
+                            <div class="w-[50px] h-[50px] bg-[#f5841f] flex justify-center items-center flex-col text-center rounded-[10px] shadow-md p-1">
+                                <p class="px-3 font-bold text-white text-[20px] " id="countdown_second">30</p>
+                                <p class="text-[12px] font-medium  text-white">Giây</p>
+                            </div>
+                        </div>
+                    </div>
+                    <p>Sự kiện sẽ diễn ra</p>
+                </section>
+                <!--  -->
+                <div class="my-card p-4 rounded-lg">
+                    <h3 class="title text-[20px] font-semibold tracking-normal">Đăng ký nhóm</h3>
+                    <p class="text-[14px] my-4 font-light italic text-[#333]">
+                        Mở đăng ký: <span class="start_date">07/11/2025</span>-<span class="end_date">04/12/2025</span>
+                    </p>
+                    <a href="/event/group-bib/<%=slug%>" style=" width: 100% !important;" class="block text-center mb-4 w-full  btn-outline-indigo font-semibold px-6 py-2 rounded-lg ">Đăng ký nhóm</a>
+                </div>
+                <!-- group links -->
+                <div class="my-card p-4 rounded-lg">
+                    <div class="group-links flex justify-around flex-wrap gap-4">
+                        <a href="#!">
+                            <div class="anchor flex flex-col justify-center items-center">
+                                <div class="icon"><i class="bi bi-facebook text-[32px] text-blue-700"></i></div>
+                                <div><span class="text-[14px] font-medium tracking-normal">Fanpage</span></div>
+                            </div>
+                        </a>
+                        <a href="#!">
+                            <div class="anchor flex flex-col justify-center items-center">
+                                <div class="icon"><i class="bi bi-browser-chrome text-[32px]"></i></div>
+                                <div><span class="text-[14px] font-medium tracking-normal">Website</span></div>
+                            </div>
+                        </a>
+                        <a href="#!">
+                            <div class="anchor flex flex-col justify-center items-center">
+                                <div class="icon">
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        x="0px"
+                                        y="0px"
+                                        width="48"
+                                        height="48"
+                                        viewBox="0 0 48 48"
+                                    >
+                                        <path
+                                            fill="#2962ff"
+                                            d="M15,36V6.827l-1.211-0.811C8.64,8.083,5,13.112,5,19v10c0,7.732,6.268,14,14,14h10	c4.722,0,8.883-2.348,11.417-5.931V36H15z"
+                                        ></path>
+                                        <path
+                                            fill="#eee"
+                                            d="M29,5H19c-1.845,0-3.601,0.366-5.214,1.014C10.453,9.25,8,14.528,8,19	c0,6.771,0.936,10.735,3.712,14.607c0.216,0.301,0.357,0.653,0.376,1.022c0.043,0.835-0.129,2.365-1.634,3.742	c-0.162,0.148-0.059,0.419,0.16,0.428c0.942,0.041,2.843-0.014,4.797-0.877c0.557-0.246,1.191-0.203,1.729,0.083	C20.453,39.764,24.333,40,28,40c4.676,0,9.339-1.04,12.417-2.916C42.038,34.799,43,32.014,43,29V19C43,11.268,36.732,5,29,5z"
+                                        ></path>
+                                        <path
+                                            fill="#2962ff"
+                                            d="M36.75,27C34.683,27,33,25.317,33,23.25s1.683-3.75,3.75-3.75s3.75,1.683,3.75,3.75	S38.817,27,36.75,27z M36.75,21c-1.24,0-2.25,1.01-2.25,2.25s1.01,2.25,2.25,2.25S39,24.49,39,23.25S37.99,21,36.75,21z"
+                                        ></path>
+                                        <path
+                                            fill="#2962ff"
+                                            d="M31.5,27h-1c-0.276,0-0.5-0.224-0.5-0.5V18h1.5V27z"
+                                        ></path>
+                                        <path
+                                            fill="#2962ff"
+                                            d="M27,19.75v0.519c-0.629-0.476-1.403-0.769-2.25-0.769c-2.067,0-3.75,1.683-3.75,3.75	S22.683,27,24.75,27c0.847,0,1.621-0.293,2.25-0.769V26.5c0,0.276,0.224,0.5,0.5,0.5h1v-7.25H27z M24.75,25.5	c-1.24,0-2.25-1.01-2.25-2.25S23.51,21,24.75,21S27,22.01,27,23.25S25.99,25.5,24.75,25.5z"
+                                        ></path>
+                                        <path
+                                            fill="#2962ff"
+                                            d="M21.25,18h-8v1.5h5.321L13,26h0.026c-0.163,0.211-0.276,0.463-0.276,0.75V27h7.5	c0.276,0,0.5-0.224,0.5-0.5v-1h-5.321L21,19h-0.026c0.163-0.211,0.276-0.463,0.276-0.75V18z"
+                                        ></path>
+                                    </svg>
+                                </div>
+                                <div><span class="text-[14px] font-medium tracking-normal">Nhóm Zalo</span></div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!--  -->
+</div>
+<!-- =============================event # -->
+
+<script>
+    document.querySelectorAll('.collapse-header').forEach((header) => {
+        header.addEventListener('click', () => {
+            const body = header.parentElement.querySelector('.collapse-body');
+            const icon = header.querySelector('span');
+
+            if (body.classList.contains('max-h-0')) {
+                body.classList.remove('max-h-0');
+                body.classList.add('min-h-[100px]'); // đủ cao cho nội dung
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                body.classList.add('max-h-0');
+                body.classList.remove('min-h-[100px]');
+                icon.style.transform = 'rotate(0deg)';
+            }
+        });
+    });
+</script>
