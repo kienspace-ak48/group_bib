@@ -9,18 +9,28 @@ const UserSchema = new mongoose.Schema(
         password: { type: String, length: 200 },
         email: { type: String, length: 100 },
         phone: { type: String, length: 20 },
-        role_id: {type: String, default: 'user'},
+        role_id: { type: String, default: 'user' },
         avatar: String,
+
+        // provider
+        providers: [
+            {
+                name: String, //google, facebook, github,...
+                id: String,
+                email: String,
+                avatar: String,
+            },
+        ],
     },
     { timestamps: true },
 );
 
 //pre save
-// UserSchema.pre('save', async function(next){
-//     if(!this.isModified('password')) return next();
-//     this.password = await bcrypt.hash(this.password, 10);
-//     next();
-// })
+UserSchema.pre('save', async function (next) {
+    if (!this.isModified('password')) return next();
+    this.password = await bcrypt.hash(this.password, 10);
+    next();
+});
 // func compare
 UserSchema.methods.comparePassword = function (password) {
     return bcrypt.compare(password, this.password);

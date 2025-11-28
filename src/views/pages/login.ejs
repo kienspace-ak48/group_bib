@@ -136,9 +136,9 @@
     }
 
     /* Hidden login/register */
-    .login { display: none; }
-    .container.login-active .register { display: none; }
-    .container.login-active .login { display: flex; }
+    .register { display: none; }
+    .container.register-active .register { display: flex; }
+    .container.register-active .login { display: none; }
 
     @media (max-width: 768px) {
       .container {
@@ -188,36 +188,54 @@
       <p class="switch-text">Bạn đã có tài khoản? <a onclick="toggleForm()">Login</a></p>
     </div>
 
+    <!--  -->
     <!-- Login Form -->
+    <form action="/auth/normal/login" method="POST">
     <div class="form-wrapper login">
       <h2>Login</h2>
       <p class="subtitle">Đăng nhập để tiếp tục</p>
 
       <div class="input-group">
         <label>Email</label>
-        <input type="email" name="l_username" placeholder="mail@example.com" />
+        <input type="email" name="l_username" required placeholder="mail@example.com" />
       </div>
 
       <div class="input-group">
         <label>Password</label>
-        <input type="password" name="l_password" placeholder="••••••••" />
+        <input type="password" name="l_password" required placeholder="••••••••"/>
       </div>
 
-      <button id="cta_login">Login</button>
+      <div class="input-group" style="display:flex;align-items:center;">
+        <input type="checkbox" id="rememberMe" name="rememberMe" style="margin-right:8px; width: 16px; height: 16px;">
+        <label for="rememberMe" style="margin:0;">Ghi nhớ lần sau đăng nhập</label>
+      </div>
+
+      <button type="submit" id="cta_login">Login</button>
+
+      <p class="subtitle" style="text-align:center;margin:15px 0;">Hoặc đăng nhập bằng</p>
+
+      <div style="display:flex;gap:10px;justify-content:center;">
+        <a href="/gg/auth/google" class="social-btn" style="background:#DB4437;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;">Google</a>
+        <a href="/auth/facebook" class="social-btn" style="background:#4267B2;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;">Facebook</a>
+      </div>
+
       <p class="switch-text">Bạn chưa có tài khoản? <a onclick="toggleForm()">Sign Up</a></p>
     </div>
+    </form>
+    
+
 
     <!-- Right Banner -->
     <div class="right">
-      <h3>Welcome to Our Platform</h3>
-      <p>Tham gia ngay để trải nghiệm giao diện tối giản, dễ nhìn và hệ thống đăng ký đăng nhập chuẩn hiện đại.</p>
+      <h3>Welcome Accessrace</h3>
+      <p>AccessRace Timing  - Provide timing solutions and equipment with a software management system and high-precision timing devices for sports events.</p>
     </div>
   </div>
 
   <script>
     const container = document.getElementById('container');
     function toggleForm() {
-      container.classList.toggle('login-active');
+      container.classList.toggle('register-active');
     }
   </script>
 </body>
@@ -234,6 +252,11 @@
       email: document.querySelector('input[name="email"]').value,
       phone: document.querySelector('input[name="phone"]').value,
       password: document.querySelector('input[name="password"]').value
+    }
+    if(!data.email || !data.fullname ||!data.password ||!data.password){
+      alert('Please fill the form!');
+      ev.preventDefault();
+      return
     }
     console.log(data);
     // 
@@ -252,25 +275,31 @@
     })
     alert('create')
   })
-  btnLogin.addEventListener('click', (ev)=>{
-    // alert('login')
-    const data={
-      username: document.querySelector('input[name="l_username"]').value,
-      password: document.querySelector('input[name="l_password"]').value
-    };
-    console.log(data)
-    // 
-    $.ajax({
-      url: '/user/login',
-      method: 'POST',
-      contentType: 'application/json',
-      data: JSON.stringify(data),
-      success: (res)=>{
-        console.log(res)
-      },
-      error: (xhr, status, err)=>{
-        console.log(xhr.responseJSON?.mess);
-      }
-    })
-  })
+  // btnLogin.addEventListener('click', (ev)=>{
+  //   // alert('login')
+  //   const data={
+  //     username: document.querySelector('input[name="l_username"]').value,
+  //     password: document.querySelector('input[name="l_password"]').value
+  //   };
+  //   if(!data.username || !data.password){
+  //     alert("Enter username & password!")
+  //     ev.preventDefault();
+  //     return
+  //   }
+  //   console.log(data)
+  //   // 
+  //   $.ajax({
+  //     url: '/auth/normal/login',
+  //     method: 'POST',
+  //     contentType: 'application/json',
+  //     data: JSON.stringify(data),
+  //     success: (res)=>{
+  //       console.log(res)
+  //     },
+  //     error: (xhr, status, err)=>{
+  //       console.log(xhr.responseJSON?.mess);
+  //     }
+  //   })
+  // })
+
 </script>

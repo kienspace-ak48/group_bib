@@ -24,10 +24,10 @@ const homeController = () => {
                 const eventId = req.params.slug;
                 const result = await GroupService.GetByEventId(eventId);
                 console.log(result);
-                res.render('pages/groupBib', {layout: VLAYOUT, groups: result||[]});
+                res.render('pages/groupBib', {layout: VLAYOUT, groups: result||[], slug: eventId||''});
             } catch (error) {
                 console.log(CNAME, error.message);
-                res.render('pages/groupBib', {layout: VLAYOUT, groups: []});
+                res.render('pages/groupBib', {layout: VLAYOUT, groups: [], slug: ''});
             }
         },
         // RegisterGroupBib: async(req, res)=>{

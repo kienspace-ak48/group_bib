@@ -85,7 +85,7 @@ const eventController = () => {
                     organizer_fanpage: data.organizer_fanpage,
                     organizer_zalo: data.organizer_zalo,
                 };
-                console.log(eventDTO);
+                // console.log(eventDTO);
                 const result = await EventService.UpdateBySlug(slug,eventDTO);
                 if(!result) return res.json({success: false, mess: 'update failed'})
                 return res.json({success: true, redirect: '/admin/event'})

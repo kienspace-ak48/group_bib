@@ -12,11 +12,8 @@ class GroupService {
     }
     async GetByEventId(slug){
         try {
-            // eventID xonmg
             const event = await EventService.GetBySlug(slug);
-            // console.log(event)
             const eventID = event._id;
-            // console.log(slug);
             if(event){
                 const result = await GroupEntity.find({event_id: eventID}).select('-__v').lean();
                 return result;
@@ -30,6 +27,11 @@ class GroupService {
     GetById() {}
     async Add(group) {
         try {
+            const _event = await EventService.GetBySlug(group.event_id);
+            const _eventId = _event._id;
+            console.log('---');
+            console.log(_eventId)
+            console.log('Data check', _eventId);
             const _group = new GroupEntity({
                 group_name: group.group_name,
                 facebook_link: group.facebook_link,
@@ -39,7 +41,7 @@ class GroupService {
                 bank_name: group.bank_name,
                 bank_number: group.bank_number,
                 bank_transfer_code: group.bank_transfer_code,
-                event_id: group.event_id,
+                event_id: _eventId,
                 captain_id: group.captain_id,
                 qr_image: group.qr_image,
                 hotline: group.phone,

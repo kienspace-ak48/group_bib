@@ -1,0 +1,140 @@
+<div class="main-container">
+    <div class="max-w-6xl mx-auto grid grid-cols-12 gap-6">
+
+  <!-- Sidebar giữ nguyên -->
+  <div class="col-span-12 md:col-span-3">
+    <div class="bg-white rounded-lg shadow p-4">
+      <ul class="space-y-2 text-[16px] text-gray-700">
+        <a href="/user/profile">
+        <li class="py-1">Thông tin tài khoản</li>
+        </a>
+        <a href="">
+        <li class="py-1">Đăng ký của bạn</li>
+
+        </a>
+        <a href="/user/group">
+        <li class="py-1">Quản lý đăng ký nhóm</li>
+
+        </a>
+        <a href="/user/profile-doc-history">
+        <li class="font-semibold text-blue-600">Hồ sơ đăng ký</li>
+
+        </a>
+        <a href="/user/change-password">
+            <li class="py-1">Đổi mật khẩu</li>
+        </a>
+        
+      </ul>
+    </div>
+  </div>
+
+  <!-- Main content -->
+  <div class="col-span-12 md:col-span-9">
+    <div class="bg-white rounded-lg shadow p-6">
+
+      <!-- Alert -->
+      <div class="bg-teal-100 text-gray-700 px-4 py-3 rounded mb-6 text-sm">
+        Tạo sẵn hồ sơ đăng ký giúp bạn nhanh chóng nhập thông tin khi mua BIB. Chỉ với 1 lần nhấn chọn hồ sơ, hệ thống sẽ tự động điền các trường đăng ký giúp bạn.
+      </div>
+
+      <!-- Title -->
+      <h2 class="text-xl font-semibold text-gray-800 mb-4">Thông tin cá nhân</h2>
+
+      <!-- Form Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="text-sm font-medium">Họ & tên (*)</label>
+          <input class="w-full border rounded-lg px-3 py-2">
+          <p class="text-xs text-pink-500 mt-1">Nhập đúng theo CCCD hoặc Giấy khai sinh.</p>
+        </div>
+
+        <div>
+          <label class="text-sm font-medium">Email (*)</label>
+          <input class="w-full border rounded-lg px-3 py-2">
+          <p class="text-xs text-pink-500 mt-1">Nên dùng Gmail để đăng ký.</p>
+        </div>
+
+        <div>
+          <label class="text-sm font-medium">Số điện thoại (*)</label>
+          <input class="w-full border rounded-lg px-3 py-2">
+        </div>
+
+        <div>
+          <label class="text-sm font-medium">CCCD hoặc hộ chiếu (*)</label>
+          <input class="w-full border rounded-lg px-3 py-2">
+          <p class="text-xs text-pink-500 mt-1">Nếu chưa có CCCD, nhập định danh của người giám hộ.</p>
+        </div>
+
+        <div>
+          <label class="text-sm font-medium">Quốc tịch (*)</label>
+          <select class="w-full border rounded-lg px-3 py-2">
+            <option>Việt Nam</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="text-sm font-medium">Quốc gia đang sinh sống (*)</label>
+          <select class="w-full border rounded-lg px-3 py-2">
+            <option>Việt Nam</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="text-sm font-medium">Tỉnh/Thành phố đang sinh sống (*)</label>
+          <select class="w-full border rounded-lg px-3 py-2">
+            <option>Hồ Chí Minh</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="text-sm font-medium">Ngày sinh (*)</label>
+          <input type="date" class="w-full border rounded-lg px-3 py-2">
+        </div>
+
+        <div>
+          <label class="text-sm font-medium">Giới tính (*)</label>
+          <select class="w-full border rounded-lg px-3 py-2">
+            <option>Chọn thông tin</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Thông tin khác -->
+      <h3 class="text-lg font-semibold text-gray-800 mt-8 mb-3">Thông tin khác</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="text-sm font-medium">Tên trên BIB</label>
+          <input class="w-full border rounded-lg px-3 py-2">
+        </div>
+        <div>
+          <label class="text-sm font-medium">Size áo (*)</label>
+          <select class="w-full border rounded-lg px-3 py-2">
+            <option>Chọn thông tin</option>
+          </select>
+          <a href="#" class="text-blue-600 text-sm mt-1 inline-block">Chi tiết cỡ áo</a>
+        </div>
+
+        <!-- 3 input trống -->
+        <input class="w-full border rounded-lg px-3 py-2" placeholder="Thông tin khác 1">
+        <input class="w-full border rounded-lg px-3 py-2" placeholder="Thông tin khác 2">
+        <input class="w-full border rounded-lg px-3 py-2" placeholder="Thông tin khác 3">
+      </div>
+
+      <!-- Thông tin y tế -->
+      <h3 class="text-lg font-semibold text-gray-800 mt-8 mb-3">Thông tin y tế</h3>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <input class="w-full border rounded-lg px-3 py-2" placeholder="Nhóm máu">
+        <input class="w-full border rounded-lg px-3 py-2" placeholder="Dị ứng (nếu có)">
+        <input class="w-full border rounded-lg px-3 py-2" placeholder="Bệnh lý nổi bật">
+      </div>
+
+      <!-- Nút submit -->
+      <div class="mt-6 flex justify-end">
+        <button class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">Lưu hồ sơ</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</div>

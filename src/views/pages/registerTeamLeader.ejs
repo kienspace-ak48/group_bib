@@ -209,6 +209,7 @@
                     >
                         XÁC NHẬN 🚀
                     </button>
+                    <input type="hidden" name="slug_hidden" value="<%=slug?slug:''%>">
                 </div>
             </div>
         </form>
@@ -219,13 +220,17 @@
     $('#groupForm').on('submit', function (e) {
         e.preventDefault();
         const data = Object.fromEntries(new FormData(this).entries());
+        const slug = document.querySelector('input[name="slug_hidden"]').value;
         $.ajax({
             url: `/group-bib/form-add`,
             method: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(data),
             success: (res) => {
-                console.log(res);
+                // console.log(res);
+                if(res.success){
+                    document.location.href=`/event/group-bib/${slug}`
+                }
             },
             error: (xhr, status, err) => {
                 console.log(xhr.responseJSON?.mess || 'Server error');

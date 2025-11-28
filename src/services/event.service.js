@@ -1,4 +1,4 @@
-const EventEntity = require('../areas/admin/model/Event');
+const EventEntity = require('../areas/admin/model/EventM');
 const CNAME = 'event.service.js ';
 
 class EventService {
@@ -16,7 +16,7 @@ class EventService {
     }
     async GetBySlug(slug) {
         try {
-            const result = await EventEntity.findOne({ slug: slug }).select('-_id').lean();
+            const result = await EventEntity.findOne({ slug: slug }).lean();
             return result;
         } catch (error) {
             console.log(CNAME, error.message);

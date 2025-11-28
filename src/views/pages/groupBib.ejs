@@ -5,7 +5,7 @@
             <input type="text" class="form-control" />
             <button class="btn text-[16px] text-white bg-[#262b32] " >Tìm kiếm nhóm</button>
         </div>
-        <a href="/group-bib/form-add" class="btn mx-auto w-2/8 text-[16px] bg-[#e668b3] text-white"><i class="bi bi-discord"></i>Tạo nhóm ngay</a>
+        <a href="/group-bib/form-add/<%=slug%>" class="btn mx-auto w-2/8 text-[16px] bg-[#e668b3] text-white"><i class="bi bi-discord"></i>Tạo nhóm ngay</a>
     </div>
     <!-- table -->
     <div class="overflow-x-auto mt-8">
@@ -38,7 +38,7 @@
                     <%groups.forEach((g,i)=>{%>
                         <tr class="bg-white divide-y divide-gray-200">
                             <td class="px-6 py-4 whitespace-nowrap"><%=i+1%></td>
-                            <td class="px-6 py-4 whitespace-nowrap"><%=g.group_name%></td>
+                            <td class="px-6 py-4 whitespace-nowrap"><%=g.group_name.substring(0, 20)+ '...' %></td>
                             <td class="px-6 py-4 whitespace-nowrap"><%=g.leader_name%></td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <% if (g.zalo_link.length > 20) { %>
@@ -79,7 +79,9 @@
                         </tr>
                     <%})%>
                 <%}else{%>
-
+                    <tr class="bg-white divide-y divide-gray-200">
+                        <td class="text-center px-6 py-4" colspan="7">-- No data --</td>
+                    </tr>
                 <%}%>
                 
             </tbody>

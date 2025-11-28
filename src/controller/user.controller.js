@@ -20,7 +20,10 @@ const userController = () => {
         Register: async (req, res) => {
             try {
                 const data = req.body;
-                const result = await UserService.Add(data);
+                console.log('data client',data);
+                if(!data.fullname || !data.email || !data.phone || data.password)return res.status(400).json({ success: false, mess: 'Pls fill in your information' });
+                // const result = await UserService.Add(data);
+                const result = false;
                 console.log(typeof result);
                 console.log(result);
                 if (result === 0) {
@@ -36,7 +39,10 @@ const userController = () => {
             try {
                 const { username, password } = req.body;
                 console.log(username, password);
+                // handle login
                 const result = await UserService.GetByCondition(username);
+                
+                // 
                 console.log(result);
                 if (!result) return res.json({ success: false, mess: 'ko co account nay' });
                 const isMatch = result.password === password;
@@ -47,6 +53,42 @@ const userController = () => {
                 res.status(500).json({ success: false, mess: error.message });
             }
         },
+        Profile: async(req, res)=>{
+            try {
+                res.render(VNAME+'user/profile', {layout: VLAYOUT})
+            } catch (error) {
+                
+            }
+        },
+        ChangePassword: async(req, res)=>{
+            try {
+                res.render(VNAME+'user/changePassword', {layout: VLAYOUT})
+            } catch (error) {
+                
+            }
+        },
+        ProfileDocHistory: async(req, res)=>{
+            try {
+                res.render(VNAME+'user/profileDocHistory', {layout: VLAYOUT});
+            } catch (error) {
+                
+            }
+        },
+        ProfileDocHistoryList: async(req, res)=>{
+            try {
+                res.render(VNAME+'user/profileDocHistoryList', {layout: VLAYOUT})
+            } catch (error) {
+                
+            }
+        },
+        Group: async(req, res)=>{
+            try {
+                res.render(VNAME+'user/group', {layout: VLAYOUT})
+                
+            } catch (error) {
+                
+            }
+        }
     };
 };
 

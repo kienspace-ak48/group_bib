@@ -5,31 +5,19 @@ const GroupService = require('../services/group.service');
 const groupBibController = () => {
     return {
         RegisterGroupBib: async (req, res) => {
-            res.render('pages/registerTeamLeader', { layout: VLAYOUT });
+            const slug = req.params.slug;
+            console.log(slug);
+            res.render('pages/registerTeamLeader', { layout: VLAYOUT, slug: slug||'' });
         },
         Index: (req, res) => {
             res.render('pages/groupBib', { layout: VLAYOUT });
         },
         AddGroup: async (req, res) => {
-            // const groupDTO = {
-            //     name: 'Accessrace',
-            //     facebook_link: 'https://facebook.com',
-            //     zalo_link: 'https://zalo.me',
-            //     discount_percent: 10,
-            //     bank_owner: 'VuVanKien',
-            //     bank_name: 'MB Bank',
-            //     bank_number: '0905648961',
-            //     bank_transfer_code: 'ARR',
-            //     event_id: '69143093e41d85097255e609',
-            //     captain_id: '691bfb852a70dc358b2792f0',
-            //     qr_image: 'qr_code.png',
-            //     hotline: '19001900',
-            //     cccd: '123456789101',
-            //     dob: new Date('11/10/2025'),
-            // };
             try {
                 const data = req.body;
-                const groupDTO = {
+                const slug = data.slug_hidden;
+                console.log(slug);
+                var groupDTO = {
                     facebook_link: data.facebook_link,
                     zalo_link: data.zalo_link,
                     discount_percent: Number.parseInt(data.discount_percent),
@@ -37,7 +25,7 @@ const groupBibController = () => {
                     bank_name: data.bank_name,
                     bank_number: data.bank_account_number,
                     bank_transfer_code: data.bank_transfer_fix,
-                    event_id: '69143093e41d85097255e609',
+                    event_id: slug, //69143093e41d85097255e609
                     captain_id: '691bfb852a70dc358b2792f0',
                     qr_image: 'qr_code.png',
                     leader_name: data.leader_name,
@@ -51,11 +39,12 @@ const groupBibController = () => {
                 };
                 console.log(data);
                 const result = await GroupService.Add(groupDTO);
+                // result = true
                 if (!result) return res.json({ success: false, mess: 'Add new failed' });
                 res.json({ success: true });
             } catch (error) {
                 console.log(CNAME, error.message);
-                res.status.json({ success: false, mess: error.message });
+                res.status(500).json({ success: false, mess: error.message });
             }
         },
     };

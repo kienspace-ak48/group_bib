@@ -1,4 +1,4 @@
-const EventEntity = require('../model/Event');
+const EventEntity = require('../model/EventM');
 const CNAME = 'event.service.js ';
 
 class EventService {
