@@ -32,7 +32,7 @@ async function auth(req, res, next) {
     console.log('pls login');
     res.redirect('/test/login');
 }
-router.get('/checkin', bibIdentification.Index);
+//router.get('/checkin', bibIdentification.Index);
 router.get('/dashboard',auth, (req, res) => {
     res.render('test/dashboard', { layout: false });
 });

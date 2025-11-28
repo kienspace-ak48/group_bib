@@ -1,13 +1,16 @@
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const { handleLogin } = require('../services/ggAuth.service');
-
+console.log('env? ',process.env.NODE_ENV)
 passport.use(
     new GoogleStrategy(
         {
             clientID: process.env.GOOGLE_CLIENT_ID,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-            callbackURL: 'http://localhost:8080/gg/auth/google/callback',
+            callbackURL:
+                process.env.NODE_ENV === 'production'
+                    ? 'https://kienvu.id.vn/gg/auth/google/callback'
+                    : 'http://localhost:8080/gg/auth/google/callback',
         },
         async function (accessToken, refreshToken, profile, done) {
             // Tại đây bạn kiểm tra user trong DB
