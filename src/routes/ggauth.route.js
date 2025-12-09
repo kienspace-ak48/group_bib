@@ -6,8 +6,7 @@ const ggAuthController = require('../controller/ggAuth.controller')();
 // Bấm nút login
 router.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 
-// Google trả về
-
+// Google trả về goi callback
 router.get(
     '/auth/google/callback',
     passport.authenticate('google', { failureRedirect: '/login' }),
@@ -17,6 +16,7 @@ router.get(
 // Logout
 router.get('/logout', (req, res) => {
     req.logout(() => {
+        res.clearCookie('token');
         res.redirect('/');
     });
 });

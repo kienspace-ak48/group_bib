@@ -17,7 +17,7 @@ const ggAuthController = () => {
                 console.log(CNAME, 'User from passport:', user._id, user.email);
 
                 // Set token cho client
-                const token = jwt.sign({ _id: user._id, email: user.email }, process.env.JWT_SECRET, {
+                const token = jwt.sign({ _id: user._id, email: user.email, avatar: user.avatar, name: user.fullname }, process.env.JWT_SECRET, {
                     expiresIn: '30m',
                 });
 

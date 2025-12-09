@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const authRoute = require('../middleware/auth.middleware');
+const uploadImageMemory = require('../config/imageUploadMemory');
+const excelUploadMemory = require('../config/excelUploadM');
 
 const homeController = require('../controller/home.controller')();
 const bibIdentitficationController = require('../controller/bibIdentification.controller')();
@@ -16,15 +18,20 @@ router.get('/event/event-detail/:slug', homeController.EventDetail);
 router.get('/event/group-bib/:slug' , homeController.GroupBib);
 router.get('/', homeController.Index);
 // bib group
-router.get('/group-bib/form-add/:slug' , groupbibController.RegisterGroupBib);
-router.post('/group-bib/form-add', groupbibController.AddGroup);
+router.get('/group-bib/form-add/:slug', authRoute, groupbibController.RegisterGroupBib);
+router.post('/group-bib/form-add', authRoute,uploadImageMemory.single('imageQR') , groupbibController.AddGroup);
 // user
 router.post('/user/register', userController.Register);
 router.post('/user/login', userController.Login);
-router.get('/user/profile',  userController.Profile);
+router.get('/user/profile', authRoute,  userController.Profile);
 router.get('/user/change-password', userController.ChangePassword);
-router.get('/user/group', userController.Group)
+// router.get('/user/group', userController.Group)
+router.get('/user/group-detail/runner-info/:runner_id', authRoute, userController.GetRunnerById);
 router.get('/user/profile-doc-history-list', userController.ProfileDocHistoryList);
 router.get('/user/profile-doc-history' ,userController.ProfileDocHistory);
+router.get('/user/group-management',authRoute ,userController.GroupManagement);
+router.post('/user/group-detail/import-excel', excelUploadMemory.single('excelFile'), userController.GroupDetailImportExcel);
+router.get('/user/group-detail/:slug',authRoute,  userController.GroupDetail)
+// ---import file excel
 
 module.exports = router;

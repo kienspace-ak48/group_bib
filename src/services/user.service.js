@@ -60,8 +60,8 @@ class UserService {
         try {
             const _user = new UserEntity(user);
             const isExitEmail = await UserEntity.findOne({ email: user.email }).lean();
-            const isExitPhone = await UserEntity.findOne({ phone: user.phone }).lean();
-            if (isExitEmail || isExitPhone) {
+            //const isExitPhone = await UserEntity.findOne({ phone: user.phone }).lean();
+            if (isExitEmail) {
                 return 0;
             }
             // const user = new UserEntity(userDTO);

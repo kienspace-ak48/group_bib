@@ -76,6 +76,15 @@ class EventService {
             return false;
         }
     }
+    async GetAllEventForCreateTicketDropdown(){
+        try {
+            const events = await EventEntity.find().select('name id start_date end_date').lean();
+            return events
+        } catch (error) {
+            console.log(CNAME, error.message);
+            return [];
+        }
+    }
 }
 
 module.exports = new EventService(); //export instance singleton

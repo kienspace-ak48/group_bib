@@ -10,6 +10,7 @@ class GroupService {
     async GetAll() {
         const result = await GroupEntity.find({});
     }
+
     async GetByEventId(slug){
         try {
             const event = await EventService.GetBySlug(slug);
@@ -24,7 +25,33 @@ class GroupService {
             return [];
         }
     }
-    GetById() {}
+    async GetByCaption(catainId){
+        try {
+            const result = await GroupEntity.find({captain_id: catainId}).lean();
+            console.log(typeof result);
+            return result;
+        } catch (error) {
+            console.log(CNAME, error.message);
+            return [];
+        }
+    }
+    // async GetByCaptainAndGroup(captainId, groupId){
+    //     try {
+            
+    //     } catch (error) {
+            
+    //     }
+    // }
+    async GetById(id) {
+        try {
+            const result = await GroupEntity.findOne({_id: id}).lean();
+            console.log(typeof result);
+            return result;
+        } catch (error) {
+            console.log(CNAME, error.message);
+            return [];
+        }
+    }
     async Add(group) {
         try {
             const _event = await EventService.GetBySlug(group.event_id);

@@ -1,0 +1,144 @@
+<div class="main-container">
+    <div class="bg-white shadow-md rounded-lg p-8">
+
+        <!-- Lưu ý -->
+        <div class="bg-yellow-100 text-yellow-800 p-4 rounded mb-6 text-sm">
+            <strong>Lưu ý:</strong> Bạn đang chỉnh sửa thông tin nhóm. Hãy chắc chắn các thông tin là chính xác.
+        </div>
+
+        <!-- Tiêu đề sự kiện -->
+        <h3 class="text-lg font-medium mb-6">
+            Chỉnh sửa nhóm cho Sự kiện
+            <span class="text-blue-600 font-bold"><%#= eventName %></span>
+        </h3>
+
+        <!-- Form Edit -->
+        <form id="groupEditForm" class="space-y-6" enctype="multipart/form-data">
+            
+            <!-- Hidden fields -->
+            <input type="hidden" name="group_id" value="<%#= group._id %>">
+            <input type="hidden" name="slug_hidden" value="<%#= group.event_id %>">
+
+            <!-- Tên trưởng nhóm -->
+            <div>
+                <label class="block text-gray-700 font-medium mb-1">
+                    Họ và tên trưởng nhóm <span class="text-red-500">*</span>
+                </label>
+                <input type="text" name="leader_name" value="<%#= group.leader_name %>" class="w-full border border-gray-300 rounded px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none"/>
+            </div>
+
+            <!-- Email và SĐT -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-gray-700 font-medium mb-1">Email <span class="text-red-500">*</span></label>
+                    <input type="email" name="leader_email" value="<%#= group.email %>" class="w-full border border-gray-300 rounded px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none"/>
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium mb-1">Số điện thoại <span class="text-red-500">*</span></label>
+                    <input type="tel" name="leader_phone" value="<%#= group.hotline %>" class="w-full border border-gray-300 rounded px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none"/>
+                </div>
+            </div>
+
+            <!-- Ngày sinh và CCCD -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-gray-700 font-medium mb-1">Ngày sinh <span class="text-red-500">*</span></label>
+                    <input type="date" name="leader_dob" value="<%#= group.dob.toISOString().split('T')[0] %>" class="w-full border border-gray-300 rounded px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none"/>
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium mb-1">CCCD / Hộ chiếu <span class="text-red-500">*</span></label>
+                    <input type="text" name="leader_identity" value="<%#= group.cccd %>" class="w-full border border-gray-300 rounded px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none"/>
+                </div>
+            </div>
+
+            <!-- Zalo và Facebook -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-gray-700 font-medium mb-1">Liên kết Zalo nhóm <span class="text-red-500">*</span></label>
+                    <input type="url" name="zalo_link" value="<%#= group.zalo_link %>" class="w-full border border-gray-300 rounded px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none"/>
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium mb-1">Liên kết Facebook nhóm</label>
+                    <input type="url" name="facebook_link" value="<%#= group.facebook_link %>" class="w-full border border-gray-300 rounded px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none"/>
+                </div>
+            </div>
+
+            <!-- QR & Upload -->
+            <div class="flex items-center gap-4">
+                <div class="flex-none">
+                    <img src="/uploads/qr/<%#= group.qr_image %>" id="previewQR" class="h-32 w-32 object-cover border rounded">
+                </div>
+                <label class="flex flex-1 border-2 border-dashed border-gray-400 rounded-lg h-32 flex-col justify-center items-center cursor-pointer text-gray-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M16 10l-4-4m0 0L8 10m4-4v12" />
+                    </svg>
+                    <span id="fileName"><%#= group.qr_image %></span>
+                    <input type="file" class="hidden" id="fileQR" name="imageQR"/>
+                </label>
+            </div>
+
+            <!-- Thông tin ngân hàng -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                <input type="text" name="bank_account_name" value="<%#= group.bank_owner %>" placeholder="Chủ tài khoản (*)" class="border-gray-300 w-full border rounded px-4 py-2 focus:ring-2 focus:ring-blue-400"/>
+                <input type="text" name="bank_name" value="<%#= group.bank_name %>" placeholder="Tên ngân hàng (*)" class="border-gray-300 w-full border rounded px-4 py-2 focus:ring-2 focus:ring-blue-400"/>
+                <input type="text" name="bank_account_number" value="<%#= group.bank_number %>" placeholder="Số tài khoản (*)" class="border-gray-300 w-full border rounded px-4 py-2 focus:ring-2 focus:ring-blue-400"/>
+                <input type="text" name="transfer_code_prefix" value="<%#= group.bank_transfer_code %>" placeholder="Tiền tố nội dung chuyển khoản (*)" class="border-gray-300 w-full border rounded px-4 py-2 focus:ring-2 focus:ring-blue-400"/>
+            </div>
+
+            <!-- Tên nhóm và expiry -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                <input type="text" name="group_name" value="<%#= group.group_name %>" placeholder="Tên nhóm" class="border-gray-300 px-4 py-2 w-full border rounded focus:ring-2 focus:ring-blue-400"/>
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="date" name="expiry_date" value="<%#= group.expiry_date.toISOString().split('T')[0] %>" class="border-gray-300 border rounded px-4 py-2 focus:ring-2 focus:ring-blue-400"/>
+                    <input type="time" name="expiry_time" value="<%#= group.expiry_time %>" class="border-gray-300 border rounded px-4 py-2 focus:ring-2 focus:ring-blue-400"/>
+                </div>
+            </div>
+
+            <!-- Submit -->
+            <div class="text-center mt-6">
+                <button type="submit" class="bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold px-10 py-3 rounded-full shadow hover:opacity-90 transition">
+                    LƯU THAY ĐỔI
+                </button>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+<!-- ============ Script =============== -->
+<script>
+const fileQR = document.getElementById('fileQR');
+const previewQR = document.getElementById('previewQR');
+const fileName = document.getElementById('fileName');
+
+fileQR.addEventListener('change', function(ev){
+    const file = ev.target.files[0];
+    if(file){
+        previewQR.src = URL.createObjectURL(file);
+        fileName.textContent = file.name;
+    }
+});
+
+$('#groupEditForm').on('submit', function(e){
+    e.preventDefault();
+    const formData = new FormData(this);
+    const groupId = formData.get('group_id');
+
+    $.ajax({
+        url: `/group-bib/edit/${groupId}`,
+        method: 'POST',
+        contentType: false,
+        processData: false,
+        data: formData,
+        success: (res) => {
+            if(res.success){
+                alert('Cập nhật nhóm thành công!');
+                window.location.href = `/event/group-bib/${formData.get('slug_hidden')}`;
+            }
+        },
+        error: (xhr) => {
+            console.log(xhr.responseJSON?.mess || 'Server error');
+        }
+    });
+});
+</script>

@@ -19,7 +19,7 @@
             <a href="">
           <li class="py-1">Đăng ký của bạn</li>
             </a>
-            <a href="/user/group">
+            <a href="/user/group-management">
           <li class="py-1">Quản lý đăng ký nhóm</li>
             </a>
             <a href="/user/profile-doc-history">
@@ -35,7 +35,7 @@
       <!-- Profile Header Card -->
       <div class="bg-white rounded-lg shadow p-6 flex justify-between items-center">
         <div>
-          <h2 class="text-xl font-semibold">Hi, Vũ Kiên</h2>
+          <h2 class="text-xl font-semibold">Hi, <%=user?.name%></h2>
           <div class="flex items-center space-x-2 text-[16px] mt-2">
             <span class="font-medium text-gray-600">Đồng</span>
             <span class="bg-yellow-500 text-white px-2 py-1 text-xs rounded">Ưu đãi thành viên</span>
@@ -65,18 +65,18 @@
         <div class="flex flex-col md:flex-row gap-6">
           <!-- Avatar -->
           <div class="flex flex-col items-center">
-            <img src="/images/avatar.jpg" class="w-32 h-32 rounded-full object-cover shadow" alt="Avatar">
+            <img src="<%=user?.avatar%>" class="w-32 h-32 rounded-full object-cover shadow" alt="Avatar">
             <label class="text-xs text-gray-500 mt-2">(Kích thước: 560x350px - JPG, PNG &lt; 200kB)</label>
           </div>
 
           <!-- Form Inputs -->
           <div class="flex-1 space-y-4">
             <div>
-              <label class="block text-[16px] font-medium mb-1">Họ & tên (*)</label>
+              <label class="block text-[16px] font-medium mb-1"><%=user?.name%> (*)</label>
               <input type="text" class="w-full border border-gray-300 rounded px-3 py-2 focus:ring focus:outline-none" value="Vũ Kiên"/>
             </div>
             <div>
-              <label class="block text-[16px] font-medium mb-1">Email (*)</label>
+              <label class="block text-[16px] font-medium mb-1"><%=user?.email%> (*)</label>
               <input type="email" class="w-full border border-gray-300 rounded px-3 py-2 focus:ring focus:outline-none" value="kienvu.dev@gmail.com"/>
             </div>
             <div>

@@ -13,9 +13,12 @@ passport.use(
                     : 'http://localhost:8080/gg/auth/google/callback',
         },
         async function (accessToken, refreshToken, profile, done) {
+            console.log('ggStrategy run')
+            console.log(accessToken, refreshToken)
             // Tại đây bạn kiểm tra user trong DB
             // Nếu chưa có -> tạo user -> done(null, newUser)
             // Nếu có -> done(null, user)
+            //====> passport luu uẻ vao bien req.user
             try {
                 const { user } = await handleLogin(profile, 'google');
                 return done(null, user);

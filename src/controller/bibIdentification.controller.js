@@ -1,6 +1,6 @@
-const Tesseract = require('tesseract.js');
-const PaddleOCR = require("paddleocr");
-const Jimp = require('jimp');
+//const Tesseract = require('tesseract.js');
+//const PaddleOCR = require("paddleocr");
+//const Jimp = require('jimp');
 const mypath = require('../config/mypath.config');
 
 const bibIdentification = () => {

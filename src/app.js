@@ -10,7 +10,7 @@ require('./middleware/passport.middleware');
 const MongoDBStore = require('connect-mongodb-session')(session);
 // Tạo store MongoDB
 const store = new MongoDBStore({
-  uri: 'mongodb://localhost:27017/group_bib',  // URL MongoDB
+  uri: process.env.MONGO_URI,  // URL MongoDB
   collection: 'sessions'                  // Tên collection lưu session
 });
 //

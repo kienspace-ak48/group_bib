@@ -3,6 +3,8 @@ const router = express.Router();
 const bibIdentification = require('../controller/bibIdentification.controller')();
 const bcrypt = require('bcrypt');
 const SALT = 12;
+const excelUpload = require('../config/excelUploadM');
+const xlsx = require('xlsx')
 //fake data database
 //table accounts
 const accounts = [
@@ -71,4 +73,31 @@ router.post('/login', async (req, res) => {
     res.json({ mess: 'ko co user' });
 });
 
+// excel
+router.get('/xlsx', (req, res)=>{
+    res.send(`
+        <h1>Form import data</h1>
+        <form action="/test/xlsx" method="post" enctype="multipart/form-data">
+        <label for="">Drag file here</label>
+        <input type="file" name="excelFile" id=""> 
+        <button type="submit">Submit</button>
+    </form>
+        `)
+})
+router.post('/xlsx', excelUpload.single('excelFile'), (req, res)=>{
+    try {
+        if(!req.file) return res.status(400).send('chua co file');
+        const workbook = xlsx.read(req.file.buffer, {type: 'buffer'});
+        //lay sheet dau tien
+        const sheetName = workbook.SheetNames[0];//lay sheet dau tien
+        //lay sheet theo ten
+        const worksheet = workbook.Sheets[sheetName];
+        const data = xlsx.utils.sheet_to_json(worksheet);//convert to JSON
+        console.log(data);
+        res.json({mess: 'read file', data})
+    } catch (error) {
+        console.log(error.message);
+        res.status(500).send(error.message)
+    }
+})
 module.exports = router;

@@ -2,7 +2,7 @@ const multer = require('multer');
 const mypath = require('./mypath.config');
 const path = require('path');
 const fs = require('fs');
-const uploadDir = path.join(mypath, 'public/uploads/image');
+const uploadDir = path.join(mypath.root, 'public/uploads/image');
 
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir);

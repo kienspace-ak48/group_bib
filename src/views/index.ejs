@@ -10,7 +10,7 @@
                     <div class="h-[210px] w-[210px] basis-1/3">
                         <a href="/event/event-detail/<%=e.slug%>">
                             <img
-                            src="https://pace8.vn/uploads/2025/11/1-avatar.webp?ver=1.5.30"
+                            src="<%=e.img_thumb%>"
                             alt="img"
                             class="w-full h-full object-cover rounded-lg"
                         />
@@ -23,7 +23,7 @@
                                 <a href="/event/event-detail/<%=e.slug%>"><p class="title text-[18px] font-bold"><%=e.name%></p></a>
                                 <div class="date-time text-[14px] text-[#666] font-medium pt-3 " ><i class="bi bi-calendar-event mr-1.5"></i> 21-22 tháng 03, 2026</div>
                                 <div class="location text-[14px] text-[#666] font-medium">
-                                    <i class="bi bi-geo-alt mr-1.5"></i>Vườn quốc gia Gia Kon Ka Kinh
+                                    <i class="bi bi-geo-alt mr-1.5"></i><%=e?.location%>
                                 </div>
                             </div>
                             <ul class="distance flex gap-1 mt-2 flex-wrap mt-auto" >

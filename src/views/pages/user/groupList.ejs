@@ -1,0 +1,107 @@
+<div class="main-container">
+
+  <!-- Breadcrumb -->
+  <div class="text-sm text-gray-500 mb-2">
+    Trang chủ > Sự kiện > Quản lý đăng ký nhóm
+  </div>
+
+  <!-- Title -->
+  <h2 class="text-2xl font-bold inline-block pb-2 border-b-4 border-indigo-500 mb-6">
+    QUẢN LÝ ĐĂNG KÝ NHÓM
+  </h2>
+
+  <!-- Filter Box -->
+  <div class="bg-white p-5 rounded-xl shadow-sm flex flex-wrap gap-4 items-end">
+
+    <!-- Trạng thái -->
+    <div class="flex flex-col">
+      <label class="text-sm text-gray-600 mb-1">Trạng thái:</label>
+      <select class="px-4 py-2 border border-gray-300 rounded-lg w-44">
+        <option>Tất cả</option>
+        <option>Đã duyệt</option>
+        <option>Chờ duyệt</option>
+        <option>Từ chối</option>
+      </select>
+    </div>
+
+    <!-- Vai trò -->
+    <div class="flex flex-col">
+      <label class="text-sm text-gray-600 mb-1">Vai trò:</label>
+      <select class="px-4 py-2 border border-gray-300 rounded-lg w-44">
+        <option>Tất cả</option>
+        <option>Trưởng nhóm</option>
+        <option>Thành viên</option>
+      </select>
+    </div>
+
+    <!-- Search Input -->
+    <div class="flex flex-col flex-1">
+      <label class="text-sm text-gray-600 mb-1 invisible">Nhập tên nhóm</label>
+      <input type="text" placeholder="Nhập tên nhóm"
+             class="px-4 py-2 border border-gray-300 rounded-lg w-full">
+    </div>
+
+    <!-- Button -->
+    <button class="px-6 py-2 bg-indigo-600 text-white rounded-lg font-semibold">
+      TÌM KIẾM
+    </button>
+
+  </div>
+
+  <!-- Table -->
+  <div class="bg-white rounded-xl shadow-sm mt-6 overflow-hidden">
+    <table class="w-full text-left">
+      <thead class="bg-indigo-50">
+        <tr>
+          <th class="px-5 py-3 text-sm font-semibold text-gray-700">Tên nhóm</th>
+          <th class="px-5 py-3 text-sm font-semibold text-gray-700">Trạng thái</th>
+          <th class="px-5 py-3 text-sm font-semibold text-gray-700">Số thành viên</th>
+          <th class="px-5 py-3 text-sm font-semibold text-gray-700">Vai trò</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <%if(groups && groups.length >0){%>
+          <%groups.forEach((g, i)=>{%>
+            <!-- Row 1 -->
+            <tr class="border-b" data-id="<%=g._id%>">
+              <td class="px-5 py-3"><a class="font-semibold text-[18px] cursor-pointer text-primary" href="/user/group-detail/<%=g._id%>"><%=g?.group_name%></a></td>
+              <td class="px-5 py-3">
+                <span class="px-3 py-1 rounded-md text-xs font-semibold bg-green-100 text-green-700">
+                  Đã duyệt
+                </span>
+              </td>
+              <td class="px-5 py-3">12</td>
+              <td class="px-5 py-3">Trưởng nhóm</td>
+            </tr>
+          <%})%>
+        <%} %>
+        <!-- Row 1
+        <tr class="border-b">
+          <td class="px-5 py-3"><a href="/user/group-detail/mid-night-run-2025-1764298009433">Run Together</a></td>
+          <td class="px-5 py-3">
+            <span class="px-3 py-1 rounded-md text-xs font-semibold bg-green-100 text-green-700">
+              Đã duyệt
+            </span>
+          </td>
+          <td class="px-5 py-3">12</td>
+          <td class="px-5 py-3">Trưởng nhóm</td>
+        </tr>
+
+         Row 2
+        <tr class="border-b">
+          <td class="px-5 py-3">Da Nang Runners</td>
+          <td class="px-5 py-3">
+            <span class="px-3 py-1 rounded-md text-xs font-semibold bg-yellow-100 text-yellow-700">
+              Chờ duyệt
+            </span>
+          </td>
+          <td class="px-5 py-3">8</td>
+          <td class="px-5 py-3">Thành viên</td>
+        </tr> -->
+
+      </tbody>
+    </table>
+  </div>
+
+</div>

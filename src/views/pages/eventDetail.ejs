@@ -20,11 +20,7 @@
                 <div class="main-content rounded-lg" style="background-color: #fff">
                     <!-- img -->
                     <div>
-                        <img
-                            src="https://pace8.vn/uploads/2025/11/1-cover-tphm-2025.webp"
-                            class="rounded-tl-lg rounded-tr-lg"
-                            alt=""
-                        />
+                        <img src="<%=event?.img_banner%>" class="rounded-tl-lg rounded-tr-lg" alt="" />
                     </div>
                     <div class="main-info p-4">
                         <div class="distances">
@@ -200,53 +196,22 @@
             </div>
             <!-- =============== right===========  -->
             <div class="col-right col-span-4">
-                <section id="countdown" class="bg-white rounded-lg text-center p-5">
-                    <div class="flex justify-center p-5">
-                        <div class="flex justify-center flex-nowrap gap-3 text-center lg:justify-start">
-                            <div class="w-[50px] h-[50px] bg-[#f5841f] flex justify-center items-center flex-col text-center rounded-[10px] shadow-md p-1">
-                                <p class="px-3 font-bold text-white text-[20px] " id="countdown_date">21</p>
-                                <p class="text-[12px] font-medium  text-white">Ngày</p>
-                            </div>
-                            <div class="w-[50px] h-[50px] bg-[#f5841f] flex justify-center items-center flex-col text-center rounded-[10px] shadow-md p-1">
-                                <p class="px-3 font-bold text-white text-[20px] " id="countdown_hour">05</p>
-                                <p class="text-[12px] font-medium  text-white">Giờ</p>
-                            </div>
-                            <div class="w-[50px] h-[50px] bg-[#f5841f] flex justify-center items-center flex-col text-center rounded-[10px] shadow-md p-1">
-                                <p class="px-3 font-bold text-white text-[20px] " id="countdown_minute">51</p>
-                                <p class="text-[12px] font-medium  text-white">Phút</p>
-                            </div>
-                            <div class="w-[50px] h-[50px] bg-[#f5841f] flex justify-center items-center flex-col text-center rounded-[10px] shadow-md p-1">
-                                <p class="px-3 font-bold text-white text-[20px] " id="countdown_second">30</p>
-                                <p class="text-[12px] font-medium  text-white">Giây</p>
-                            </div>
-                        </div>
-                    </div>
-                    <p>Sự kiện sẽ diễn ra</p>
-                </section>
-                <!--  -->
-                <div class="my-card p-4 rounded-lg">
-                    <h3 class="title text-[20px] font-semibold tracking-normal">Đăng ký nhóm</h3>
-                    <p class="text-[14px] my-4 font-light italic text-[#333]">
-                        Mở đăng ký: <span class="start_date">07/11/2025</span>-<span class="end_date">04/12/2025</span>
-                    </p>
-                    <a href="/event/group-bib/<%=slug%>" style=" width: 100% !important;" class="block text-center mb-4 w-full  btn-outline-indigo font-semibold px-6 py-2 rounded-lg ">Đăng ký nhóm</a>
-                </div>
                 <!-- group links -->
-                <div class="my-card p-4 rounded-lg">
+                <div class="my-card p-4 mt-[0_!important] rounded-lg">
                     <div class="group-links flex justify-around flex-wrap gap-4">
-                        <a href="#!">
+                        <a target="_blank" href="<%=event?.organizer_fanpage%>">
                             <div class="anchor flex flex-col justify-center items-center">
                                 <div class="icon"><i class="bi bi-facebook text-[32px] text-blue-700"></i></div>
                                 <div><span class="text-[14px] font-medium tracking-normal">Fanpage</span></div>
                             </div>
                         </a>
-                        <a href="#!">
+                        <a target="_blank" href="<%=event?.organizer_web%>">
                             <div class="anchor flex flex-col justify-center items-center">
                                 <div class="icon"><i class="bi bi-browser-chrome text-[32px]"></i></div>
                                 <div><span class="text-[14px] font-medium tracking-normal">Website</span></div>
                             </div>
                         </a>
-                        <a href="#!">
+                        <a target="_blank" href="<%=event?.organizer_zalo%>">
                             <div class="anchor flex flex-col justify-center items-center">
                                 <div class="icon">
                                     <svg
@@ -288,6 +253,134 @@
                         </a>
                     </div>
                 </div>
+                
+                <!--  -->
+                <section class="ticket_type mt-6">
+                    <div class="max-w-md mx-auto bg-white shadow-xl rounded-xl p-6 space-y-6">
+                        <!-- Header -->
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-800">REGULAR</h2>
+                            <p class="text-sm text-gray-500 mt-1">Mở đăng ký: 21/11/2025 - 15/01/2026</p>
+
+                            <div class="flex space-x-2 mt-3">
+                                <div class="h-1 flex-1 bg-blue-600 rounded"></div>
+                                <div class="h-1 flex-1 bg-blue-300 rounded"></div>
+                                <div class="h-1 flex-1 bg-blue-200 rounded"></div>
+                            </div>
+                        </div>
+
+                        <!-- DISTANCE BLOCK -->
+                        <div class="space-y-6">
+                            <!--  -->
+                            <%if(tickets && tickets.length>0){%>
+                                <%tickets.forEach(t=>{%>
+                                    <div class="flex items-center justify-between border-b pb-4">
+                                        <div class="flex items-center space-x-3">
+                                            <img
+                                                src="<%=event.img_thumb%>"
+                                                class="w-12 h-12 object-cover rounded"
+                                            />
+                                            <span class="font-semibold text-gray-800"><%=t.name%></span>
+                                        </div>
+                                        <div class="flex items-center space-x-4">
+                                            <span class="font-semibold text-blue-600"><%=t.price%>,000đ</span>
+
+                                            <!-- Counter -->
+                                            <div class="flex items-center space-x-2">
+                                                <button
+                                                    class="w-7 h-7 flex items-center justify-center rounded-full border text-gray-500"
+                                                >
+                                                    -
+                                                </button>
+                                                <span class="font-semibold">0</span>
+                                                <button
+                                                    class="w-7 h-7 flex items-center justify-center rounded-full border text-blue-600"
+                                                >
+                                                    +
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <%})%>
+                            <%}%>
+                            <!--  -->
+                            
+                            
+                        </div>
+
+                        <!-- Subtotal -->
+                        <div class="flex justify-between text-gray-700 font-semibold">
+                            <span>Tạm tính:</span>
+                            <span>0đ</span>
+                        </div>
+
+                        <!-- Buttons -->
+                        <button class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700">
+                            ĐĂNG KÝ →
+                        </button>
+
+                        <p class="text-xs text-gray-500 text-center">
+                            Khi nhấn “ĐĂNG KÝ” đồng nghĩa với việc bạn đã đọc và đồng ý
+                            <a href="#" class="underline text-blue-600">Điều khoản</a> &
+                            <a href="#" class="underline text-blue-600">Quy định</a> của sự kiện.
+                        </p>
+                        <!--  -->
+                        <a
+                        href="/event/group-bib/<%=slug%>"
+                        style="width: 100% !important"
+                        class="block text-center mb-4 w-full btn-outline-indigo font-semibold px-6 py-2 rounded-lg"
+                        >Đăng ký nhóm</a>
+                        <!-- <button
+                            class="w-full border border-blue-600 text-blue-600 py-3 rounded-lg font-semibold hover:bg-blue-50"
+                        >
+                            ĐĂNG KÝ NHÓM ↗
+                        </button> -->
+                    </div>
+                </section>
+                <!--  -->
+                <!-- <div class="my-card p-4 rounded-lg">
+                    <h3 class="title text-[20px] font-semibold tracking-normal py-4">Đăng ký nhóm</h3>
+                    <p class="text-[14px] my-4 font-light italic text-[#333]">
+                        Mở đăng ký: <span class="start_date">07/11/2025</span>-<span class="end_date">04/12/2025</span>
+                    </p>
+                    <a
+                        href="/event/group-bib/<%#=slug%>"
+                        style="width: 100% !important"
+                        class="block text-center mb-4 w-full btn-outline-indigo font-semibold px-6 py-2 rounded-lg"
+                        >Đăng ký nhóm</a
+                    >
+                </div> -->
+                <section id="countdown" class="bg-white rounded-lg text-center p-5 mt-6">
+                    <div class="flex justify-center p-5">
+                        <div class="flex justify-center flex-nowrap gap-3 text-center lg:justify-start">
+                            <div
+                                class="w-[50px] h-[50px] bg-[#f5841f] flex justify-center items-center flex-col text-center rounded-[10px] shadow-md p-1"
+                            >
+                                <p class="px-3 font-bold text-white text-[20px]" id="countdown_date">21</p>
+                                <p class="text-[12px] font-medium text-white">Ngày</p>
+                            </div>
+                            <div
+                                class="w-[50px] h-[50px] bg-[#f5841f] flex justify-center items-center flex-col text-center rounded-[10px] shadow-md p-1"
+                            >
+                                <p class="px-3 font-bold text-white text-[20px]" id="countdown_hour">05</p>
+                                <p class="text-[12px] font-medium text-white">Giờ</p>
+                            </div>
+                            <div
+                                class="w-[50px] h-[50px] bg-[#f5841f] flex justify-center items-center flex-col text-center rounded-[10px] shadow-md p-1"
+                            >
+                                <p class="px-3 font-bold text-white text-[20px]" id="countdown_minute">51</p>
+                                <p class="text-[12px] font-medium text-white">Phút</p>
+                            </div>
+                            <div
+                                class="w-[50px] h-[50px] bg-[#f5841f] flex justify-center items-center flex-col text-center rounded-[10px] shadow-md p-1"
+                            >
+                                <p class="px-3 font-bold text-white text-[20px]" id="countdown_second">30</p>
+                                <p class="text-[12px] font-medium text-white">Giây</p>
+                            </div>
+                        </div>
+                    </div>
+                    <p>Sự kiện sẽ diễn ra</p>
+                </section>
             </div>
         </div>
     </section>

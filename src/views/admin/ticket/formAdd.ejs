@@ -100,8 +100,12 @@
                     <label for="event">Chọn sự kiện</label>
                     <select class="form-select" id="event">
                         <option value="">-- Chọn sự kiện --</option>
-                        <option value="1">Event 1</option>
-                        <option value="2">Event 2</option>
+                        <!-- <option value="2">Event 2</option> -->
+                        <% if(events && events.length >0){%>
+                            <%events.forEach(e=>{%>
+                                <option value="<%=e._id%>"><%=e.name%></option>
+                            <%})%>
+                        <%}%>
                     </select>
                 </div>
                 <!--  -->

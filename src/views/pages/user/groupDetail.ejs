@@ -1,0 +1,505 @@
+<!-- <script src="https://cdn.tailwindcss.com"></script><script src="https://cdn.tailwindcss.com"></script> -->
+
+<div class="min-h-screen bg-gray-50 p-6">
+    <!-- Tiêu đề -->
+    <h1 class="text-2xl font-bold mb-6">Chi tiết nhóm đăng ký</h1>
+
+    <!-- Thông tin Nhóm -->
+    <div class="bg-white shadow-md rounded-lg p-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <p class="text-gray-500 text-sm">Tên nhóm</p>
+                <p class="font-semibold text-lg"><%=group.group_name%></p>
+            </div>
+
+            <div>
+                <p class="text-gray-500 text-sm">Mã nhóm</p>
+                <p class="font-semibold text-lg">--not available--</p>
+            </div>
+
+            <div>
+                <p class="text-gray-500 text-sm">Trạng thái</p>
+                <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                    --not available--</span
+                >
+            </div>
+
+            <div>
+                <p class="text-gray-500 text-sm">Số thành viên</p>
+                <p class="font-semibold text-lg"><%=count%> thành viên</p>
+            </div>
+
+            <div>
+                <p class="text-gray-500 text-sm">Trưởng nhóm</p>
+                <p class="font-semibold"><%=group.leader_name%></p>
+            </div>
+
+            <div>
+                <p class="text-gray-500 text-sm">Ngày tạo</p>
+                <p class="font-semibold"><%=new Date(group.updatedAt).toLocaleDateString('vi-VN')%></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Danh sách thành viên -->
+    <div class="bg-white shadow-md rounded-lg p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-semibold">Danh sách thành viên</h2>
+            <div>
+                <button
+                    class="px-5 py-2 bg-green-500 text-white rounded-lg shadow hover:bg-green-700"
+                    onclick="openImportModal()"
+                >
+                    Import data excel
+                </button>
+                <button
+                    onclick="openFormAddModal()"
+                    class="px-5 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700"
+                >
+                    Thêm thành viên
+                </button>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table id="tableParticipant" class="min-w-full border border-gray-200 rounded-lg overflow-hidden">
+                <thead class="bg-gray-100">
+                    <tr class="text-left text-sm text-gray-600">
+                        <th class="px-4 py-3 border-b">#</th>
+                        <th class="px-4 py-3 border-b">Họ tên</th>
+                        <th class="px-4 py-3 border-b">Email</th>
+                        <th class="px-4 py-3 border-b">Số điện thoại</th>
+                        <th class="px-4 py-3 border-b">Cự ly</th>
+                        <th class="px-4 py-3 border-b">Thanh toán</th>
+                        <th class="px-4 py-3 border-b">Vai trò</th>
+                    </tr>
+                </thead>
+
+                <tbody class="text-sm">
+                    <%if(runners && runners.length>0){%> <%runners.forEach((r,i)=>{%>
+                    <tr data-id="<%=r._id%>" class="border-b hover:bg-gray-50">
+                        <td class="px-4 py-3"><%=i+1%></td>
+                        <td class="px-4 py-3 font-medium"><%=r.fullname%></td>
+                        <td class="px-4 py-3"><%=r.email%></td>
+                        <td class="px-4 py-3"><%=r.phone%></td>
+                        <td class="px-4 py-3"><%=r.distance%></td>
+                        <td class="px-4 py-3">
+                            <%-r.payment_status==='unpaid' ?`<span
+                                class="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs"
+                                >Chờ thanh toán </span
+                            >` :`<span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs"
+                                >Đã thanh toán </span
+                            >` %>
+                        </td>
+                        <td class="px-4 py-3">Thành viên</td>
+                    </tr>
+                    <%})%> <%}%>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div id="jsonResult" style="white-space: pre-wrap; background: #f0f0f0; padding: 10px; margin-top: 10px"></div>
+
+    <!-- Overlay + Modal -->
+    <div
+        id="importModal"
+        class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center z-50"
+    >
+        <!-- Modal content -->
+        <div
+            class="bg-white w-full max-w-[700px] p-6 rounded-lg shadow-lg transform scale-95 opacity-0 transition-all duration-200"
+            id="importModalBox"
+        >
+            <!-- Header -->
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold">Import Excel</h2>
+                <button onclick="closeImportModal()" class="text-gray-500 hover:text-gray-700">✕</button>
+            </div>
+
+            <!-- Body -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Chọn file Excel</label>
+
+                <input
+                    type="file"
+                    id="excelFile"
+                    accept=".xlsx,.xls"
+                    class="block w-full border border-gray-300 rounded px-3 py-2 cursor-pointer"
+                />
+
+                <p id="fileName" class="mt-2 text-sm text-gray-600 hidden"></p>
+            </div>
+
+            <!-- Footer -->
+            <div class="flex justify-end space-x-2 mt-6">
+                <button onclick="closeImportModal()" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">
+                    Hủy
+                </button>
+
+                <button onclick="confirmImport()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                    Import
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- formAdd modal -->
+    <!-- <button  onclick="openFormAddModal()" class="bg-blue-600 text-white px-4 py-4 rounded">Add Runner</button> -->
+    <div id="formAddModal" class="addRunnerForm fixed inset-0 bg-black/50 hidden justify-center items-center">
+        <div class="bg-[#f0f0f8] p-6 rounded-lg shadow-lg w-[90vw] max-h-[90vh] overflow-y-auto">
+            <h2 class="text-lg font-bold mb-3">🏃‍♂️‍➡️ Thông Tin Người Đăng Ký | <span id="action_currently" class="text-lg font-bold mb-3">--</span></h2>
+            <!--  -->
+            <div class="grid grid-cols-[2fr_1fr] gap-[30px]">
+                <!-- left -->
+                <div class="bg-white p-4 rounded-lg shadow-lg border-gray-200 space-y-4">
+                    <label for="" class="font-semibold mb-1 text-[20px] tracking-normal">Thông tin cá nhân</label>
+                    <!-- Form Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-sm font-medium">Họ & tên (*)</label>
+                            <input name="fullname" class="w-full border rounded-lg px-3 py-2" />
+                            <p class="text-xs text-pink-500 mt-1">Nhập đúng theo CCCD hoặc Giấy khai sinh.</p>
+                        </div>
+
+                        <div>
+                            <label class="text-sm font-medium">Email (*)</label>
+                            <input name="email" class="w-full border rounded-lg px-3 py-2" />
+                            <p class="text-xs text-pink-500 mt-1">Nên dùng Gmail để đăng ký.</p>
+                        </div>
+
+                        <div>
+                            <label class="text-sm font-medium">Số điện thoại (*)</label>
+                            <input name="phone" class="w-full border rounded-lg px-3 py-2" />
+                        </div>
+
+                        <div>
+                            <label class="text-sm font-medium">CCCD hoặc hộ chiếu (*)</label>
+                            <input name="cccd" class="w-full border rounded-lg px-3 py-2" />
+                            <p class="text-xs text-pink-500 mt-1">
+                                Nếu chưa có CCCD, nhập định danh của người giám hộ.
+                            </p>
+                        </div>
+
+                        <div>
+                            <label class="text-sm font-medium">Quốc tịch (*)</label>
+                            <select id="nationlity" class="w-full border rounded-lg px-3 py-2">
+                                <option>Việt Nam</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="text-sm font-medium">Quốc gia đang sinh sống (*)</label>
+                            <select id="nation" class="w-full border rounded-lg px-3 py-2">
+                                <option>Việt Nam</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="text-sm font-medium">Tỉnh/Thành phố đang sinh sống (*)</label>
+                            <select id="city" class="w-full border rounded-lg px-3 py-2">
+                                <option>Hồ Chí Minh</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="text-sm font-medium">Ngày sinh (*)</label>
+                            <input name="dob" type="date" class="w-full border rounded-lg px-3 py-2" />
+                        </div>
+
+                        <div>
+                            <label class="text-sm font-medium">Giới tính (*)</label>
+                            <select id="gender" class="w-full border rounded-lg px-3 py-2">
+                                <option>Chọn thông tin</option>
+                                <option value="0">Nữ</option>
+                                <option value="1">Nam</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Thông tin khác -->
+                    <h3 class="text-lg font-semibold text-gray-800 mt-8 mb-3">Thông tin khác</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-sm font-medium">Tên trên BIB</label>
+                            <input name="bib_name" class="w-full border rounded-lg px-3 py-2" />
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium">Distance</label>
+                            <select id="distance" class="w-full border rounded-lg px-3 py-2">
+                                <option>Chọn cự ly</option>
+                                <option value="5KM">5KM</option>
+                                <option value="10KM">10KM</option>
+                                <option value="21Km">21KM</option>
+                            </select>
+                            <a href="#" class="text-blue-600 text-sm mt-1 inline-block">Chi tiết cỡ áo</a>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium">Size áo (*)</label>
+                            <select id="tshirt_size" class="w-full border rounded-lg px-3 py-2">
+                                <option>Chọn thông tin</option>
+                            </select>
+                            <a href="#" class="text-blue-600 text-sm mt-1 inline-block">Chi tiết cỡ áo</a>
+                        </div>
+
+                        <!-- 3 input trống -->
+                        <div>
+                            <label for="" class="text-sm font-medium">Tên người liên hệ khẩn cấp</label>
+                            <input
+                                name="patron_name"
+                                class="w-full border rounded-lg px-3 py-2"
+                                placeholder="Ex: Nguyen Van A"
+                            />
+                        </div>
+                        <div>
+                            <label for="">SĐT người liên hệ khẩn cấp</label>
+                            <input
+                                name="patron_phone"
+                                class="w-full border rounded-lg px-3 py-2"
+                                placeholder="Ex: 19001900"
+                            />
+                        </div>
+                        <div>
+                            <label for="">Team</label>
+                            <input
+                                name="team"
+                                class="w-full border rounded-lg px-3 py-2"
+                                placeholder="Ex: Accessrace"
+                            />
+                        </div>
+                    </div>
+
+                    <!-- Thông tin y tế -->
+                    <h3 class="text-lg font-semibold text-gray-800 mt-8 mb-3">Thông tin y tế</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <input name="blood" class="w-full border rounded-lg px-3 py-2" placeholder="Nhóm máu" />
+                        <input name="medical" class="w-full border rounded-lg px-3 py-2" placeholder="Thông tin y tế" />
+                        <input
+                            name="medicine"
+                            class="w-full border rounded-lg px-3 py-2"
+                            placeholder="Loại thuốc đang dùng"
+                        />
+                    </div>
+                </div>
+                <!-- right -->
+                <div class="bg-white p-4 rounded-lg shadow-lg border-gray-200 space-y-4 h-fit">
+                    <label for="" class="text-[20px] font-semibold tracking-normal">Thông tin người mua</label>
+                    <div>
+                        <label class="block font-semibold mb-1">Fullname</label>
+                        <input name="user_id" type="text" class="w-full border px-3 py-2 rounded" />
+                    </div>
+
+                    <div>
+                        <label class="block font-semibold mb-1">Email</label>
+                        <input name="email" type="email" class="w-full border px-3 py-2 rounded" />
+                    </div>
+                    <div>
+                        <label class="block font-semibold mb-1">Phone</label>
+                        <input name="phone" type="text" class="w-full border px-3 py-2 rounded" />
+                    </div>
+                </div>
+                <!-- Buttons -->
+                <div class="col-span-2 flex justify-end mt-4 gap-3">
+                    <button type="button" onclick="closeFormAddModal()" class="bg-gray-300 px-4 py-2 rounded">
+                        Hủy
+                    </button>
+                    <button id="btn-cta-addonerunner" type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">
+                        Add New
+                    </button>
+                    <button id="btn-cta-updateonerunner" class="bg-yellow-600 text-white px-4 py-2 rounded hidden">Update</button>
+                    <button id="btn-cta-deleteonerunner" class="bg-red-600 text-white px-4 py-2 rounded ">Delete</button>
+                </div>
+                <!--  -->
+            </div>
+        </div>
+    </div>
+    <!--  -->
+    <script>
+        // global scope
+        const btnAddOneRunner = document.querySelector('#btn-cta-addonerunner');
+        const btnDeleteOneRunner = document.querySelector('#btn-cta-deleteonerunner');
+        const btnUpdateOneRunner = document.querySelector('#btn-cta-updateonerunner');
+        const participantTable = document.querySelector('#tableParticipant');
+        let participantDataTable = null;
+        const modalFormAddAndEditParticipant = document.querySelector('#formAddModal');
+        // a
+        function openFormAddModal(action='edit') {
+            // console.log('AAA');
+            if(action ==='edit'){
+                document.querySelector('#formAddModal #btn-cta-updateonerunner').classList.remove('hidden');
+                document.querySelector('#formAddModal #btn-cta-addonerunner').classList.add('hidden');
+                document.querySelector('#action_currently').textContent ="Form Edit";
+            }else if(action ==='add'){
+                document.querySelector('#btn-cta-deleteonerunner').classList.add('hidden');
+                document.querySelector('#action_currently').textContent ="From Add";
+            }
+            document.querySelector('#formAddModal').classList.remove('hidden');
+            document.querySelector('#formAddModal').classList.add('flex');
+        }
+        function closeFormAddModal() {
+            document.querySelector('#formAddModal').classList.add('hidden');
+        }
+        // Open modal
+        function openImportModal() {
+            const modal = document.getElementById('importModal');
+            const box = document.getElementById('importModalBox');
+
+            modal.classList.remove('hidden');
+
+            setTimeout(() => {
+                box.classList.remove('scale-95', 'opacity-0');
+                box.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        // Close modal
+        function closeImportModal() {
+            const modal = document.getElementById('importModal');
+            const box = document.getElementById('importModalBox');
+
+            box.classList.add('scale-95', 'opacity-0');
+            box.classList.remove('scale-100', 'opacity-100');
+
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 150);
+        }
+
+        // Click outside to close
+        document.getElementById('importModal').addEventListener('click', function (e) {
+            if (e.target === this) closeImportModal();
+        });
+
+        // ESC to close
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeImportModal();
+        });
+
+        // Show filename
+        document.getElementById('excelFile').addEventListener('change', function () {
+            const fileName = document.getElementById('fileName');
+            fileName.textContent = 'Đã chọn: ' + this.files[0].name;
+            fileName.classList.remove('hidden');
+        });
+        // Handle Import button
+        function confirmImport() {
+            const fileInput = document.getElementById('excelFile');
+
+            if (!fileInput.files[0]) {
+                alert('Vui lòng chọn file Excel!');
+                return;
+            }
+
+            // 👉 Gửi file lên server (Express)
+            const formData = new FormData();
+            formData.append('excelFile', fileInput.files[0]);
+
+            formData.append('group', '<%=group?._id%>');
+
+            fetch('/user/group-detail/import-excel', {
+                method: 'POST',
+                body: formData,
+            })
+                .then((res) => res.json())
+                .then((data) => {
+                    // alert('Import thành công!');
+                    closeImportModal();
+                    // Chuyển sang trang hiển thị JSON thô
+                    // Convert JSON thành string đẹp
+                    const jsonStr = JSON.stringify(data, null, 2); // 2 là indent
+                    // Hiển thị trong <pre> để giữ format
+                    document.getElementById('jsonResult').innerHTML = jsonStr;
+                })
+                .catch((err) => {
+                    alert('Lỗi khi import!');
+                });
+        }
+        // data table
+        $(document).ready(function () {
+            participantDataTable = $('#tableParticipant').DataTable();
+        });
+        //
+        btnAddOneRunner.addEventListener('click', () => {
+            AddOneRunner();
+        });
+        $('#tableParticipant tbody').on('click', 'tr',async function () {
+            // let rowData = participantDataTable.row(this).data();
+            const dataRunnerId = this.getAttribute('data-id');
+            // console.log('dataRunnerId', dataRunnerId)
+            // console.log('Runner ', rowData);
+            //cal api lay info runner
+            
+            const runner =await getInforRunner(dataRunnerId);
+            openFormAddModal();
+
+            //set value cho popup
+                document.querySelector('input[name="fullname"]').value = runner.fullname;
+                document.querySelector('input[name="email"]').value = runner.email;
+                document.querySelector('input[name="phone"]').value = runner.phone;
+                document.querySelector('input[name="cccd"]').value = runner.cccd;
+                document.querySelector('#nationlity').value = runner.nationlity;
+                document.querySelector('#nation').value = runner.nation;
+                document.querySelector('#city').value = runner.city;
+                const dob = new Date(runner.dob);
+                document.querySelector('input[name="dob"]').value = dob.toISOString().split('T')[0];
+                if(runner.gender == false){
+                    document.querySelector('#gender').value = '0';
+                }else{
+                    document.querySelector('#gender').value = '1'
+                }
+                document.querySelector('input[name="bib_name"]').value = runner.bib_name;
+                document.querySelector('#tshirt_size').value = runner.tshirt_size;
+                document.querySelector('input[name="patron_phone"]').value = runner.patron_phone;
+                document.querySelector('input[name="team"]').value = runner.team;
+                document.querySelector('input[name="blood"]').value = runner.blood;
+                document.querySelector('input[name="medical"]').value = runner.medical;
+                document.querySelector('input[name="medicine"]').value = runner.medicine;
+
+            //
+        });
+        const getInforRunner = async(id)=>{
+            let runner = null;
+            await $.ajax({
+                url: `/user/group-detail/runner-info/${id}`,
+                method: 'GET',
+                // contentType: 'application/json',
+                success: (res)=>{
+                    if(res.success){
+                        console.log(res.data);
+                        runner = res.data;
+                    };
+                },
+                error: (xhr, status, err)=>{
+                    console.log(xhr?.responseJSON?.mess || 'Server error');
+                }
+            })
+            console.log(runner)
+            return runner|| {};
+        }
+        function AddOneRunner() {
+            const data = {
+                fullname: document.querySelector('input[name="fullname"]').value,
+                email: document.querySelector('input[name="email"]').value,
+                phone: document.querySelector('input[name="phone"]').value,
+                cccd: document.querySelector('input[name="cccd"]').value,
+                nationlity: document.querySelector('#nationlity').value,
+                nation: document.querySelector('#nation').value,
+                city: document.querySelector('#city').value,
+                dob: document.querySelector('input[name="dob"]').value,
+                gender: document.querySelector('#gender').value,
+                bib_name: document.querySelector('input[name="bib_name"]').value,
+                tshirt_size: document.querySelector('#tshirt_size').value,
+                patron_phone: document.querySelector('input[name="patron_phone"]').value,
+                team: document.querySelector('input[name="team"]').value,
+                blood: document.querySelector('input[name="blood"]').value,
+                medical: document.querySelector('input[name="medical"]').value,
+                medicine: document.querySelector('input[name="medicine"]').value,
+            };
+            console.log(data);
+            // alert('submit success')
+        }
+    </script>
+</div>
+<!-- Nút mở modal -->
+
+<script>
+    // swal.fire('hello')
+</script>

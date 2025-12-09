@@ -38,7 +38,7 @@
                     <%groups.forEach((g,i)=>{%>
                         <tr class="bg-white divide-y divide-gray-200">
                             <td class="px-6 py-4 whitespace-nowrap"><%=i+1%></td>
-                            <td class="px-6 py-4 whitespace-nowrap"><%=g.group_name.substring(0, 20)+ '...' %></td>
+                            <td class="px-6 py-4 whitespace-nowrap"><a href="#"><%=g.group_name.substring(0, 20)+ '...' %></a></td>
                             <td class="px-6 py-4 whitespace-nowrap"><%=g.leader_name%></td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <% if (g.zalo_link.length > 20) { %>

@@ -2,6 +2,7 @@
 const CNAME = 'ticket.controller.js ';
 const VNAME = 'admin/ticket/';
 const VLAYOUT = 'layouts/adminLayout';
+const eventService = require('../services/event.service');
 const ticketService = require('../services/ticket.service');
 const TicketService = require('../services/ticket.service');
 const a = {
@@ -17,10 +18,12 @@ const ticketController = () => {
         FormAdd: async (req, res) => {
             try {
                 const result = await ticketService.GetAll();
-                res.render(VNAME + 'formAdd', { layout: VLAYOUT, tickets: result });
+                const events = await eventService.GetAllEventForCreateTicketDropdown();
+                // console.log(events);
+                res.render(VNAME + 'formAdd', { layout: VLAYOUT, tickets: result, events:events||[] });
             } catch (error) {
                 console.log(CNAME, error.message);
-                res.render(VNAME + 'formAdd', { layout: VLAYOUT, tickets: [] });
+                res.render(VNAME + 'formAdd', { layout: VLAYOUT, tickets: [], events: [] });
             }
         },
         Create: async (req, res) => {
@@ -32,7 +35,7 @@ const ticketController = () => {
                     desc: dc.desc,
                     price: dc.price,
                     quantity: dc.quantity,
-                    event_id: '69143093e41d85097255e609',
+                    event_id: dc.event_id,
                     register_start: dc.start,
                     register_end: dc.end,
                 };
