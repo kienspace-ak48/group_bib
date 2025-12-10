@@ -12,16 +12,15 @@
         <!-- bootstrap icon -->
         <link rel="stylesheet" href="/libs/bootstrap-icons/bootstrap-icons.min.css" />
         <!-- dataTable css -->
-        <link rel="stylesheet" href="/libs/css/dataTables.dataTables.min.css">
+        <link rel="stylesheet" href="/libs/css/dataTables.dataTables.min.css" />
         <!-- jquey -->
         <script src="/libs/js/jquery-3.7.1.js"></script>
         <!-- datatable -->
         <script src="/libs/js/dataTables.min.js"></script>
         <!-- sweetalert 2 -->
-         <link rel="stylesheet" href="/libs/css/sweetalert2.min.css">
-         <script src="/libs/js/sweetalert2.all.min.js"></script>
-         <!--  -->
-         
+        <link rel="stylesheet" href="/libs/css/sweetalert2.min.css" />
+        <script src="/libs/js/sweetalert2.all.min.js"></script>
+        <!--  -->
 
         <style>
             body {
@@ -32,11 +31,22 @@
                 margin: 20px 0;
             }
         </style>
+        <!-- Google tag (gtag.js) -->
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-TJ6V81DS9P"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag() {
+                dataLayer.push(arguments);
+            }
+            gtag('js', new Date());
+
+            gtag('config', 'G-TJ6V81DS9P');
+        </script>
     </head>
     <body>
         <%- include('../partials/header.ejs') %>
         <main><%- body %></main>
-        
+
         <%- include('../partials/footer.ejs') %>
     </body>
     <!-- flowbite -->

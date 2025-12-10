@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Document</title>
+    </head>
+    <body>
+        <h2>ticket</h2>
+        <div class="item">
+            <span>5KM</span>
+            <span>250,000d</span>
+            <button class="btn-minus" data-id="5km">-</button>
+            <span id="qty-5km">0</span>
+            <button class="btn-plus" data-id="5km">+</button>
+        </div>
+        <br />
+        <div class="item">
+            <span>10KM</span>
+            <span>350,000d</span>
+            <button class="btn-minus" data-id="10km">-</button>
+            <span id="qty-10km">0</span>
+            <button class="btn-plus" data-id="10km">+</button>
+        </div>
+
+        <h3>Tạm tính: <span id="subtotal">0d</span></h3>
+        <!-- Script -->
+        <script>
+            const categories = [
+                { id: '5km', name: '5KM Supper', price: 250, qty: 0 },
+                { id: '10km', name: '10KM', price: 350, qty: 0 },
+            ];
+
+            function updateQty(id, step) {
+                const item = categories.find((x) => x.id === id);
+                if (!item) return;
+                item.qty = Math.max(0, item.qty + step); //ko am
+                document.querySelector('#qty-' + id).innerText = item.qty;
+                subTotal();
+            }
+            function subTotal(){
+                const total = categories.reduce((sum, item)=>{
+                    sum = sum+ item.price*item.qty;
+                    return sum;
+                }, 0)
+                document.querySelector('#subtotal').textContent = total;
+            }
+            document.addEventListener('click', (e) => {
+                // debugger
+                console.log('A')
+                if (e.target.classList.contains('btn-plus')) {
+                    updateQty(e.target.dataset.id, 1);
+                }
+                if(e.target.classList.contains('btn-minus')){
+                    updateQty(e.target.dataset.id, -1)
+                }
+            });
+            const arr =[1, 5, 3, 5];
+            const result = arr.reduce((sum, num)=>{
+                return sum+num;
+            }, 0);
+            console.log('result: ', result)
+        </script>
+    </body>
+</html>

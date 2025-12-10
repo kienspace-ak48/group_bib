@@ -1,0 +1,297 @@
+<div class="main-container">
+    <div class="mx-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- ==== Left Column (THÔNG TIN NGƯỜI ĐĂNG KÝ) ==== -->
+        <div class="lg:col-span-2 space-y-4 min-h-screen">
+            <h2 class="text-lg font-bold text-gray-700 flex items-center gap-2">🏃 THÔNG TIN NGƯỜI ĐĂNG KÝ</h2>
+            <%let no = 1;%>
+            <% carts.forEach(t => { %> <% for(let i = 0; i < t.qty; i++){ %>
+            <!-- Render form nhập thông tin -->
+            <!-- Item 2 -->
+            <div class="bg-white rounded-lg shadow p-4" data-item>
+                <div class="flex items-center justify-between cursor-pointer" data-header>
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="w-10 h-10 bg-indigo-500 text-white rounded-full flex items-center justify-center font-semibold"
+                        >
+                            <%=no++%>
+                        </div>
+                        <span class="font-semibold text-gray-800"><%=t.name%></span>
+                    </div>
+
+                    <svg
+                        class="w-6 h-6 text-gray-500 transition-transform"
+                        data-icon-down
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+
+                    <svg
+                        class="w-6 h-6 text-gray-500 transition-transform hidden"
+                        data-icon-up
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                    </svg>
+                </div>
+
+                <div class="mt-4 border-t pt-4 space-y-3 text-gray-700 hidden" data-content>
+                    <!-- left -->
+                    <div class="bg-white p-4 rounded-lg shadow-lg border-gray-200 space-y-4">
+                        <label for="" class="font-semibold mb-1 text-[20px] tracking-normal">Thông tin cá nhân</label>
+                        <!-- Form Grid -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-sm font-medium">Họ & tên (*)</label>
+                                <input name="fullname" class="w-full border rounded-lg px-3 py-2" />
+                                <p class="text-xs text-pink-500 mt-1">Nhập đúng theo CCCD hoặc Giấy khai sinh.</p>
+                            </div>
+
+                            <div>
+                                <label class="text-sm font-medium">Email (*)</label>
+                                <input name="email" class="w-full border rounded-lg px-3 py-2" />
+                                <p class="text-xs text-pink-500 mt-1">Nên dùng Gmail để đăng ký.</p>
+                            </div>
+
+                            <div>
+                                <label class="text-sm font-medium">Số điện thoại (*)</label>
+                                <input name="phone" class="w-full border rounded-lg px-3 py-2" />
+                            </div>
+
+                            <div>
+                                <label class="text-sm font-medium">CCCD hoặc hộ chiếu (*)</label>
+                                <input name="cccd" class="w-full border rounded-lg px-3 py-2" />
+                                <p class="text-xs text-pink-500 mt-1">
+                                    Nếu chưa có CCCD, nhập định danh của người giám hộ.
+                                </p>
+                            </div>
+
+                            <div>
+                                <label class="text-sm font-medium">Quốc tịch (*)</label>
+                                <select id="nationlity" class="w-full border rounded-lg px-3 py-2">
+                                    <option>Việt Nam</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="text-sm font-medium">Quốc gia đang sinh sống (*)</label>
+                                <select id="nation" class="w-full border rounded-lg px-3 py-2">
+                                    <option>Việt Nam</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="text-sm font-medium">Tỉnh/Thành phố đang sinh sống (*)</label>
+                                <select id="city" class="w-full border rounded-lg px-3 py-2">
+                                    <option>Hồ Chí Minh</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="text-sm font-medium">Ngày sinh (*)</label>
+                                <input name="dob" type="date" class="w-full border rounded-lg px-3 py-2" />
+                            </div>
+
+                            <div>
+                                <label class="text-sm font-medium">Giới tính (*)</label>
+                                <select id="gender" class="w-full border rounded-lg px-3 py-2">
+                                    <option>Chọn thông tin</option>
+                                    <option value="0">Nữ</option>
+                                    <option value="1">Nam</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Thông tin khác -->
+                        <h3 class="text-lg font-semibold text-gray-800 mt-8 mb-3">Thông tin khác</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-sm font-medium">Tên trên BIB</label>
+                                <input name="bib_name" class="w-full border rounded-lg px-3 py-2" />
+                            </div>
+                            <div>
+                                <label class="text-sm font-medium">Distance</label>
+                                <select id="distance" class="w-full border rounded-lg px-3 py-2">
+                                    <option>Chọn cự ly</option>
+                                    <option value="5KM">5KM</option>
+                                    <option value="10KM">10KM</option>
+                                    <option value="21Km">21KM</option>
+                                </select>
+                                <a href="#" class="text-blue-600 text-sm mt-1 inline-block">Chi tiết cỡ áo</a>
+                            </div>
+                            <div>
+                                <label class="text-sm font-medium">Size áo (*)</label>
+                                <select id="tshirt_size" class="w-full border rounded-lg px-3 py-2">
+                                    <option>Chọn thông tin</option>
+                                </select>
+                                <a href="#" class="text-blue-600 text-sm mt-1 inline-block">Chi tiết cỡ áo</a>
+                            </div>
+
+                            <!-- 3 input trống -->
+                            <div>
+                                <label for="" class="text-sm font-medium">Tên người liên hệ khẩn cấp</label>
+                                <input
+                                    name="patron_name"
+                                    class="w-full border rounded-lg px-3 py-2"
+                                    placeholder="Ex: Nguyen Van A"
+                                />
+                            </div>
+                            <div>
+                                <label for="">SĐT người liên hệ khẩn cấp</label>
+                                <input
+                                    name="patron_phone"
+                                    class="w-full border rounded-lg px-3 py-2"
+                                    placeholder="Ex: 19001900"
+                                />
+                            </div>
+                            <div>
+                                <label for="">Team</label>
+                                <input
+                                    name="team"
+                                    class="w-full border rounded-lg px-3 py-2"
+                                    placeholder="Ex: Accessrace"
+                                />
+                            </div>
+                        </div>
+
+                        <!-- Thông tin y tế -->
+                        <h3 class="text-lg font-semibold text-gray-800 mt-8 mb-3">Thông tin y tế</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <input name="blood" class="w-full border rounded-lg px-3 py-2" placeholder="Nhóm máu" />
+                            <input
+                                name="medical"
+                                class="w-full border rounded-lg px-3 py-2"
+                                placeholder="Thông tin y tế"
+                            />
+                            <input
+                                name="medicine"
+                                class="w-full border rounded-lg px-3 py-2"
+                                placeholder="Loại thuốc đang dùng"
+                            />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <% } %> <% }) %>
+        </div>
+
+        <!-- ==== Right Column (FORM NGƯỜI MUA) ==== -->
+        <div class="space-y-4">
+            <h2 class="text-lg font-bold text-gray-700 flex items-center gap-2">🧾 THÔNG TIN NGƯỜI MUA</h2>
+
+            <div class="bg-white rounded-lg shadow p-4 space-y-3">
+                <input type="text" placeholder="Họ & tên (*)" class="w-full border p-2 rounded" />
+                <input type="email" placeholder="Email (*)" class="w-full border p-2 rounded" />
+                <input type="text" placeholder="Số điện thoại (*)" class="w-full border p-2 rounded" />
+            </div>
+
+            <h2 class="text-lg font-bold text-gray-700">💳 CHỌN PHƯƠNG THỨC THANH TOÁN</h2>
+
+            <div class="bg-white rounded-lg shadow p-4">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="pay" checked />
+                    <span class="font-medium">Thanh toán qua mã QR</span>
+                    <span class="text-xs bg-blue-600 text-white px-2 py-1 rounded">Đề xuất</span>
+                </label>
+            </div>
+            <!-- ================ -->
+             <div class="w-full max-w-md">
+    <!-- Title -->
+    <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22"
+        fill="currentColor" class="text-gray-700" viewBox="0 0 16 16">
+        <path
+          d="M0 1.5A.5.5 0 0 1 .5 1H2l.5 2H14a1 1 0 0 1 .96 1.27l-1.5 6A1 1 0 0 1 12.5 11H4a1 1 0 0 1-.98-.8L1.61 3H.5a.5.5 0 0 1-.5-.5z" />
+      </svg>
+      VÉ CỦA BẠN
+    </h2>
+
+    <!-- Card -->
+    <div class="bg-white p-6 rounded-xl shadow">
+        <% carts.forEach(t => { %> <% for(let i = 0; i < t.qty; i++){ %>
+            <div class="flex justify-between py-2 border-b border-dashed">
+        <span>1 x <%=t.name%></span>
+        <span class="font-medium"><%=t.price%>,000đ</span>
+      </div>
+        <% } %> <% }) %>
+
+      <!-- Subtotal -->
+      <!-- <div class="flex justify-between pt-4 text-gray-600">
+        <span>Tạm tính</span>
+        <span class="font-semibold" id="temp_payment">1,316,000đ</span>
+      </div> -->
+
+      <!-- Total -->
+      <div class="flex justify-between mt-1 text-lg font-bold">
+        <span>Tổng thanh toán</span>
+        <span class="text-blue-700" id="final_payment">1,316,000đ</span>
+      </div>
+    </div>
+
+    <!-- Coupon -->
+    <div class="mt-4 bg-white p-4 rounded-xl shadow flex gap-3">
+      <input type="text" placeholder="Mã giảm giá"
+        class="flex-1 border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-pink-500" />
+
+      <button class="bg-pink-500 text-white font-semibold px-5 rounded-lg">
+        ÁP DỤNG
+      </button>
+    </div>
+
+    <!-- Pay button -->
+    <button
+      class="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl text-lg font-semibold flex items-center justify-center gap-2">
+      THANH TOÁN
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+        fill="currentColor" viewBox="0 0 16 16">
+        <path fill-rule="evenodd"
+          d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 
+          4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 
+          1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z" />
+      </svg>
+    </button>
+
+  </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- =========================== JS DROPDOWN =========================== -->
+<script>
+    // global scope
+    const elementModal = document.querySelector('#formAddModal');
+    let shoppingCart = <%-JSON.stringify(carts)%>;
+    let total = 0;
+    total = shoppingCart.reduce((pre, cur)=>pre+cur.qty*cur.price, 0)
+    // document.querySelector('#temp_payment').innerText = total.toLocaleString('vi-VN')+'.000đ'
+    document.querySelector('#final_payment').innerText = total.toLocaleString('vi-VN')+'.000đ'
+
+    console.log(shoppingCart)
+    function openModal() {
+        elementModal.classList.remove('hidden');
+        elementModal.classList.add('flex');
+    }
+    function closeModal() {
+        elementModal.classList.remove('flex');
+        elementModal.classList.add('hidden');
+    }
+    document.querySelectorAll('[data-item]').forEach((item) => {
+        const header = item.querySelector('[data-header]');
+        const content = item.querySelector('[data-content]');
+        const iconDown = item.querySelector('[data-icon-down]');
+        const iconUp = item.querySelector('[data-icon-up]');
+
+        header.addEventListener('click', () => {
+            content.classList.toggle('hidden');
+            iconDown.classList.toggle('hidden');
+            iconUp.classList.toggle('hidden');
+        });
+    });
+</script>

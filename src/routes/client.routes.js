@@ -25,6 +25,8 @@ router.post('/user/register', userController.Register);
 router.post('/user/login', userController.Login);
 router.get('/user/profile', authRoute,  userController.Profile);
 router.get('/user/change-password', userController.ChangePassword);
+router.get('/user/event-detail/:slug/payment', userController.PaymentForm);
+// router.get('/user/event-detail/:slug/payment', userController.PaymentCheckout);
 // router.get('/user/group', userController.Group)
 router.get('/user/group-detail/runner-info/:runner_id', authRoute, userController.GetRunnerById);
 router.get('/user/profile-doc-history-list', userController.ProfileDocHistoryList);

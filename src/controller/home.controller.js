@@ -18,9 +18,7 @@ const homeController = () => {
                 const slug = req.params.slug;
                 const event = await EventService.GetBySlug(slug);
                 const ticket_types = await TicketService.GetByEventId(event);
-                console.log(ticket_types)
-                // console.log(event);
-                // console.log('slug: ',slug)
+                // console.log(ticket_types)
                 res.render('pages/eventDetail', { layout: VLAYOUT, event, slug, tickets: ticket_types||[] });
             } catch (error) {
                 console.log(CNAME, error.message);

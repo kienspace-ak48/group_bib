@@ -121,7 +121,7 @@ const userController = () => {
             try {
                 //lay idUser tu viec login vao he thong
                 const captainId = req.user._id;
-                if(!captainId) return res.redirect('/login')
+                if (!captainId) return res.redirect('/login');
                 // console.log('captainId: ',captainId);
                 const groups = await GroupService.GetByCaption(captainId);
                 res.render(VNAME + 'user/groupList', { layout: VLAYOUT, groups: groups || [] });
@@ -137,11 +137,15 @@ const userController = () => {
                 const group = await GroupService.GetById(groupId);
                 const event_id = group.event_id;
                 const captain_id = group.captain_id;
-                const runners =await ParticipantService.GetAll(captain_id, event_id, groupId);
-                
+                const runners = await ParticipantService.GetAll(captain_id, event_id, groupId);
 
                 // console.log(typeof runners, runners)
-                res.render(VNAME + 'user/groupDetail', { layout: VLAYOUT, group: group, runners: runners.runners||[], count: runners.count });
+                res.render(VNAME + 'user/groupDetail', {
+                    layout: VLAYOUT,
+                    group: group,
+                    runners: runners.runners || [],
+                    count: runners.count,
+                });
             } catch (error) {
                 console.log(CNAME, error.message);
                 res.render(VNAME + 'user/groupDetail', { layout: VLAYOUT, group: '', runners: [], count: 0 });
@@ -181,17 +185,54 @@ const userController = () => {
                 res.status(500).json({ success: false });
             }
         },
-        GetRunnerById: async(req, res)=>{
+        GetRunnerById: async (req, res) => {
             try {
                 const runnerId = req.params.runner_id;
-                if(!runnerId) return res.json({success: false, mess: 'param ko hop le'});
+                if (!runnerId) return res.json({ success: false, mess: 'param ko hop le' });
                 const participant = await ParticipantService.GetById(runnerId);
-                res.json({success: true, data: participant});
+                res.json({ success: true, data: participant });
             } catch (error) {
                 console.log(CNAME, error.message);
-                return res.status(500).json({success: false, data: {}});
+                return res.status(500).json({ success: false, data: {} });
+            }
+        },
+        PaymentForm: async (req, res) => {
+            try {
+                const slug = req.params.slug;
+            const data = req.query.cart;
+            const carts = JSON.parse(data);
+            let arr = [];
+            carts.forEach((v, i)=>{
+                arr.push({id:v._id, qty: v.qty, name: v.name, price: v.price})
+            });
+            console.log('mang moi', arr)
+            console.log(carts);
+            res.render(VNAME + 'user/payment', { layout: VLAYOUT, carts: carts||[] });
+            } catch (error) {
+            res.render(VNAME + 'user/payment', { layout: VLAYOUT, carts: [] });
+                
+            }
+            
+
+            // const data =JSON.parse(req.body.cart);
+            // Lưu session
+            // req.session.cart = data;
+            // res.redirect(`/user/event-detail/${slug}/payment`)
+            
+        },
+        PaymentCheckout: async(req, res)=>{
+            try {
+                const slug = req.params.slug;
+                const cart = req.session.cart;
+                if(!cart) return res.redirect(`/user/event-detail/${slug}/payment`)
+                console.log('cart ',cart)
+                res.render(VNAME + 'user/payment', { layout: VLAYOUT });
+            } catch (error) {
+                console.log(CNAME, error.message);
+                res.render(VNAME + 'user/payment', { layout: VLAYOUT });
             }
         }
+
         // Group: async (req, res) => {
         //     try {
         //         res.render(VNAME + 'user/group', { layout: VLAYOUT });

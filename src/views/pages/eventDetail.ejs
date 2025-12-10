@@ -253,83 +253,92 @@
                         </a>
                     </div>
                 </div>
-                
+
                 <!--  -->
-                <section class="ticket_type mt-6">
-                    <div class="max-w-md mx-auto bg-white shadow-xl rounded-xl p-6 space-y-6">
+                <section id="ticket_type" class="ticket_type mt-6">
+                    <div class="max-w-md mx-auto relative overflow-hidden bg-white shadow-xl rounded-xl p-6 space-y-6">
                         <!-- Header -->
-                        <div>
-                            <h2 class="text-xl font-bold text-gray-800">REGULAR</h2>
-                            <p class="text-sm text-gray-500 mt-1">Mở đăng ký: 21/11/2025 - 15/01/2026</p>
+                        <!-- lop pattern -->
+                        <div class="absolute inset-0 bg-[url('/imgs/map.png')] bg-cover bg-center opacity-20"></div>
+                        <!-- lop phu -->
+                        <div class="absolute inset-0 bg-white/60 pointer-events-none"></div>
+                        <!-- real -->
+                        <div class="relative z-10 space-y-6">
+                            <div>
+                                <h2 class="text-xl font-bold text-gray-800">REGULAR</h2>
+                                <p class="text-sm text-gray-500 mt-1">Mở đăng ký: 21/11/2025 - 15/01/2026</p>
 
-                            <div class="flex space-x-2 mt-3">
-                                <div class="h-1 flex-1 bg-blue-600 rounded"></div>
-                                <div class="h-1 flex-1 bg-blue-300 rounded"></div>
-                                <div class="h-1 flex-1 bg-blue-200 rounded"></div>
+                                <div class="flex space-x-2 mt-3">
+                                    <div class="h-1 flex-1 bg-blue-600 rounded"></div>
+                                    <div class="h-1 flex-1 bg-blue-300 rounded"></div>
+                                    <div class="h-1 flex-1 bg-blue-200 rounded"></div>
+                                </div>
                             </div>
-                        </div>
 
-                        <!-- DISTANCE BLOCK -->
-                        <div class="space-y-6">
-                            <!--  -->
-                            <%if(tickets && tickets.length>0){%>
-                                <%tickets.forEach(t=>{%>
-                                    <div class="flex items-center justify-between border-b pb-4">
+                            <!-- DISTANCE BLOCK -->
+                            <div class="space-y-6">
+                                <!--  -->
+                                <%if(tickets && tickets.length>0){%> <%tickets.forEach(t=>{%>
+                                <div class="flex items-center justify-between border-b pb-4">
+                                    <div class="flex items-center space-x-3">
+                                        <img src="<%=event.img_thumb%>" class="w-12 h-12 object-cover rounded" />
+                                        <span class="font-semibold text-gray-800"><%=t.name%></span>
+                                    </div>
+                                    <div class="grid grid-cols-1 gap-2 text-center">
+                                        <span class="font-semibold text-blue-600"><%=t.price%>,000đ</span>
+
+                                        <!-- Counter -->
                                         <div class="flex items-center space-x-3">
-                                            <img
-                                                src="<%=event.img_thumb%>"
-                                                class="w-12 h-12 object-cover rounded"
-                                            />
-                                            <span class="font-semibold text-gray-800"><%=t.name%></span>
-                                        </div>
-                                        <div class="flex items-center space-x-4">
-                                            <span class="font-semibold text-blue-600"><%=t.price%>,000đ</span>
-
-                                            <!-- Counter -->
-                                            <div class="flex items-center space-x-2">
-                                                <button
-                                                    class="w-7 h-7 flex items-center justify-center rounded-full border text-gray-500"
-                                                >
-                                                    -
-                                                </button>
-                                                <span class="font-semibold">0</span>
-                                                <button
-                                                    class="w-7 h-7 flex items-center justify-center rounded-full border text-blue-600"
-                                                >
-                                                    +
-                                                </button>
-                                            </div>
+                                            <button
+                                                data-id="<%=t._id%>"
+                                                class="w-7 h-7 flex items-center justify-center rounded-full border text-gray-500 btn-minus"
+                                            >
+                                                -
+                                            </button>
+                                            <span
+                                                class="font-semibold inline-block text-center min-w-7"
+                                                id="qty-<%=t._id%>"
+                                                >0</span
+                                            >
+                                            <button
+                                                data-id="<%=t._id%>"
+                                                class="w-7 h-7 flex items-center justify-center rounded-full border text-blue-600 btn-plus"
+                                            >
+                                                +
+                                            </button>
                                         </div>
                                     </div>
-                                <%})%>
-                            <%}%>
+                                </div>
+                                <%})%> <%}%>
+                                <!--  -->
+                            </div>
+
+                            <!-- Subtotal -->
+                            <div class="flex justify-between text-gray-700 font-semibold">
+                                <span>Tạm tính:</span>
+                                <span id="card_total">0đ</span>
+                            </div>
+
+                            <!-- Buttons -->
+                            <button id="checkout_shoppingcard"
+                                class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700"
+                            >
+                                ĐĂNG KÝ →
+                            </button>
+
+                            <p class="text-xs text-gray-500 text-center">
+                                Khi nhấn “ĐĂNG KÝ” đồng nghĩa với việc bạn đã đọc và đồng ý
+                                <a href="#" class="underline text-blue-600">Điều khoản</a> &
+                                <a href="#" class="underline text-blue-600">Quy định</a> của sự kiện.
+                            </p>
                             <!--  -->
-                            
-                            
+                            <a
+                                href="/event/group-bib/<%=slug%>"
+                                style="width: 100% !important"
+                                class="block text-center mb-4 w-full btn-outline-indigo font-semibold px-6 py-2 rounded-lg"
+                                >Đăng ký nhóm</a
+                            >
                         </div>
-
-                        <!-- Subtotal -->
-                        <div class="flex justify-between text-gray-700 font-semibold">
-                            <span>Tạm tính:</span>
-                            <span>0đ</span>
-                        </div>
-
-                        <!-- Buttons -->
-                        <button class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700">
-                            ĐĂNG KÝ →
-                        </button>
-
-                        <p class="text-xs text-gray-500 text-center">
-                            Khi nhấn “ĐĂNG KÝ” đồng nghĩa với việc bạn đã đọc và đồng ý
-                            <a href="#" class="underline text-blue-600">Điều khoản</a> &
-                            <a href="#" class="underline text-blue-600">Quy định</a> của sự kiện.
-                        </p>
-                        <!--  -->
-                        <a
-                        href="/event/group-bib/<%=slug%>"
-                        style="width: 100% !important"
-                        class="block text-center mb-4 w-full btn-outline-indigo font-semibold px-6 py-2 rounded-lg"
-                        >Đăng ký nhóm</a>
                         <!-- <button
                             class="w-full border border-blue-600 text-blue-600 py-3 rounded-lg font-semibold hover:bg-blue-50"
                         >
@@ -387,9 +396,60 @@
 
     <!--  -->
 </div>
+<form id="hiddenCheckoutForm" method="GET" action="/user/event-detail/<%=slug%>/payment">
+    <input type="hidden" name="cart" id="cartInput">
+</form>
 <!-- =============================event # -->
 
 <script>
+    // global scope
+    localStorage.removeItem('my_ticket')
+    const tickets = <%-JSON.stringify(tickets)%>;
+    const elementTicketTypeZone = document.querySelector('#ticket_type');
+    const btnCtaCheckoutShoppingCard = document.querySelector('#checkout_shoppingcard');
+    //
+    const ticketsWithQty = tickets.map(item=>({...item, qty: 0}))
+    localStorage.setItem('my_ticket', JSON.stringify(ticketsWithQty));
+    //
+    elementTicketTypeZone.addEventListener('click', function(e){
+        // console.log(e.target);
+        if(e.target.classList.contains('btn-plus')){
+            console.log('add')
+            updateQty(e.target.dataset.id, 1);
+        };
+        if(e.target.classList.contains('btn-minus')){
+            console.log('minus')
+            updateQty(e.target.dataset.id, -1);
+        }
+    })
+    function updateQty(id, step){
+        const myTickets = JSON.parse(localStorage.getItem('my_ticket'));
+        const item = myTickets.find((arr)=>arr._id ===id);
+        if(!item) return;
+        item.qty = (item.qty || 0)+step;
+        console.log(item)
+        console.log(myTickets)
+        if(item.qty<0) item.qty =0;//ko cho am
+        localStorage.setItem('my_ticket', JSON.stringify(myTickets));
+        document.querySelector('#qty-'+id).innerText = item.qty;
+        updateSubTotal();
+    }
+    function updateSubTotal(){
+        const myShoppingCard = JSON.parse(localStorage.getItem('my_ticket'));
+        let total = myShoppingCard.reduce((tol, tic)=>tol+tic.price*tic.qty, 0);
+        console.log(total);
+        // format
+        const formatted = (total*1000).toLocaleString('vi-VN')+'đ';
+        document.querySelector('#card_total').innerText = formatted;
+    }
+    //
+    btnCtaCheckoutShoppingCard.addEventListener('click', ()=>{
+        const myShoppingCard = localStorage.getItem('my_ticket')
+        console.log(myShoppingCard);
+        document.getElementById('cartInput').value = myShoppingCard;
+        document.getElementById('hiddenCheckoutForm').submit();
+
+    })
     document.querySelectorAll('.collapse-header').forEach((header) => {
         header.addEventListener('click', () => {
             const body = header.parentElement.querySelector('.collapse-body');

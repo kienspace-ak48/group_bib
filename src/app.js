@@ -21,9 +21,9 @@ const swaggerFile = require('./swagger/swagger-output.json');
 
 //middleware
 app.use(passport.initialize());
-app.use(express.json());
+app.use(express.json()); //Chỉ dùng để parse body JSON của request POST/PUT/PATCH.
 app.use(cookieParser());
-app.use(express.urlencoded({ extendedys: true }));
+app.use(express.urlencoded({ extendedys: true })); //Chỉ parse body của form POST gửi lên dạng Content-Type: application/x-www-form-urlencoded
 //static files
 app.use(express.static(myPathConfig.public));
 //template engine
