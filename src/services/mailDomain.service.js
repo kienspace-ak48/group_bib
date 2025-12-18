@@ -1,11 +1,11 @@
 const sgMail = require('@sendgrid/mail');
 
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+sgMail.setApiKey(process.env.SENDGRID_API_KEY_DOMAIN);
 
-async function sendOtpMail(email, otp) {
+async function sendMailDomain(email, otp) {
     await sgMail.send({
         to: email,
-        from: {email: process.env.SENDGRID_FROM, name: 'AccessRace'},
+        from: {email: process.env.SENDGRID_FROM_DOMAIN, name: 'AccessRace'},
         subject: 'Your OTP code',
         html: `
             <h2>Email Verification</h2>
@@ -16,4 +16,4 @@ async function sendOtpMail(email, otp) {
     });
 }
 
-module.exports = { sendOtpMail };
+module.exports = { sendMailDomain };

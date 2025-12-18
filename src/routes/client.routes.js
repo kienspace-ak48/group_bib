@@ -24,6 +24,7 @@ router.post('/group-bib/form-add', authRoute,uploadImageMemory.single('imageQR')
 // user
 router.post('/user/register', userController.Register);
 router.post('/user/login', userController.Login);
+router.post('/user/email-verify-resend', userController.ReSendCode);
 router.get('/user/email-verify', userController.FormEmailVerify);
 router.post('/user/email-verify', userController.EmailVerify);
 router.get('/user/profile', authRoute,  userController.Profile);

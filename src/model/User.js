@@ -12,7 +12,9 @@ const UserSchema = new mongoose.Schema(
         role_id: { type: String, default: 'user' },
         avatar: String,
         is_verified: {type: Boolean, default: false},
-        code_reset: {type: String, default:''},
+        verify_expires_at: {type: Date, default: new Date()},
+        code: {type: String, default:''},
+        
 
         // provider
         providers: [

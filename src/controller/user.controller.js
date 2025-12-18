@@ -16,6 +16,7 @@ const participantPreService = require('../services/participantPre.service');
 const User = require('../model/User');
 const { sendOtpMail } = require('../services/mail.service');
 const jwt = require('jsonwebtoken');
+const { sendMailDomain } = require('../services/mailDomain.service');
 var userDTO = {
     fullname: 'Kien Vu',
     email: 'test@gmail.com',
@@ -89,11 +90,37 @@ const userController = () => {
         RegisterOrLogin: async () => {
             res.render(VNAME + '/login', { layout: VLAYOUT });
         },
+        //
+        ReSendCode: async(req, res)=>{
+            // console.log('aaa',req.body)
+            const {email}  = req.body;
+            try {
+                const exist = await User.findOne({
+                    email: email,
+                    is_verified: false
+                })
+                const random = Math.random();
+                console.log("random: ", random)
+                if(!exist) return res.status(400).json({success: false, mess:' Email ont exist'});
+                const OTP = Math.floor(10000+random*900000).toString();
+                exist.code =OTP;
+                exist.verify_expires_at= new Date();
+                await sendOtpMail(email, OTP);
+                await sendMailDomain(email, OTP);
+                await exist.save();
+                
+                res.json({success: false, mess: 'Check hom thuw'})
+            } catch (error) {
+                console.log(CNAME, error.message)
+                res.json({success: false, mess: error.message|| 'Server error'});
+                
+            }
+        },
         // ajax
         Register: async (req, res) => {
             try {
                 const data = req.body;
-                console.log(data);
+                // console.log(data);
                 if (!data.fullname || !data.email || !data.phone || !data.password) {
                     return res.status(400).json({ success: false, mess: 'Pls fill in your information' });
                 }
@@ -106,11 +133,14 @@ const userController = () => {
                     email: data.email,
                     phone: data.phone,
                     password: data.password,
-                    code_reset: OTP,
+                    code: OTP,
+                    verify_expires_at: new Date()
+
                 });
                 await user.save();
                 await sendOtpMail(user.email, OTP);
-                console.log(OTP);
+                await sendMailDomain(user.email, OTP);
+                console.log(OTP); //cmt som
                 res.json({ success: true, redirect: `/user/email-verify` });
             } catch (error) {
                 console.log(CNAME, error.message);
@@ -126,6 +156,7 @@ const userController = () => {
                 const result = await UserService.GetByConditionEmailOrName(l_username);
 
                 if (!result) return res.render(VNAME+'/login', {layout: false, err: 'Account not exist'});
+                if(!result.is_verified)  return res.render(VNAME+'/login', {layout: false, err: 'Account not verified!'});
                 const isMatch =await result.comparePassword(l_password);
                 if (!isMatch) return res.render(VNAME+'/login', {layout: false, err: 'user or password wrong'});
                 //cap token cho client
@@ -158,16 +189,19 @@ const userController = () => {
         },
         EmailVerify: async (req, res) => {
             try {
+                const now = new Date();
                 const { email, code } = req.body;
                 if (!email || !code) {
                     return res.status(400).json({
                         success: false,
                         mess: 'Missing email or OTP',
+                        verify_expires_at: now,
                     });
                 }
                 const user = await User.findOne({
                     email: email,
-                    code_reset: code,
+                    code: code,
+
                 });
                 if (!user) {
                     return res.status(400).json({
@@ -175,7 +209,14 @@ const userController = () => {
                         mess: 'Invalid OTP',
                     });
                 }
-                user.code_reset = null;
+                const diffMinutes = (now - user.verify_expires_at)/(1000*60);
+                //cau hinh 2p
+                console.log('time now ',diffMinutes)
+                if(diffMinutes>1){
+                    res.status(500).json({ success: false, mess: 'Code expiried' });
+                    return 
+                }
+                user.code = null;
                 user.is_verified = true;
                 await user.save();
                 res.status(200).json({ success: true });
