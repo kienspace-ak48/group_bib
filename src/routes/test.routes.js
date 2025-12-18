@@ -4,7 +4,8 @@ const bibIdentification = require('../controller/bibIdentification.controller')(
 const bcrypt = require('bcrypt');
 const SALT = 12;
 const excelUpload = require('../config/excelUploadM');
-const xlsx = require('xlsx')
+const xlsx = require('xlsx');
+const {sendOtpMail} = require('../services/mail.service');
 //fake data database
 //table accounts
 const accounts = [
@@ -72,7 +73,16 @@ router.post('/login', async (req, res) => {
     console.log('ko co user');
     res.json({ mess: 'ko co user' });
 });
-
+router.get('/sendgrid',async (req, res)=>{
+    try {
+        const otp = '123456';
+    console.log('running here')
+    await sendOtpMail('kienvu.dev3@gmail.com', otp);
+    return res.json({success: true, mess: 'ok'});
+    } catch (error) {
+        return res.status(500).json({success: false, mess: 'failed'})
+    }
+})
 // excel
 router.get('/xlsx', (req, res)=>{
     res.send(`

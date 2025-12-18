@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Hand Gesture Action Demo</title>
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    video, canvas {
+      position: absolute;
+      top: 100px;
+      width: 640px;
+      height: 480px;
+      border-radius: 10px;
+    }
+    canvas {
+      z-index: 10;
+    }
+    h2 {
+      margin-top: 10px;
+    }
+    .status {
+      margin-top: 580px;
+      font-size: 20px;
+    }
+    button {
+      margin-top: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 6px;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+
+<h2>✋ Gesture Control Demo</h2>
+
+<button id="enableBtn">▶ Enable Gesture Control</button>
+
+<video id="video" autoplay playsinline></video>
+<canvas id="canvas" width="640" height="480"></canvas>
+
+<div class="status" id="status">Chưa kích hoạt gesture</div>
+
+<!-- MediaPipe -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+
+<script>
+  const video = document.getElementById("video");
+  const canvas = document.getElementById("canvas");
+  const ctx = canvas.getContext("2d");
+  const status = document.getElementById("status");
+  const enableBtn = document.getElementById("enableBtn");
+
+  let lastActionTime = 0;
+  let gestureEnabled = false;
+
+  enableBtn.onclick = () => {
+    gestureEnabled = true;
+    status.innerText = "✅ Gesture đã được kích hoạt";
+    alert("Gesture control enabled!");
+  };
+
+  function countFingers(landmarks) {
+    let fingers = 0;
+
+    // 4 ngón (trỏ, giữa, áp út, út)
+    const tips = [8, 12, 16, 20];
+    const pips = [6, 10, 14, 18];
+
+    for (let i = 0; i < tips.length; i++) {
+      if (landmarks[tips[i]].y < landmarks[pips[i]].y) {
+        fingers++;
+      }
+    }
+
+    // Ngón cái (tay phải)
+    if (landmarks[4].x > landmarks[3].x) {
+      fingers++;
+    }
+
+    return fingers;
+  }
+
+  function triggerAction(fingers) {
+    if (!gestureEnabled) return;
+
+    // 👉 LOG SỐ NGÓN TAY
+    console.log("Số ngón tay đang giơ:", fingers);
+
+    const now = Date.now();
+    if (now - lastActionTime < 2000) return; // chống spam
+    lastActionTime = now;
+
+    if (fingers === 1) {
+      status.innerText = "✋ 4 ngón → Mở YouTube 🎵";
+      window.open(
+        "https://www.youtube.com/watch?v=UX5oj9isGPM&list=RDUX5oj9isGPM&start_radio=1",
+        "_blank"
+      );
+    } else {
+      status.innerText = `✋ Đang giơ ${fingers} ngón`;
+    }
+  }
+
+  const hands = new Hands({
+    locateFile: (file) =>
+      `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+  });
+
+  hands.setOptions({
+    maxNumHands: 1,
+    modelComplexity: 1,
+    minDetectionConfidence: 0.7,
+    minTrackingConfidence: 0.7
+  });
+
+  hands.onResults((results) => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (results.multiHandLandmarks) {
+      for (const landmarks of results.multiHandLandmarks) {
+        drawConnectors(ctx, landmarks, HAND_CONNECTIONS, { color: "#00FF00" });
+        drawLandmarks(ctx, landmarks, { color: "#FF0000" });
+
+        const fingers = countFingers(landmarks);
+        triggerAction(fingers);
+      }
+    }
+  });
+
+  const camera = new Camera(video, {
+    onFrame: async () => {
+      await hands.send({ image: video });
+    },
+    width: 640,
+    height: 480
+  });
+
+  camera.start();
+</script>
+
+
+</body>
+</html>

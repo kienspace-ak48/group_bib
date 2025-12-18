@@ -1,0 +1,72 @@
+<script src="/libs/js/jquery-3.7.1.js"></script>
+        <!-- sweetalert 2 -->
+        <link rel="stylesheet" href="/libs/css/sweetalert2.min.css" />
+        <script src="/libs/js/sweetalert2.all.min.js"></script>
+<h2>Verify email</h2>
+<hr>
+<div>
+    <label for="">OTP:</label>
+    <input id="code" type="text" name="code">
+    <input id="email" type="hidden" name="email">
+    <input type="submit" id="submitForm"> <br> 
+    <br>
+    <a style="display: none;" id="resend"  href="#"><button>Resend</button></a>
+    
+    <br> <br>
+    <div>
+        Mã OTP sẽ hết hạn sau:
+        <span id="countdown"></span>
+    </div>
+</div>
+
+<script>
+    const countdownEl = document.querySelector('#countdown');
+    document.querySelector('#email').value = localStorage.getItem('verify_email')||'';
+    let time = 5*60;
+    const timer = setInterval(() => {
+        const minutes = Math.floor(time/60);
+        const seconds = time%60;
+
+    countdownEl.textContent =`${String(minutes).padStart(2, '0')}: ${String(seconds).padStart(2,'0')}`;
+    time--;
+    if(time<0){
+        document.getElementById('resend').style.display = 'block'
+        clearInterval(timer);
+        countdownEl.textContent ='expired';
+
+    }
+    }, 1000);
+    //
+    document.querySelector('#submitForm').addEventListener('click', ()=>{
+        const data = {
+            email: document.querySelector('#email').value,
+            code: document.querySelector('#code').value
+        }
+        $.ajax({
+            url: '/user/email-verify',
+            method: "POST",
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            success: (res)=>{
+                if(res.success){
+                    myNotification('success','verify success');
+                    setTimeout(()=>{
+                        document.location.href='/user/login'
+                    }, 2000)
+                }
+            },
+            error: (xhr, status, err)=>{
+                console.log(xhr?.responseJSON?.mess||'Server error');
+                myNotification('warning', xhr.responseJSON.mess||'Server error')
+            }
+        })
+    });
+    function myNotification(icon, mess, position='center', timer=2500){
+        Swal.fire({
+            icon: icon,
+            title: mess,
+            position,
+            timer
+        })
+    }
+</script>

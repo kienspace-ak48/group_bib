@@ -11,6 +11,8 @@ const UserSchema = new mongoose.Schema(
         phone: { type: String, length: 20 },
         role_id: { type: String, default: 'user' },
         avatar: String,
+        is_verified: {type: Boolean, default: false},
+        code_reset: {type: String, default:''},
 
         // provider
         providers: [

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Zod Validation</title>
+<script src="https://cdn.jsdelivr.net/npm/zod@3.23.2/lib/index.umd.min.js"></script>
+</head>
+<body>
+  <input type="text" id="username" placeholder="Username">
+  <p id="errorUsername" style="color:red"></p>
+  <input type="text" id="email" placeholder="Email">
+  <p id="errorEmail" style="color:red"></p>
+  <button id="checkBtn">Validate</button>
+
+
+  <script>
+    const usernameInput = document.getElementById('username');
+    const emailInput = document.getElementById('email');
+    const btn = document.getElementById('checkBtn');
+    const errorUsername = document.getElementById('errorUsername');
+    const errorEmail = document.getElementById('errorEmail');
+
+    // Định nghĩa schema với Zod
+    const schema = Zod.object({
+      username: Zod.string()
+        .min(3, "Username phải có ít nhất 3 ký tự")
+        .max(15, "Username tối đa 15 ký tự")
+        .regex(/^[a-zA-Z0-9_]+$/, "Username chỉ được chứa chữ cái, số và dấu _"),
+      email: Zod.string()
+        .email("Email không hợp lệ")
+    });
+
+    const inputs =document.querySelectorAll('input, select')
+    inputs.forEach(input=>{
+        console.log(input.id)
+        input.addEventListener('input', ()=>{
+            console.log(input.value)
+            validateField(inputs, input.id, input.value)
+        })
+        input.addEventListener('blur', ()=>{
+            console.log(input.value)
+        })
+    })
+    //ham validate 
+    function validateField(item, fieldName, value){
+        const fieldName = schema.shape[fieldName];
+        if(!fieldName) return;
+        try {
+            fieldName.parse(value);
+            const errEl = item.querySelector(`#err-${fieldName}`);
+            if(errEl) errEl.textContent = '';
+        } catch (err) {
+         const errEl = item.querySelector(`#err-${fieldName}`);
+         if(errEl) errEl.textContent = err.errors[0].message;   
+        }
+    }
+  </script>
+</body>
+</html>

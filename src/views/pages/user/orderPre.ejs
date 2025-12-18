@@ -1,0 +1,157 @@
+<div class="main-container">
+    <a href="/user/profile" class="text-gray-500">goback profile-></a>
+    <div class="flex justify-between mb-2">
+        <a href="/user/group-detail/<%=group._id%>" class="border bg-green-100 rounded-xl px-4 py-3 ">
+            <span class="text-2xl font-bold mb-6">Chi tiết nhóm đăng ký</span>
+        </a>
+        <a href="/user/pre-order-management/<%=group._id%>" class="border bg-amber-200 rounded-xl px-4 py-3">
+            <span class="text-2xl font-bold mb-6">Thêm thành viên vào nhóm</span>
+        </a>
+    </div>
+    <!-- Thông tin Nhóm -->
+    <div class="bg-white shadow-md rounded-lg p-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <p class="text-gray-500 text-sm">Tên nhóm</p>
+                <p class="font-semibold text-lg"><%=group.group_name%></p>
+            </div>
+
+            <div>
+                <p class="text-gray-500 text-sm">Mã nhóm</p>
+                <p class="font-semibold text-lg">--not available--</p>
+            </div>
+
+            <div>
+                <p class="text-gray-500 text-sm">Trạng thái</p>
+                <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                    --not available--</span
+                >
+            </div>
+
+            <div>
+                <p class="text-gray-500 text-sm">Số thành viên</p>
+                <p class="font-semibold text-lg"><%#=count%> thành viên</p>
+            </div>
+
+            <div>
+                <p class="text-gray-500 text-sm">Trưởng nhóm</p>
+                <p class="font-semibold"><%=group.leader_name%></p>
+            </div>
+
+            <div>
+                <p class="text-gray-500 text-sm">Ngày tạo</p>
+                <p class="font-semibold"><%=new Date(group.updatedAt).toLocaleDateString('vi-VN')%></p>
+            </div>
+        </div>
+    </div>
+    <div class="grid">
+        <!-- <div class="grid-cols-3">a</div> -->
+        <div class="grid-cols-7">
+            <!-- table -->
+            <div class="relative overflow-hidden bg-white rounded-xl shadow-sm mt-6 p-4">
+                <div class="overflow-x-auto">
+                    <table id="order_pre" class="mix-w-max w-full text-left">
+                        <thead class="bg-indigo-50">
+                            <th class="px-5 py-3 text-sm font-semibold text-gray-700">
+                                <input type="checkbox" id="checkAll" />
+                            </th>
+                            <!-- <th class="px-5 py-3 text-sm font-semibold text-gray-700"></th> -->
+                            <th class="px-5 py-3 text-sm font-semibold text-gray-700">Name</th>
+                            <th class="px-5 py-3 text-sm font-semibold text-gray-700">Trạng thái</th>
+                            <th class="px-5 py-3 text-sm font-semibold text-gray-700">Điện thoại</th>
+                            <th class="px-5 py-3 text-sm font-semibold text-gray-700">Email</th>
+                            <th class="px-5 py-3 text-sm font-semibold text-gray-700">Cự ly</th>
+                            <th class="px-5 py-3 text-sm font-semibold text-gray-700">Size áo</th>
+                        </thead>
+                        <tbody>
+                            <%if(pp&&pp.length>0){%> <%pp.forEach((r,i)=>{%>
+                            <tr>
+                                <td class="px-5 py-3"><input type="checkbox" data-id="<%=r._id%>" class="row-check" /></td>
+                                <!-- <td class="px-5 py-3"><%=i+1%></td> -->
+                                <td class="px-5 py-3"><%=r.fullname%></td>
+                                <td class="px-5 py-3">Đã thanh toán</td>
+                                <td class="px-5 py-3"><span class="text-[red]">xx</span><%=r.phone.slice(-4)%></td>
+                                <%
+                                var [local, domain] = r.email.split('@');
+                                %>
+                                <td class="px-5 py-3"><span class="text-[red]">xx</span><%=local.slice(-6) +'@'+domain%></td>
+                                <td class="px-5 py-3"><%=r.distance%></td>
+                                <td class="px-5 py-3"><%=r.tshirt_size%></td>
+                            </tr>
+                            <%})%> <%}%>
+                        </tbody>
+                    </table>
+                </div>
+                <!-- thanh bar noi len -->
+                <div class="absolute inset-x-0 flex justify-center bottom-2 z-10 gap-4">
+                    <div class="bg-amber-600 shadow-md rounded-full px-4 py-2">
+                        <button class="px-4 py-1 border rounded-lg" id="btn_cta_addmember">Thêm vào danh sách</button>
+                        <button class="px-4 py-1 border rounded-lg">chua biet de lam gi</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- script -->
+<script>
+    // global scope
+    var orderPreTable = null;
+    const checkAll = document.querySelector('#checkAll');
+    const rowCheck = document.querySelectorAll('.row-check');
+    //
+    $(document).ready(function () {
+        orderPreTable = $('#order_pre').DataTable({
+            columnDefs:[
+                {
+                    targets: 0,       // cột checkbox
+                    orderable: false,
+                    searchable: false
+                }
+            ]
+        });
+    });
+    //
+    checkAll.addEventListener('change', ()=>{
+        rowCheck.forEach(cb=>cb.checked=checkAll.checked)
+    })
+    function getSelectedId(){
+        return Array.from(
+            document.querySelectorAll('#order_pre .row-check:checked')
+        ).map(cb=>cb.dataset.id);
+    }
+    document.querySelector('#btn_cta_addmember').addEventListener('click', ()=>{
+        submitData();
+        
+    });
+    function addMember(data){
+        $.ajax({
+            url: `/user/group-add-member/<%=group._id%>`,
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ids: data}),
+            success: (res)=>{
+                console.log(res)
+            },
+            error: (xhr, status, err)=>{
+                console.log(xhr.responseJSON.mess||'Server error');
+            }
+        })
+    }
+    function submitData(){
+        Swal.fire({
+            title: 'Are you sure?',
+            showCancelButton: true,
+            confirmButtonText: "Save",
+        }).then((result)=>{
+            if(result.isConfirmed){
+                console.log('listen event')
+                const data = getSelectedId();
+                addMember(data)
+            }
+        })
+    }
+    
+
+</script>

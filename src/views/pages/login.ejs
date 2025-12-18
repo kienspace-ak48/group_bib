@@ -1,305 +1,362 @@
 <!DOCTYPE html>
 <html lang="vi">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Auth Pages - Clean UI</title>
-  <script src="/libs/js/jquery-3.7.1.js"></script>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: 'Poppins', sans-serif;
-    }
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Auth Pages - Clean UI</title>
+        <script src="/libs/js/jquery-3.7.1.js"></script>
+        <!-- sweetalert 2 -->
+        <link rel="stylesheet" href="/libs/css/sweetalert2.min.css" />
+        <script src="/libs/js/sweetalert2.all.min.js"></script>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+                font-family: 'Poppins', sans-serif;
+            }
 
-    body {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      background: #f0f2f5;
-      padding: 20px;
-    }
+            body {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+                background: #f0f2f5;
+                padding: 20px;
+            }
 
-    .container {
-      width: 800px;
-      max-width: 95%;
-      background: #fff;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      border-radius: 15px;
-      overflow: hidden;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.1);
-      transition: all 0.5s ease;
-    }
+            .container {
+                width: 800px;
+                max-width: 95%;
+                background: #fff;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                border-radius: 15px;
+                overflow: hidden;
+                box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+                transition: all 0.5s ease;
+            }
 
-    .form-wrapper {
-      padding: 40px 30px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      transition: all 0.5s ease;
-    }
+            .form-wrapper {
+                padding: 40px 30px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                transition: all 0.5s ease;
+            }
 
-    h2 {
-      font-size: 28px;
-      font-weight: 700;
-      margin-bottom: 8px;
-      color: #222;
-    }
+            h2 {
+                font-size: 28px;
+                font-weight: 700;
+                margin-bottom: 8px;
+                color: #222;
+            }
 
-    p.subtitle {
-      font-size: 13px;
-      color: #666;
-      margin-bottom: 25px;
-    }
+            p.subtitle {
+                font-size: 13px;
+                color: #666;
+                margin-bottom: 25px;
+            }
 
-    .input-group {
-      margin-bottom: 15px;
-    }
+            .input-group {
+                margin-bottom: 15px;
+            }
 
-    .input-group label {
-      display: block;
-      font-size: 13px;
-      margin-bottom: 5px;
-      color: #444;
-    }
+            .input-group label {
+                display: block;
+                font-size: 13px;
+                margin-bottom: 5px;
+                color: #444;
+            }
 
-    .input-group input {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 14px;
-      transition: all 0.3s;
-    }
+            .input-group input {
+                width: 100%;
+                padding: 10px 12px;
+                border: 1px solid #ccc;
+                border-radius: 8px;
+                font-size: 14px;
+                transition: all 0.3s;
+            }
 
-    .input-group input:focus {
-      border-color: #4f46e5;
-      box-shadow: 0 0 5px rgba(79,70,229,0.2);
-      outline: none;
-    }
+            .input-group input:focus {
+                border-color: #4f46e5;
+                box-shadow: 0 0 5px rgba(79, 70, 229, 0.2);
+                outline: none;
+            }
 
-    button {
-      width: 100%;
-      padding: 12px;
-      background: #4f46e5;
-      border: none;
-      border-radius: 8px;
-      color: white;
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: 0.3s;
-      margin-top: 10px;
-    }
+            button {
+                width: 100%;
+                padding: 12px;
+                background: #4f46e5;
+                border: none;
+                border-radius: 8px;
+                color: white;
+                font-size: 15px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: 0.3s;
+                margin-top: 10px;
+            }
 
-    button:hover {
-      background: #3730a3;
-    }
+            button:hover {
+                background: #3730a3;
+            }
 
-    .switch-text {
-      margin-top: 12px;
-      font-size: 13px;
-      text-align: center;
-    }
+            .switch-text {
+                margin-top: 12px;
+                font-size: 13px;
+                text-align: center;
+            }
 
-    .switch-text a {
-      color: #4f46e5;
-      font-weight: 600;
-      text-decoration: none;
-      cursor: pointer;
-    }
+            .switch-text a {
+                color: #4f46e5;
+                font-weight: 600;
+                text-decoration: none;
+                cursor: pointer;
+            }
 
-    .right {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      background: #4f46e5;
-      color: white;
-      text-align: center;
-      padding: 30px;
-      grid-column: 2 / 3;
-    }
+            .right {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-direction: column;
+                background: #4f46e5;
+                color: white;
+                text-align: center;
+                padding: 30px;
+                grid-column: 2 / 3;
+            }
 
-    .right h3 {
-      font-size: 24px;
-      margin-bottom: 10px;
-    }
+            .right h3 {
+                font-size: 24px;
+                margin-bottom: 10px;
+            }
 
-    .right p {
-      font-size: 14px;
-      line-height: 1.5;
-      max-width: 260px;
-    }
+            .right p {
+                font-size: 14px;
+                line-height: 1.5;
+                max-width: 260px;
+            }
 
-    /* Hidden login/register */
-    .register { display: none; }
-    .container.register-active .register { display: flex; }
-    .container.register-active .login { display: none; }
+            /* Hidden login/register */
+            .register {
+                display: none;
+            }
+            .container.register-active .register {
+                display: flex;
+            }
+            .container.register-active .login_form {
+                display: none;
+            }
 
-    @media (max-width: 768px) {
-      .container {
-        grid-template-columns: 1fr;
-      }
+            @media (max-width: 768px) {
+                .container {
+                    grid-template-columns: 1fr;
+                }
 
-      .right {
-        display: none;
-      }
-    }
-  </style>
-</head>
-<body>
-  <div class="container" id="container">
+                .right {
+                    display: none;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container" id="container">
+            <!-- Register Form -->
+            <div class="form-wrapper register">
+                <h2>Sign Up</h2>
+                <p class="subtitle">Tạo tài khoản để bắt đầu sử dụng dịch vụ của bạn</p>
 
-    <!-- Register Form -->
-    <div class="form-wrapper register">
-      <h2>Sign Up</h2>
-      <p class="subtitle">Tạo tài khoản để bắt đầu sử dụng dịch vụ của bạn</p>
+                <div class="input-group">
+                    <label>Full Name</label>
+                    <input type="text" name="fullname" placeholder="Nhập họ tên" />
+                </div>
 
-      <div class="input-group">
-        <label>Full Name</label>
-        <input type="text" name="fullname" placeholder="Nhập họ tên" />
-      </div>
+                <div class="input-group">
+                    <label>Email</label>
+                    <input type="email" name="email" placeholder="mail@example.com" />
+                </div>
 
-      <div class="input-group">
-        <label>Email</label>
-        <input type="email" name="email" placeholder="mail@example.com" />
-      </div>
+                <div class="input-group">
+                    <label>Phone</label>
+                    <input type="text" name="phone" placeholder="19001900" />
+                </div>
 
-      <div class="input-group">
-        <label>Phone</label>
-        <input type="text" name="phone" placeholder="19001900" />
-      </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" name="password" placeholder="••••••••" />
+                </div>
 
-      <div class="input-group">
-        <label>Password</label>
-        <input type="password" name="password" placeholder="••••••••" />
-      </div>
+                <div class="input-group">
+                    <label>Confirm Password</label>
+                    <input type="password" name="confirm_password" placeholder="••••••••" />
+                </div>
 
-      <div class="input-group">
-        <label>Confirm Password</label>
-        <input type="password" name="confirm_password" placeholder="••••••••" />
-      </div>
+                <button id="cta_register">Create Account</button>
+                <p class="switch-text">Bạn đã có tài khoản? <a onclick="toggleForm()">Login</a></p>
+            </div>
 
-      <button id="cta_register">Create Account</button>
-      <p class="switch-text">Bạn đã có tài khoản? <a onclick="toggleForm()">Login</a></p>
-    </div>
+            <!--  -->
+            <!-- Login Form -->
+            <form action="/user/login" class="login_form" method="POST">
+                <div class="form-wrapper">
+                    <h2>Login</h2>
+                    <p class="subtitle">Đăng nhập để tiếp tục</p>
 
-    <!--  -->
-    <!-- Login Form -->
-    <form action="/auth/normal/login" method="POST">
-    <div class="form-wrapper login">
-      <h2>Login</h2>
-      <p class="subtitle">Đăng nhập để tiếp tục</p>
+                    <div class="input-group">
+                        <label>Email</label>
+                        <input type="email" name="l_username" required placeholder="mail@example.com" />
+                    </div>
 
-      <div class="input-group">
-        <label>Email</label>
-        <input type="email" name="l_username" required placeholder="mail@example.com" />
-      </div>
+                    <div class="input-group">
+                        <label>Password</label>
+                        <input type="password" name="l_password" required placeholder="•••••" />
+                    </div>
 
-      <div class="input-group">
-        <label>Password</label>
-        <input type="password" name="l_password" required placeholder="••••••••"/>
-      </div>
+                    <div class="input-group" style="display: flex; align-items: center">
+                        <input
+                            type="checkbox"
+                            id="rememberMe"
+                            name="rememberMe"
+                            style="margin-right: 8px; width: 16px; height: 16px"
+                        />
+                        <label for="rememberMe" style="margin: 0">Ghi nhớ lần sau đăng nhập</label>
+                    </div>
 
-      <div class="input-group" style="display:flex;align-items:center;">
-        <input type="checkbox" id="rememberMe" name="rememberMe" style="margin-right:8px; width: 16px; height: 16px;">
-        <label for="rememberMe" style="margin:0;">Ghi nhớ lần sau đăng nhập</label>
-      </div>
+                    <button type="submit" id="cta_login">Login</button>
 
-      <button type="submit" id="cta_login">Login</button>
+                    <p class="subtitle" style="text-align: center; margin: 15px 0">Hoặc đăng nhập bằng</p>
 
-      <p class="subtitle" style="text-align:center;margin:15px 0;">Hoặc đăng nhập bằng</p>
+                    <div style="display: flex; gap: 10px; justify-content: center">
+                        <a
+                            href="/gg/auth/google"
+                            class="social-btn"
+                            style="
+                                background: #db4437;
+                                color: white;
+                                padding: 10px 20px;
+                                border-radius: 8px;
+                                text-decoration: none;
+                            "
+                            >Google</a
+                        >
+                        <a
+                            href="#!"
+                            class="social-btn"
+                            
+                            style="
+                                background: #4267b2;
+                                color: white;
+                                padding: 10px 20px;
+                                border-radius: 8px;
+                                text-decoration: none;
+                            "
+                            >Facebook</a
+                        >
+                    </div>
 
-      <div style="display:flex;gap:10px;justify-content:center;">
-        <a href="/gg/auth/google" class="social-btn" style="background:#DB4437;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;">Google</a>
-        <a href="/auth/facebook" class="social-btn" style="background:#4267B2;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;">Facebook</a>
-      </div>
+                    <p class="switch-text">Bạn chưa có tài khoản? <a onclick="toggleForm()">Sign Up</a></p>
+                </div>
+            </form>
 
-      <p class="switch-text">Bạn chưa có tài khoản? <a onclick="toggleForm()">Sign Up</a></p>
-    </div>
-    </form>
-    
+            <!-- Right Banner -->
+            <div class="right">
+                <h3>Welcome Accessrace</h3>
+                <p>
+                    AccessRace Timing - Provide timing solutions and equipment with a software management system and
+                    high-precision timing devices for sports events.
+                </p>
+            </div>
+        </div>
 
-
-    <!-- Right Banner -->
-    <div class="right">
-      <h3>Welcome Accessrace</h3>
-      <p>AccessRace Timing  - Provide timing solutions and equipment with a software management system and high-precision timing devices for sports events.</p>
-    </div>
-  </div>
-
-  <script>
-    const container = document.getElementById('container');
-    function toggleForm() {
-      container.classList.toggle('register-active');
-    }
-  </script>
-</body>
+        <script>
+            const container = document.getElementById('container');
+            function toggleForm() {
+                container.classList.toggle('register-active');
+            }
+        </script>
+    </body>
 </html>
 
 <script>
-  //global scope
-  const btnCreate = document.querySelector('#cta_register');
-  const btnLogin = document.querySelector('#cta_login');
-
-  btnCreate.addEventListener('click', (ev)=>{
-    const data={
-      fullname: document.querySelector('input[name="fullname"]').value,
-      email: document.querySelector('input[name="email"]').value,
-      phone: document.querySelector('input[name="phone"]').value,
-      password: document.querySelector('input[name="password"]').value
+    //global scope
+    const btnCreate = document.querySelector('#cta_register');
+    const btnLogin = document.querySelector('#cta_login');
+    let err = ''
+    <%if(typeof err !== 'undefined'){%>
+       err = '<%=err%>'
+    <%}%>
+    if(err.length>0){
+      myNotification('warning', err);
     }
-    if(!data.email || !data.fullname ||!data.password ||!data.password){
-      alert('Please fill the form!');
-      ev.preventDefault();
-      return
+    btnCreate.addEventListener('click', (ev) => {
+        const data = {
+            fullname: document.querySelector('input[name="fullname"]').value,
+            email: document.querySelector('input[name="email"]').value,
+            phone: document.querySelector('input[name="phone"]').value,
+            password: document.querySelector('input[name="password"]').value,
+        };
+        if (!data.email || !data.fullname || !data.password || !data.password) {
+            alert('Please fill the form!');
+            ev.preventDefault();
+            return;
+        }
+        console.log(data);
+        //
+        $.ajax({
+            url: `/user/register`,
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            success: (res) => {
+                console.log('success');
+                if (res.success) {
+                    document.location.href = res.redirect;
+                    localStorage.setItem('verify_email', data.email);
+                }else{
+                  myNotification('warning', res.mess);
+                }
+            },
+            error: (xhr, status, err) => {
+                console.log(xhr?.responseJSON?.mess||'Server error');
+                myNotification('warning', xhr?.responseJSON?.mess || 'Server error')
+            },
+        });
+        // alert('create')
+    });
+    // btnLogin.addEventListener('click', (ev)=>{
+    //   // alert('login')
+    //   const data={
+    //     username: document.querySelector('input[name="l_username"]').value,
+    //     password: document.querySelector('input[name="l_password"]').value
+    //   };
+    //   if(!data.username || !data.password){
+    //     alert("Enter username & password!")
+    //     ev.preventDefault();
+    //     return
+    //   }
+    //   console.log(data)
+    //   //
+    //   $.ajax({
+    //     url: '/auth/normal/login',
+    //     method: 'POST',
+    //     contentType: 'application/json',
+    //     data: JSON.stringify(data),
+    //     success: (res)=>{
+    //       console.log(res)
+    //     },
+    //     error: (xhr, status, err)=>{
+    //       console.log(xhr.responseJSON?.mess);
+    //     }
+    //   })
+    // })
+    function myNotification(icon, mess, position = 'center', timer = 2500) {
+        Swal.fire({
+            title: mess,
+            icon: icon,
+            position: position,
+            timer: timer,
+        });
     }
-    console.log(data);
-    // 
-    $.ajax({
-      url: `/user/register`,
-      method: 'POST',
-      contentType: 'application/json',
-      data: JSON.stringify(data),
-      success: (res)=>{
-        console.log('success')
-      },
-      error: (xhr, status, err)=>{
-        console.log('Server error');
-        console.log(xhr?.responseJSON?.message)
-      }
-    })
-    alert('create')
-  })
-  // btnLogin.addEventListener('click', (ev)=>{
-  //   // alert('login')
-  //   const data={
-  //     username: document.querySelector('input[name="l_username"]').value,
-  //     password: document.querySelector('input[name="l_password"]').value
-  //   };
-  //   if(!data.username || !data.password){
-  //     alert("Enter username & password!")
-  //     ev.preventDefault();
-  //     return
-  //   }
-  //   console.log(data)
-  //   // 
-  //   $.ajax({
-  //     url: '/auth/normal/login',
-  //     method: 'POST',
-  //     contentType: 'application/json',
-  //     data: JSON.stringify(data),
-  //     success: (res)=>{
-  //       console.log(res)
-  //     },
-  //     error: (xhr, status, err)=>{
-  //       console.log(xhr.responseJSON?.mess);
-  //     }
-  //   })
-  // })
-
+    // myNotification('success', 'hi');
 </script>

@@ -1,5 +1,6 @@
 const CNAME = 'ticket.service.js ';
 const TicketEntity = require('../areas/admin/model/TicketType');
+const eventService = require('./event.service');
 
 class TicketService {
     constructor(parameters) {
@@ -24,7 +25,17 @@ class TicketService {
             return {};
         }
     }
-    async GetBySlug() {}
+    async GetByEventSlug(slug) {
+        try {
+            const event = await eventService.GetBySlug(slug);
+            if(!event) return [];
+            const tickets = await TicketEntity.find({event_id: event._id});
+            return tickets;
+        } catch (error) {
+            console.log(CNAME, error.message)
+            return [];
+        }
+    }
     async GetByEventId(id){
         try {
             const tickets = await TicketEntity.find({event_id: id}).lean();

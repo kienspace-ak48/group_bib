@@ -396,8 +396,9 @@
 
     <!--  -->
 </div>
-<form id="hiddenCheckoutForm" method="GET" action="/user/event-detail/<%=slug%>/payment">
+<form id="hiddenCheckoutForm" method="GET" action="/user/event-detail/<%=slug%>/checkout">
     <input type="hidden" name="cart" id="cartInput">
+    <input type="hidden" name="group_id" id="group_id">
 </form>
 <!-- =============================event # -->
 
@@ -427,8 +428,8 @@
         const item = myTickets.find((arr)=>arr._id ===id);
         if(!item) return;
         item.qty = (item.qty || 0)+step;
-        console.log(item)
-        console.log(myTickets)
+        // console.log(item)
+        // console.log(myTickets)
         if(item.qty<0) item.qty =0;//ko cho am
         localStorage.setItem('my_ticket', JSON.stringify(myTickets));
         document.querySelector('#qty-'+id).innerText = item.qty;
@@ -437,7 +438,7 @@
     function updateSubTotal(){
         const myShoppingCard = JSON.parse(localStorage.getItem('my_ticket'));
         let total = myShoppingCard.reduce((tol, tic)=>tol+tic.price*tic.qty, 0);
-        console.log(total);
+        // console.log(total);
         // format
         const formatted = (total*1000).toLocaleString('vi-VN')+'đ';
         document.querySelector('#card_total').innerText = formatted;
@@ -446,7 +447,10 @@
     btnCtaCheckoutShoppingCard.addEventListener('click', ()=>{
         const myShoppingCard = localStorage.getItem('my_ticket')
         console.log(myShoppingCard);
-        document.getElementById('cartInput').value = myShoppingCard;
+        const shoppingCartObj = JSON.parse(myShoppingCard) ||[];
+        const shoppingCartReal = shoppingCartObj.filter(item=>item.qty>0);
+        console.log('shopping cart real qty > 0', shoppingCartReal); 
+        document.getElementById('cartInput').value = JSON.stringify(shoppingCartReal);
         document.getElementById('hiddenCheckoutForm').submit();
 
     })

@@ -27,7 +27,7 @@ router.post('/login', async (req, res) => {
         res.redirect('/user/profile')
     }else{
         console.log('login failed')
-        res.redirect('/login');
+        res.redirect('/user/login');
     }
 });
 

@@ -13,10 +13,12 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@sendgrid/mail": "^8.1.6",
     "bcrypt": "^6.0.0",
     "bootstrap-icons": "^1.13.1",
     "connect-mongodb-session": "^5.0.0",
     "cookie-parser": "^1.4.7",
+    "country-data": "^0.0.31",
     "datatables.net": "^2.3.5",
     "datatables.net-dt": "^2.3.5",
     "dotenv": "^17.2.3",
@@ -25,10 +27,12 @@
     "express-ejs-layouts": "^2.5.1",
     "express-session": "^1.18.2",
     "flowbite": "^4.0.1",
+    "i18n-iso-countries": "^7.14.0",
     "jimp": "^0.16.1",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.19.3",
     "multer": "^2.0.2",
+    "nodemailer": "^7.0.11",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "sharp": "^0.34.5",
@@ -36,6 +40,7 @@
     "swagger-autogen": "^2.23.7",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
+    "world-countries": "^5.1.0",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

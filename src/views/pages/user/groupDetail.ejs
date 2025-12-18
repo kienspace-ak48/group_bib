@@ -2,7 +2,16 @@
 
 <div class="min-h-screen bg-gray-50 p-6">
     <!-- Tiêu đề -->
-    <h1 class="text-2xl font-bold mb-6">Chi tiết nhóm đăng ký</h1>
+    <a href="/user/profile" class="text-gray-500">goback profile-></a>
+
+    <div class="flex justify-between mb-2">
+        <a href="/user/group-detail/<%=group._id%>" class="border bg-green-100 rounded-xl px-4 py-3 ">
+            <span class="text-2xl font-bold mb-6">Chi tiết nhóm đăng ký</span>
+        </a>
+        <a href="/user/pre-order-management/<%=group._id%>" class="border bg-amber-200 rounded-xl px-4 py-3">
+            <span class="text-2xl font-bold mb-6">Thêm thành viên vào nhóm</span>
+        </a>
+    </div>
 
     <!-- Thông tin Nhóm -->
     <div class="bg-white shadow-md rounded-lg p-6 mb-6">
@@ -80,8 +89,12 @@
                     <tr data-id="<%=r._id%>" class="border-b hover:bg-gray-50">
                         <td class="px-4 py-3"><%=i+1%></td>
                         <td class="px-4 py-3 font-medium"><%=r.fullname%></td>
-                        <td class="px-4 py-3"><%=r.email%></td>
-                        <td class="px-4 py-3"><%=r.phone%></td>
+                        <%
+                        var[local, domain] = r.email.split('@');
+                        %>
+                        <td class="px-4 py-3"><span class="text-[red]">xx</span><%=local.slice(-6)+'@'+domain%></td>
+                        <td class="px-4 py-3"><span class="text-[red]">xx</span><%=r.phone.slice(-4)%></td>
+                        
                         <td class="px-4 py-3"><%=r.distance%></td>
                         <td class="px-4 py-3">
                             <%-r.payment_status==='unpaid' ?`<span

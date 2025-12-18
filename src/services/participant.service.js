@@ -15,6 +15,7 @@ class ParticipantService {
             return {runners: [], count: 0};
         }
     }
+    
     async GetById(user_id){
         try {
             const runner = await ParticipantEntity.findOne({_id: user_id}).lean();
@@ -22,6 +23,15 @@ class ParticipantService {
         } catch (error) {
             console.log(CNAME, error.message);
             return {};
+        }
+    }
+    async AddByRunner(data){
+        try {
+            const result =await ParticipantEntity.insertMany(data);
+            return {success: true, data: result}
+        } catch (error) {
+            console.log(CNAME, error.message);
+            return {success: false}
         }
     }
     async Add(dataList, user_id, event_id, group_id) {

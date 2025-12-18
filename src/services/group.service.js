@@ -10,10 +10,19 @@ class GroupService {
     async GetAll() {
         const result = await GroupEntity.find({});
     }
-
-    async GetByEventId(slug){
+    async GetListByEventSlug(slug){
         try {
             const event = await EventService.GetBySlug(slug);
+            const groups = await GroupEntity.find({event_id: event._id});
+            return groups;
+        } catch (error) {
+            console.log(CNAME, error.message);
+            return [];
+        }
+    }
+    async GetByEventId(id){
+        try {
+            const event = await EventService.GetBySlug(id);
             const eventID = event._id;
             if(event){
                 const result = await GroupEntity.find({event_id: eventID}).select('-__v').lean();

@@ -8,6 +8,31 @@
 <body>
     <h1>Hello world</h1>
     <hr>
-    
+    <div id="container">
+
+    </div>
+    <script>
+        // global scope
+        const container = document.querySelector('#container');
+        const numbers = new Set([1,2,3,4,3,3]);
+        console.log(numbers)
+        // 
+        const map = new Map();
+        map.set('name', 'Kien Vu');
+        map.set('age', 20);
+        map.set('name', 'Hoa')
+        console.log(map)
+        for(let [k, v] of map){
+            console.log(k+' '+v)
+            console.log([k,v])
+        }
+        
+        const p = document.createElement('p');
+        const p2 = document.createElement('p');
+        p.textContent =JSON.stringify([...numbers], null, 2);
+        p2.textContent = JSON.stringify(p2, null, 2)
+        container.append(p);
+        container.append(p2)
+    </script>
 </body>
 </html>

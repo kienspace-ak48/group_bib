@@ -1,0 +1,53 @@
+<div class="main-container">
+    <div class="grid">
+        <div class="grid-cols-3">a</div>
+        <div class="grid-cols-7">
+            <!-- table -->
+            <div class=" overflow-hidden bg-white rounded-xl shadow-sm mt-6 p-4">
+                <div class="overflow-x-auto">
+                    <table id="order_pre" class="mix-w-max w-full text-left">
+                        <thead class="bg-indigo-50">
+                            <th class="px-5 py-3 text-sm font-semibold text-gray-700">#</th>
+                            <!-- <th class="px-5 py-3 text-sm font-semibold text-gray-700"></th> -->
+                            <th class="px-5 py-3 text-sm font-semibold text-gray-700">Name</th>
+                            <th class="px-5 py-3 text-sm font-semibold text-gray-700">Trạng thái</th>
+                            <th class="px-5 py-3 text-sm font-semibold text-gray-700">Điện thoại</th>
+                            <th class="px-5 py-3 text-sm font-semibold text-gray-700">Email</th>
+                            <th class="px-5 py-3 text-sm font-semibold text-gray-700">Cự ly</th>
+                            <th class="px-5 py-3 text-sm font-semibold text-gray-700">Size áo</th>
+                        </thead>
+                        <tbody>
+                            <%if(pp&&pp.length>0){%> <%pp.forEach((r,i)=>{%>
+                            <tr>
+                                <!-- <td class="px-5 py-3"><input type="checkbox" /></td> -->
+                                <td class="px-5 py-3"><%=i+1%></td>
+                                <td class="px-5 py-3"><%=r.fullname%></td>
+                                <td class="px-5 py-3">Đã thanh toán</td>
+                                <td class="px-5 py-3"><span class="text-[red]">xx</span><%=r.phone.slice(-4)%></td>
+                                <%
+                                var [local, domain] = r.email.split('@');
+                                %>
+                                <td class="px-5 py-3"><span class="text-[red]">xx</span><%=local.slice(-6) +'@'+domain%></td>
+                                <td class="px-5 py-3"><%=r.distance%></td>
+                                <td class="px-5 py-3"><%=r.tshirt_size%></td>
+                            </tr>
+                            <%})%> <%}%>
+                        </tbody>
+                    </table>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- script -->
+<script>
+    // global scope
+    var orderPreTable = null;
+
+    //
+    $(document).ready(function () {
+        orderPreTable = $('#order_pre').DataTable();
+    });
+</script>

@@ -2,6 +2,7 @@
 const CNAME = 'home.controller.js ';
 const EventService = require('../services/event.service');
 const GroupService = require('../services/group.service');
+const participantPreService = require('../services/participantPre.service');
 const TicketService = require('../services/ticket.service');
 
 const VLAYOUT = 'layouts/main';
@@ -33,6 +34,21 @@ const homeController = () => {
             } catch (error) {
                 console.log(CNAME, error.message);
                 res.render('pages/groupBib', { layout: VLAYOUT, groups: [], slug: '' });
+            }
+        },
+        ParticipantPre: async(req, res)=>{
+            const eventSlug = req.params.event_slug;
+            const groupId = req.params.group_id;
+            try {
+                const event =await EventService.GetBySlug(eventSlug);
+                console.log('event co gi ',event)
+                if(!event) return res.render(CNAME+'user/orderPre', {layout: VLAYOUT});
+                const pp = await participantPreService.GetByEventIdAndGroup(event._id,groupId);
+                console.log('pp co gi ', pp)
+                res.render('pages/orderPre', {layout: VLAYOUT, pp:pp||[]})
+            } catch (error) {
+                console.log(CNAME, error.message);
+                res.render('pages/orderPre', {layout: VLAYOUT, pp:[]})
             }
         },
         // RegisterGroupBib: async(req, res)=>{

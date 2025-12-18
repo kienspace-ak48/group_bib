@@ -11,7 +11,7 @@ const ggAuthController = () => {
 
                 if (!user) {
                     console.log(CNAME, 'User is null or undefined');
-                    return res.redirect('/login');
+                    return res.redirect('/user/login');
                 }
 
                 console.log(CNAME, 'User from passport:', user._id, user.email);
@@ -29,12 +29,11 @@ const ggAuthController = () => {
                     maxAge: 30 * 60 * 1000,
                 });
 
-                console.log(CNAME, 'Token set, redirecting to /user/profile');
+                // console.log(CNAME, 'Token set, redirecting to /user/profile');
                 res.redirect('/user/profile');
             } catch (error) {
                 console.log(CNAME, 'Error:', error.message);
-                console.log(CNAME, 'Error stack:', error.stack);
-                res.redirect('/login');
+                res.redirect('/user/login');
             }
         },
     };

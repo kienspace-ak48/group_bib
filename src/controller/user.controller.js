@@ -7,6 +7,15 @@ const xlsx = require('xlsx');
 const excelDateToJSDateUtil = require('../utils/excelDataToJSDate.util');
 const EventService = require('../services/event.service');
 const ParticipantService = require('../services/participant.service');
+const { getAllNational, getProvince } = require('../api/nation');
+const TicketService = require('../services/ticket.service');
+const OrderService = require('../services/order.service');
+const orderItemService = require('../services/orderItem.service');
+const participantService = require('../services/participant.service');
+const participantPreService = require('../services/participantPre.service');
+const User = require('../model/User');
+const { sendOtpMail } = require('../services/mail.service');
+const jwt = require('jsonwebtoken');
 var userDTO = {
     fullname: 'Kien Vu',
     email: 'test@gmail.com',
@@ -16,6 +25,7 @@ var userDTO = {
     username: 'Kien kute',
     avatar: 'img.jpg',
 };
+
 function validateRow(row) {
     const errors = [];
 
@@ -57,6 +67,21 @@ function convertRow(row, groupId, event_id, captain_id) {
         payment_status: row.payment_status,
     };
 }
+// function getAllCountries() {
+//   return wc.map(c => {
+//     const code = c.cca2;
+//     const callingCode = cd[code]?.countryCallingCodes?.[0] || "";
+
+//     return {
+//       code,
+//       name: c.name.common,
+//       nationality: c.demonyms?.eng?.m || "",
+//       flag: c.flags?.svg || "",
+//       callingCode,
+//       continent: c.region || ""
+//     };
+//   });
+// }
 
 const userController = () => {
     return {
@@ -64,36 +89,99 @@ const userController = () => {
         RegisterOrLogin: async () => {
             res.render(VNAME + '/login', { layout: VLAYOUT });
         },
+        // ajax
         Register: async (req, res) => {
             try {
                 const data = req.body;
-                if (!data.fullname || !data.email || !data.phone || data.password)
+                console.log(data);
+                if (!data.fullname || !data.email || !data.phone || !data.password) {
                     return res.status(400).json({ success: false, mess: 'Pls fill in your information' });
-                // const result = await UserService.Add(data);
-                const result = false;
-                console.log(typeof result);
-                if (result === 0) {
-                    return res.status(400).json({ success: false, mess: 'Exit' });
                 }
-                res.json({ success: true });
+                // const result = await UserService.Add(data);
+                const exist = await User.findOne({ email: data.email });
+                if (exist) return res.status(400).json({ success: false, mess: 'Email existed' });
+                const OTP = Math.floor(100000 + Math.random() * 900000).toString();
+                const user = new User({
+                    fullname: data.fullname,
+                    email: data.email,
+                    phone: data.phone,
+                    password: data.password,
+                    code_reset: OTP,
+                });
+                await user.save();
+                await sendOtpMail(user.email, OTP);
+                console.log(OTP);
+                res.json({ success: true, redirect: `/user/email-verify` });
             } catch (error) {
                 console.log(CNAME, error.message);
-                res.status(500).json({ success: false, message: error.message });
+                res.status(500).json({ success: false, mess: error.message });
             }
         },
         Login: async (req, res) => {
             try {
-                const { username, password } = req.body;
+                const { l_username, l_password } = req.body;
                 // handle login
-                const result = await UserService.GetByCondition(username);
+                if (!l_username || !l_password)
+                    return res.render(VNAME+'/login', {layout: false, err: 'Enter username and password'});
+                const result = await UserService.GetByConditionEmailOrName(l_username);
 
-                if (!result) return res.json({ success: false, mess: 'ko co account nay' });
-                const isMatch = result.password === password;
-                if (!isMatch) return res.json({ success: false, mess: 'password wrong' });
-                res.json(result);
+                if (!result) return res.render(VNAME+'/login', {layout: false, err: 'Account not exist'});
+                const isMatch =await result.comparePassword(l_password);
+                if (!isMatch) return res.render(VNAME+'/login', {layout: false, err: 'user or password wrong'});
+                //cap token cho client
+                const token = jwt.sign(
+                    {
+                        _id: result._id,
+                        email: result.email,
+                        user: result.avatar,
+                        name: result.fullname,
+                    },
+                    process.env.JWT_SECRET,
+                    {
+                        expiresIn: '30m',
+                    },
+                );
+                res.cookie('token', token, {
+                    httpOnly: true,
+                    secure: false, // true nếu dùng HTTPS
+                    sameSite: 'lax', // 'lax' cho phép cookie được gửi trong redirect từ external domain
+                    maxAge: 30 * 60 * 1000,
+                });
+                res.redirect('/user/profile');
             } catch (error) {
                 console.log(CNAME, error.message);
                 res.status(500).json({ success: false, mess: error.message });
+            }
+        },
+        FormEmailVerify: async (req, res) => {
+            res.render(VNAME + 'emailVerified', { layout: false });
+        },
+        EmailVerify: async (req, res) => {
+            try {
+                const { email, code } = req.body;
+                if (!email || !code) {
+                    return res.status(400).json({
+                        success: false,
+                        mess: 'Missing email or OTP',
+                    });
+                }
+                const user = await User.findOne({
+                    email: email,
+                    code_reset: code,
+                });
+                if (!user) {
+                    return res.status(400).json({
+                        success: false,
+                        mess: 'Invalid OTP',
+                    });
+                }
+                user.code_reset = null;
+                user.is_verified = true;
+                await user.save();
+                res.status(200).json({ success: true });
+            } catch (error) {
+                console.log(CNAME, error.message);
+                res.status(500).json({ success: false, mess: 'Server error' });
             }
         },
         Profile: async (req, res) => {
@@ -196,42 +284,201 @@ const userController = () => {
                 return res.status(500).json({ success: false, data: {} });
             }
         },
-        PaymentForm: async (req, res) => {
+        Checkout: async (req, res) => {
+            const _countries = getAllNational();
+            const _provinces = getProvince();
+            const slug = req.params.slug;
+            let groupView = [];
             try {
-                const slug = req.params.slug;
-            const data = req.query.cart;
-            const carts = JSON.parse(data);
-            let arr = [];
-            carts.forEach((v, i)=>{
-                arr.push({id:v._id, qty: v.qty, name: v.name, price: v.price})
-            });
-            console.log('mang moi', arr)
-            console.log(carts);
-            res.render(VNAME + 'user/payment', { layout: VLAYOUT, carts: carts||[] });
+                const data = req.query.cart;
+                const carts = JSON.parse(data);
+                const group = await GroupService.GetListByEventSlug(slug);
+                group.forEach((g, i) => {
+                    groupView.push({ id: g._id, name: g.group_name });
+                });
+                console.log('group log', group);
+                let cartView = [];
+                carts.forEach((v, i) => {
+                    cartView.push({ id: v._id, qty: v.qty, name: v.name, price: v.price });
+                });
+                const _countries = getAllNational();
+                const _provinces = getProvince();
+                console.log(cartView);
+                res.render(VNAME + 'user/checkout', {
+                    layout: VLAYOUT,
+                    slug,
+                    provinces: _provinces,
+                    countries: _countries,
+                    carts: cartView || [],
+                    groups: groupView,
+                });
             } catch (error) {
-            res.render(VNAME + 'user/payment', { layout: VLAYOUT, carts: [] });
-                
+                res.render(VNAME + 'user/checkout', {
+                    layout: VLAYOUT,
+                    slug,
+                    provinces: _provinces,
+                    countries: _countries,
+                    carts: [],
+                    groups: [],
+                });
             }
-            
 
             // const data =JSON.parse(req.body.cart);
             // Lưu session
             // req.session.cart = data;
             // res.redirect(`/user/event-detail/${slug}/payment`)
-            
         },
-        PaymentCheckout: async(req, res)=>{
+        Payment: async (req, res) => {
+            let total = 0;
             try {
-                const slug = req.params.slug;
-                const cart = req.session.cart;
-                if(!cart) return res.redirect(`/user/event-detail/${slug}/payment`)
-                console.log('cart ',cart)
-                res.render(VNAME + 'user/payment', { layout: VLAYOUT });
+                const data = req.body;
+                console.log(data);
+                const event_slug = req.params.slug;
+                const group_id = data.buyer.group_id;
+                const user_id = req.user._id;
+                const cartClient = data.buyer.cart.filter((item) => item.qty > 0);
+                //  1.lay event +ticket
+                const event = await EventService.GetBySlug(event_slug);
+                // console.log('eventId', event._id);
+                const tickets = await TicketService.GetByEventSlug(event_slug);
+                // console.log('tickets', tickets);
+                const isValid = cartClient.every((item) => tickets.some((t) => t._id.toString() === item.id));
+                if (!isValid) {
+                    return res.json({ success: false, mess: 'data bib ko hop le' });
+                }
+                // 2. tinh tong
+                total = cartClient.reduce((sum, item) => {
+                    const ticket = tickets.find((t) => t._id.toString() === item.id);
+                    return sum + ticket.price * item.qty;
+                }, 0);
+                const orderDTO = {
+                    event_id: event._id,
+                    user_id: user_id,
+                    group_id: group_id,
+                    amount: total,
+                    buyer_name: data.buyer_name,
+                    buyer_email: data.buyer_email,
+                    buyer_phone: data.buyer_phone,
+                };
+                console.log('total: ', total);
+                // 3. tao Order
+                const result = await OrderService.Add(orderDTO);
+                // let orderItemDTO = [];
+                if (!result.success) {
+                    return res.json({ success: false, mess: 'Tao order that bai' });
+                }
+                const orderId = result.data._id;
+                //4. tao mang Order Item
+                const orderItemDTO = cartClient.map((item) => ({
+                    order_id: orderId,
+                    ticket_id: item.id,
+                    price: item.price,
+                    qty: item.qty,
+                }));
+                // console.log('orderItemDTO to insert:', JSON.stringify(orderItemDTO, null, 2));
+                const oiResult = await orderItemService.Add(orderItemDTO);
+                //
+                if (!oiResult.success) {
+                    return res.json({ success: false, mess: 'Tao order item that bai' });
+                }
+
+                const createOrderItems = oiResult.data; //<- list order items co _id
+                //b5 tao paricipant
+                let index = 0;
+                const dataRunner = data.runner.map((d) => ({
+                    ...d,
+                    event_id: event._id,
+                    group_id: group_id,
+                }));
+                console.log('data runner', data.runner);
+                const pResult = await participantPreService.AddByRunner(dataRunner);
+                console.log('pResult ', pResult);
+                if (pResult.success) {
+                }
+
+                // for(const item of createOrderItems){
+                // for(let i =0; i<item.qty; i++){
+
+                // }
+                // }
+                // console.log('hop le ko', isValid)
+
+                // console.log(req.user)
+                // console.log(user_id)
+                res.json({ success: true, data });
             } catch (error) {
                 console.log(CNAME, error.message);
-                res.render(VNAME + 'user/payment', { layout: VLAYOUT });
             }
-        }
+        },
+        testGetAllCountry: (req, res) => {
+            // res.json(getAllCountries())
+            res.json(countries);
+        },
+        OrderPre: async (req, res) => {
+            // const eventSlug = req.params.slug;
+            // const groupId = req.params.groupId;
+            const groupId = req.params.id;
+            if (!groupId) return res.render(VNAME + 'user/orderPre', { layout: VLAYOUT, group: null, pp: [] });
+            const group = await GroupService.GetById(groupId);
+            if (!group) return res.render(VNAME + 'user/orderPre', { layout: VLAYOUT, group: null, pp: [] });
+            try {
+                // console.log('co chay dc vao day ko ');
+                // console.log(group._id, groupId)
+                // if(!group) return res.render(CNAME+'user/orderPre', {layout: VLAYOUT});
+                const pp = await participantPreService.GetByEventIdAndGroup(group.event_id, groupId);
+
+                res.render(VNAME + 'user/orderPre', { layout: VLAYOUT, group: group, pp: pp || [] });
+            } catch (error) {
+                console.log(CNAME, error.message);
+                res.render(VNAME + 'user/orderPre', { layout: VLAYOUT, group: null, pp: [] });
+            }
+        },
+        AddMember: async (req, res) => {
+            const slug = req.params.slug;
+            const dataId = req.body.ids;
+            // const user = req.user;
+            let _usertId = req.user._id;
+            console.log(_usertId);
+            // console.log('1 ',dataId)
+            if (!slug) return res.json({ success: false, data: 'no slug' });
+            try {
+                // const data = req.body;
+                // console.log(data);
+                const pp = await participantPreService.GetByIdList(dataId);
+                if (!pp) {
+                    console.log('runner add failed ');
+                    return res.json({ success: false, mess: 'process failed' });
+                }
+                // const {..._id} =pp;
+                const deleteParticipant = await participantPreService.DeleteByIdList(dataId);
+                if (!deleteParticipant) return res.status(500).json({ success: false, mess: 'process failed' });
+                const cleanData = pp.map((item) => {
+                    const { _id, ...rest } = item.toObject ? item.toObject() : item;
+                    return {
+                        user_id: _usertId,
+                        ...rest,
+                    };
+                });
+                const p = await participantService.AddByRunner(cleanData);
+                console.log(pp);
+                res.json({ success: true, data: dataId });
+            } catch (error) {
+                console.log(CNAME, error.message);
+                res.status(500).json({ success: false, message: 'add failed' });
+            }
+        },
+        // PaymentCheckout: async(req, res)=>{
+        //     try {
+        //         const slug = req.params.slug;
+        //         const cart = req.session.cart;
+        //         if(!cart) return res.redirect(`/user/event-detail/${slug}/payment`)
+        //         console.log('cart ',cart)
+        //         res.render(VNAME + 'user/payment', { layout: VLAYOUT });
+        //     } catch (error) {
+        //         console.log(CNAME, error.message);
+        //         res.render(VNAME + 'user/payment', { layout: VLAYOUT });
+        //     }
+        // }
 
         // Group: async (req, res) => {
         //     try {

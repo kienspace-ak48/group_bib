@@ -9,7 +9,7 @@ class UserService {
 
     GetAll() {}
     async GetById(username) {}
-    async GetByCondition(username) {
+    async GetByConditionEmailOrName(username) {
         try {
             const result = await UserEntity.findOne({
                 $or: [{ phone: username }, { email: username }],
