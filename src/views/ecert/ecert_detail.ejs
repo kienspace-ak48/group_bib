@@ -1,0 +1,409 @@
+<link rel="stylesheet" href="/libs/css/bootstrap.min.css">
+  <script src="/libs/js/bootstrap.bundle.min.js"></script>
+<style>
+  .volunteer-list {
+    padding-top: 10px;
+    min-height: 500px;
+  }
+  table {
+    text-align: center;
+  }
+  section.event {
+    padding-top: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .event .event-info {
+    text-align: center;
+  }
+  /* / */
+  section.marathon {
+      width: 100%;
+      background: #fff;
+    }
+
+    .marathon .banner {
+      width: 100%;
+      max-height: 380px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .marathon .banner img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .marathon .content {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .marathon .content h1 {
+      font-size: 22px;
+      font-weight: bold;
+      color: #0a2a66;
+      margin-bottom: 15px;
+    }
+
+    .marathon .content p {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #444;
+    }
+
+    .marathon .event-info {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      color: #666;
+      font-size: 14px;
+    }
+
+    .marathon .event-info span {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    #ecert_tbl_wrapper div.dt-layout-start .dt-length select.form-select-sm, 
+      #ecert_tbl_wrapper div.dt-layout-end .dt-search input.form-control.form-control-sm{
+        font-size: 20px !important;
+      }
+    
+    /* css */
+    .table-box {
+      background: #fff;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+    }
+    .table-minimal {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .table-minimal thead {
+      background: #f9fafc;
+    }
+    .table-minimal thead th {
+      padding: 14px 16px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 600;
+      color: #666;
+      text-transform: uppercase;
+    }
+    .table-minimal tbody tr {
+      border-bottom: 1px solid #f0f0f0;
+      text-align: center;
+    }
+    .table-minimal tbody td {
+      padding: 5px;
+      font-size: 15px;
+      color: #333;
+      vertical-align: middle;
+    }
+    .table-minimal tbody tr:hover {
+      background: #f6faff;
+      transition: 0.2s;
+    }
+    .status {
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .status.active { background: #d1f7d6; color: #1b7a2a; }
+    .status.pending { background: #fff3cd; color: #856404; }
+    .status.blocked { background: #f8d7da; color: #842029; }
+    .table-minimal img.btn-cert{font-size: 5px; height: 26px; width: 26px; }
+    .table-minimal img.btn-cert:hover{
+      transform: scale(1.2);
+    }
+    .table-highlight {
+  background-color: #f2fdff !important; /* xanh aqua nhạt */
+  transition: background-color 0.4s ease;
+  /* box-shadow: inset 0 0 0 2px #26c6da; */
+}
+/* search */
+.search-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto 20px auto;
+  border: 1px solid #ddd;
+  border-radius: 30px;
+  padding: 4px 12px;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.search-box input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 10px 12px;
+  font-size: 14px;
+  border-radius: 30px;
+  background: transparent;
+}
+
+.search-box button {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 18px;
+  color: #666;
+  padding: 6px 10px;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+
+.search-box button:hover {
+  background: #f0f0f0;
+}
+/* can giua text */
+#ecert_tbl  th, #ecert_tbl td{
+  text-align: center !important;
+}
+#ecert_tbl thead th, #ecert_tbl tbody, td{
+  font-size: 15px;
+}
+/* Responsive */
+    @media (max-width: 768px) {
+      .marathon .content h1 {
+        font-size: 18px;
+      }
+
+      .marathon .content p {
+        font-size: 13px;
+      }
+      .main-container{
+        width: calc(94% - 10px) !important;
+      }
+      #ecert_tbl_wrapper div.dt-layout-start .dt-length select.form-select-sm, 
+      #ecert_tbl_wrapper div.dt-layout-end .dt-search input.form-control.form-control-sm{
+        font-size: 15px !important;
+      }
+      #ecert_tbl thead th, #ecert_tbl tbody, td{
+  font-size: 10px !important;
+}
+    }
+</style>
+
+<!-- NEW -->
+ <!-- Modal -->
+<!-- modal  -->
+<div class="modal fade" id="certificateModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog 	modal-lg">
+    <div class="modal-content">
+      <div class="modal-body">
+        <img src="" alt="Certificate Preview" class="img-fluid" />
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <!-- <button type="button" id="btn-download" download class="btn btn-primary">Download Certificate</button> -->
+         <a href="" id="btn-download" download class="btn btn-outline-success">Download certificate</a>
+      </div>
+    </div>
+  </div>
+</div>
+<section class="marathon">
+    <!-- Banner -->
+    <div class="banner">
+      <!-- <img src="https://cdn-vietrace365.vn/uploads/f_65dbf8aac26f782ac4075d3b/banner-1800-x-600-20258161512.png" alt="Thaco Chu Lai Half Marathon 2025"> -->
+       <!-- <img src="https://cdn-vietrace365.vn/uploads/f_65dbf8aac26f782ac4075d3b/banner-1800-x-600-b-20259161725.png" alt=""> -->
+        <%if(cp&&cp.img_thumb){%>
+          <img src="<%=cp?.img_thumb%>" alt="">
+        <%}else{%>
+
+        <%}%>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+      <h1><%=cp.title%></h1>
+      <!-- <p><small>(Đây là kết quả sơ bộ, BTC sẽ tiếp tục thông báo khi có kết quả chính thức)</small></p> -->
+      <p>
+        <%=(cp.desc && cp) ? cp?.desc : ''%></p>
+      </p>
+
+      <!-- Event Info -->
+      <div class="event-info">
+        [<span><%# let d = new Date(event.startDate); %>
+    
+      <%# = d.getDate().toString().padStart(2, '0') %>/<%#= (d.getMonth() +
+      1).toString().padStart(2, '0') %>/<%#= d.getFullYear() %>
+    </span>-<span><%#event.place%></span>]
+      </div>
+    </div>
+  </section>
+  <!--  -->
+
+
+<section class="volunteer-list">
+  
+<style>
+  .my-table-wraper{
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    margin: 30px 0;
+    padding: 10px 20px;
+    border-radius: 5px;
+    overflow-x: auto;
+  }
+</style>
+    <div class="main-container">
+      <div class="my-table-wraper">
+      <table class="table-minimal" id="ecert_tbl">
+      <thead>
+        <th>#</th>
+        <th>Name</th>
+        <th>Role</th>
+        <th>Certificate</th>
+      </thead>
+      <tbody>
+        <%# volunteers.forEach((v, index)=>{ %>
+        <tr
+        >
+          <td><%#=index+1%></td>
+          <td><%#= v.fullname %></td>
+          <td><%#=v.role%></td>
+          <td><img class="btn-cert" src="/icons/icon-cert.ico" alt=""></td>
+        </tr>
+        <%#})%>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  <input type="hidden" id="ei_hidden" name="" value="<%#=event_id%>" />
+    </div>
+</section>
+<!-- //=================Script==============// -->
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // global scope
+    const certTbl = document.querySelector('ecert_tbl');
+    const temp = '<%=cp.slug%>';
+    // var c_id = '68e336e17ff1767a669aa0f6';
+    var c_id = '<%=cp.slug%>'
+    // 
+    const modalRenderCertEl = document.querySelector('#certificateModal');
+    const modalRenderCert = new bootstrap.Modal(modalRenderCertEl);
+    const navLinks = document.querySelectorAll(".nav-menu a");
+  var currentPath = '/e-cert';
+
+  navLinks.forEach((link) => {
+    if (link.getAttribute("href") === currentPath) {
+      link.classList.add("active");
+    } else {
+      link.classList.remove("active");
+    }
+  });
+  
+    // tbl 
+    // global scope
+    const myDataTable = new DataTable('#ecert_tbl', {
+      processing: true,
+      serverSide:true,
+      order: [], // 👈 Tắt sort mặc định (không cột nào được sort)
+      ajax: {
+        url: `/e-cert/data-table/${c_id}`,
+        type: 'POST',
+        data: function(d){
+          return d;
+        }
+    },
+    columns: [
+      {data: null, orderable: false, serchable: false, render: (data, type, row, meta)=>meta.row+1},
+      {data: 'name', orderable: false},
+      {data: 'field_1', orderable: false},
+      {data: null, orderable: false, serchable: false,
+        render: (data, type, row)=>'<button class="btn btn-outline-info">Ecert</button>'
+      }
+    ],
+    createdRow: function(row, data, dataIndex){
+      $(row).attr('data-id', data._id)
+    }
+    
+
+    });
+    // ✅ Cách bắt sự kiện trong DataTables 2.3.4
+myDataTable.on('init', function() {
+  console.log('✅ DataTable đã khởi tạo xong!');
+  // new
+//   document.querySelector('#ecert_tbl_wrapper div:first-child').style.cssText = `
+//     display: flex;
+//     justify-content: space-around !important;
+// `;
+// document.querySelector('#ecert_tbl_wrapper .row >*').style.cssText =`
+//   width: auto !important;
+//   max-width: none !important;
+// `
+// document.querySelector('#ecert_tbl_wrapper .row.mt-2').style.cssText=`
+//   display: flex !important;
+//     justify-content: space-around !important;
+//     align-items: center !important;
+//     flex-wrap: nowrap !important;
+//     padding: 10px 0;
+// `
+// document.querySelector('#ecert_tbl_wrapper .row.mt-2 > div').style.cssText=`
+//   width: auto !important;
+//     max-width: none !important;
+//     flex: 0 0 auto !important;
+// `
+  //old
+//   document.querySelector('#ecert_tbl_wrapper div.dt-layout-end').style.width="auto"
+//   document.querySelector('#ecert_tbl_wrapper div.dt-length label').style.display='none';
+// document.querySelector('#ecert_tbl_wrapper div.dt-search input').placeholder='Name'
+//   const elSearch = document.querySelector('#ecert_tbl_wrapper div.dt-search label');
+  // console.log('Phần tử tìm thấy:', elSearch);
+   // Xử lý lần đầu khi init
+  //   document.querySelector('#ecert_tbl_wrapper div.dt-info').style.display='none'
+  // if (elSearch) elSearch.style.display = 'none';
+  
+});
+    // 
+    // lang nghe sukien click tren row
+    document.querySelector('#ecert_tbl tbody').addEventListener('click', (e)=>{
+      const tr = e.target.closest('tr');
+      if(!tr) return;
+      const userId = tr.dataset.id;
+      console.log('userId: '+userId)
+      renderCert(userId);
+    })//
+    //render sert
+    function renderCert(rowId){
+      $.ajax({
+        url: `/e-cert/render-cert?cid=${c_id}&uid=${rowId}`,
+      method: 'GET',
+      xhrFields: {responseType: 'blob'},
+      processData: false,
+      success: (blob)=>{
+        const imgURL = URL.createObjectURL(blob);
+        document.querySelector('#certificateModal img').setAttribute('src', imgURL);
+         // Gắn vào nút Download
+      const btn = document.querySelector('#btn-download');
+      btn.href = imgURL;
+      btn.download = `certificate-${rowId}.png`;  // tên file khi tải xuống
+        modalRenderCert.show();
+      },
+      error: (xhr, status, err)=>{
+        console.log(xhr.responseJSON?.mess||'Server error')
+      }
+      })
+    }
+
+    // end
+  });
+</script>
+
+
+

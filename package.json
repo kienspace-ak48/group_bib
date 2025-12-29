@@ -40,6 +40,7 @@
     "swagger-autogen": "^2.23.7",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
+    "text-to-svg": "^3.1.5",
     "world-countries": "^5.1.0",
     "xlsx": "^0.18.5"
   },

@@ -1,0 +1,224 @@
+<div class="d-flex justify-content-between">
+    <h2>E-Cert Table</h2>
+    <button class="btn btn-outline-primary" id="btn-open-modal">
+        Add
+    </button>
+</div>
+<hr />
+<br />
+<!-- Thông báo -->
+<div id="alert-container" class="position-fixed top-0 end-0 p-3" style="z-index: 1050;"></div>
+<!-- Table -->
+<table class="table table-striped" id="contest_tbl" style="text-align: center">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>CreateAt</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        <% if(cl && cl.length>0) {%>
+            <% cl.forEach((c, index)=> { %>
+                <tr data-id="<%=c._id%>">
+                    <td>
+                        <%= index + 1 %>
+                    </td>
+                    <td><a href="/admin/e-cert/contest-detail/<%=c._id%>">
+                            <%= c.title %>
+                        </a></td>
+                    <td>
+                        <%= new Date(c.createdAt).toLocaleDateString('vi-VN') %>
+                    </td>
+                    <td>
+                        <button class="btn btn-outline-danger btn-delete">Delete</button>
+                    </td>
+                </tr>
+                <% }) %>
+                    <% } else { %>
+                        <tr>
+                            <td colspan="4">Khong co du lieu</td>
+                        </tr>
+                        <% } %>
+
+    </tbody>
+</table>
+
+<!-- Modal -->
+<div class="modal fade" id="contestModal" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel"
+    aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="staticBackdropLabel">New Contest</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <input type="text" class="form-control" name="c-name" id="c-name" placeholder="contest name" />
+                </div>
+                <div class="form-group">
+                    <textarea name="" class="form-control" name="c-desc" id="c-desc" placeholder="desc" id=""
+                        rows="5"></textarea>
+                </div>
+                <div class="form-group" style="display: flex; flex-direction: column;">
+                    <label for="" class="form-label">image</label>
+                    <input type="file" id="img_file" class="form-control">
+                    <img src="" id="img_preview" alt="" style="display: none;">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="btn-create-contest" class="btn btn-primary">Save change</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/js/AlertHelper.js"></script>
+<!-- //==================script=============/ -->
+<script>
+    // AlertHelper.show('hello', 'info', 5000)
+    document.addEventListener("DOMContentLoaded", function () {
+        //write down
+        //global here
+        const modalContest = document.getElementById('contestModal');
+        const myModal = new bootstrap.Modal(modalContest);
+        const imageInput = document.getElementById('img_file');
+        const imagePreview = document.getElementById('img_preview');
+
+        //mo modal
+        document.getElementById('btn-open-modal').addEventListener('click', function (ev) {
+            myModal.show();
+        });
+        //tao contest
+        document.getElementById('btn-create-contest').addEventListener('click', function (ev) {
+            //call api tao contest()
+            addContest();
+            myModal.hide();
+        })
+        //
+        imageInput.addEventListener('change', ()=>{
+            const file = imageInput.files[0];//lay file dau tien
+            if(file){
+                const reader = new FileReader();
+                reader.onload = function(e){
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display='block';
+                    imagePreview.style.objectFit ='cover';
+                    imagePreview.style.height ='150px';
+                    imagePreview.style.width='auto'
+                }
+                reader.readAsDataURL(file);
+            }else{
+                imagePreview.src ='';
+                imagePreview.style.display ='none';
+            }
+        })
+        function addContest() {
+            //
+            const data = {
+                name: modalContest.querySelector('#c-name').value.trim(),
+                desc: modalContest.querySelector('#c-desc').value.trim(),
+                image: modalContest.querySelector('#img_file').files[0]
+            }
+            const formData = new FormData();
+            formData.append('name', modalContest.querySelector('#c-name').value.trim());
+            formData.append('desc', modalContest.querySelector('#c-desc').value.trim());
+            formData.append('image', modalContest.querySelector('#img_file').files[0]);
+            console.log(formData)
+            if (!data.name || !data.desc) {
+                showAlert('pls enter input', 'warning');
+                return;
+            }
+            console.log(data);
+            $.ajax({
+                url: '/admin/e-cert/create-contest',
+                method: 'POST',
+                processData: false,
+                contentType: false,
+                data: formData,
+                success: (res) => {
+                    if (res.success) {
+                        showAlert(res.mess, 'success');
+                        location.reload();
+                    }
+                    resetModal();
+                    myModal.hide();
+                },
+                error: (xhr, status, err) => {
+                    // 👉 xhr.responseJSON chứa JSON mà server gửi về
+                    // console.log('xhr:', xhr);
+                    // console.log('status:', status);
+                    // console.log('error:', err);
+                    showAlert(xhr.responseJSON?.mess||"Server error", 'danger');
+                }
+            })
+        }
+        //function reset modal
+        function resetModal() {
+            modalContest.querySelectorAll('input, textarea, select').forEach(el => el.value = '');
+        }
+        //delete contest
+        document.querySelector('#contest_tbl').addEventListener('click', function (ev) {
+            const btn = ev.target.closest('.btn-delete');
+            if (!btn) return;
+            //lấy id
+            const row = ev.target.closest('tr');
+            const id = row.getAttribute('data-id');
+            console.log('id:', id);
+            console.log('row:', row);
+
+            Swal.fire({
+                title: "Are you sure?",
+                // text: "You won't be able to revert this!",
+                icon: "question",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                // confirmButtonText: "Yes, delete it!"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    deleteContest(id);
+                }
+            });
+        })
+        function deleteContest(id) {
+            $.ajax({
+                url: `/admin/e-cert/delete-contest/${id}`,
+                method: 'DELETE',
+                success: (res) => {
+                    if (res.success) {
+                        showAlert(res.mess, 'success');
+                        //xoa dong tren table
+                        const row = document.querySelector(`#contest_tbl tr[data-id='${id}']`);
+                        if (row) row.remove();
+                    }
+                },
+                error(xhr, status, err) {
+                    showAlert(xhr.responseJSON.mess, 'danger');
+                }
+            })
+        }
+        //show alert
+        function showAlert(message, type = 'success', duration = 3000) {
+            // type có thể là: 'success', 'danger', 'warning', 'info'
+            const alertId = 'alert-' + Date.now();
+            const alertHtml = `
+            <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show shadow" role="alert">
+                ${message}
+                <button type="button" class ="btn-close" data-bs-dismiss="alert" aria-label="close"></button>
+            </div>
+            `
+            //them vao container
+            document.getElementById('alert-container').innerHTML += alertHtml;
+            //tu dong xoa sau duration
+            setTimeout(() => {
+                const alertEl = bootstrap.Alert.getOrCreateInstance(document.getElementById(alertId));
+                alertEl.close();
+            }, duration);
+        }
+        clearModalFocus('contestModal');
+        //end
+    })
+</script>

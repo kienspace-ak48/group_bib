@@ -1,7 +1,7 @@
 <div class="main-container">
-    <div class="grid">
-        <div class="grid-cols-3">a</div>
-        <div class="grid-cols-7">
+    <!-- grid grid-cols-10 -->
+    <div class="">
+        <div class="">
             <!-- table -->
             <div class=" overflow-hidden bg-white rounded-xl shadow-sm mt-6 p-4">
                 <div class="overflow-x-auto">
@@ -22,7 +22,11 @@
                                 <!-- <td class="px-5 py-3"><input type="checkbox" /></td> -->
                                 <td class="px-5 py-3"><%=i+1%></td>
                                 <td class="px-5 py-3"><%=r.fullname%></td>
-                                <td class="px-5 py-3">Đã thanh toán</td>
+                                <% if(r.payment_status==="PAID"){%>
+                                    <td class="px-5 py-3 text-[14px] text-[#45c4a0]">Đã thanh toán 🥰</td>
+                                <%}else{%>
+                                    <td class="px-5 py-3 text-[14px] text-[#dc3545]">Chưa thanh toán 😭</td>
+                                <%}%>
                                 <td class="px-5 py-3"><span class="text-[red]">xx</span><%=r.phone.slice(-4)%></td>
                                 <%
                                 var [local, domain] = r.email.split('@');

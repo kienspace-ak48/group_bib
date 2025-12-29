@@ -8,14 +8,31 @@ class ParticipantService {
     async GetAll(user_id, event_id, group_id) {
         try {
             const runners = await ParticipantEntity.find({user_id, event_id, group_id}).lean();
-            // console.log(typeof runners, runners);
+            console.log(typeof runners, runners);
             return {runners, count: runners.length};
         } catch (error) {
             console.log(CNAME, error.message);
             return {runners: [], count: 0};
         }
     }
-    
+    async GetAll2(_eventId, _groupId){
+        try {
+            const runners = await ParticipantEntity.find({event_id: _eventId}).lean();
+            return runners || []
+        } catch (error) {
+            console.log(CNAME, error.message);
+            return [];
+        }
+    }
+    async GetByEventIdAndGroup(eventId, groupId) {
+            try {
+                const pp = await ParticipantEntity.find({ event_id: eventId, group_id: groupId }).lean();
+                return pp;
+            } catch (error) {
+                console.log(CNAME, error.message);
+                return [];
+            }
+        }
     async GetById(user_id){
         try {
             const runner = await ParticipantEntity.findOne({_id: user_id}).lean();
@@ -38,6 +55,21 @@ class ParticipantService {
         try {
             await ParticipantEntity.deleteMany({ group_id, user_id, event_id });
             await ParticipantEntity.insertMany(dataList, { ordered: false });
+            return true;
+        } catch (error) {
+            console.log(CNAME, error.message);
+            return false;
+        }
+    }
+    async ChangePaymentStatus(idRunnerList, groupId, user){
+        try {
+            const runner = await ParticipantEntity.updateMany(
+                {_id: {$in: idRunnerList},
+                payment_status: 'PENDING',
+                group_id: groupId
+                },
+                {$set: {payment_status: 'PAID'}}
+            );
             return true;
         } catch (error) {
             console.log(CNAME, error.message);

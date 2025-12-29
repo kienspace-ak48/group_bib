@@ -1,0 +1,152 @@
+<style>
+  .form-box {
+    width: 100%;
+    max-width: 600px;
+    font-family: sans-serif;
+  }
+
+  .ps-container {
+    display: flex;
+    gap: 10px 50px;
+  }
+
+  .input-title {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-bottom: none;
+    /* bỏ viền dưới để dính với textarea */
+    border-radius: 8px 8px 0 0;
+    /* bo góc trên */
+    outline: none;
+  }
+
+  .input-content {
+    width: 100%;
+    min-height: 150px;
+    padding: 12px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 0 0 8px 8px;
+    /* bo góc dưới */
+    outline: none;
+    resize: vertical;
+  }
+</style>
+<div style="display: flex; justify-content: space-between">
+  <h2>HomePage setting</h2>
+  <button id="save_config" class="btn btn-success">Save config</button>
+</div>
+<hr />
+<br />
+<div class="card" style="padding: 10px;">
+  <div class="ps-container">
+    <div class="form-box" style="">
+      <!-- <label for="" class="form-label">Hero</label> -->
+      <input
+        id="hero_title"
+        value="<%=cf.hero_title%>"
+        type="text"
+        placeholder="Tiêu đề hero..."
+        class="input-title"
+      />
+      <textarea
+        class="input-content"
+        id="event-tinymce-hero"
+        name="event-tinymce-4"
+        class="tox-target"
+        placeholder="Write here"
+      >
+<%-cf.hero_desc%></textarea
+      >
+    </div>
+    <br />
+    <div class="form-box">
+      <!-- <label for="" class="form-label">About</label> -->
+      <input
+        id="about_title"
+        value="<%=cf.about_title%>"
+        type="text"
+        placeholder="Tiêu đề second..."
+        class="input-title"
+      />
+      <textarea
+        class="input-content"
+        id="event-tinymce-about"
+        name="event-tinymce-4"
+        class="tox-target"
+        placeholder="Write here"
+      >
+<%-cf.about_desc%></textarea
+      >
+    </div>
+  </div>
+  <!--  -->
+  <br>
+  <div class="form-group">
+    <label for="" class="form-label">Text footer</label>
+    <input id="f_desc" type="text" value="<%=cf.f_desc%>"  class="form-control w-50">
+</div>
+</div>
+
+<script src="/admin/assets/js/plugins/tinymce/tinymce.min.js"></script>
+<script>
+  //
+  document.addEventListener("DOMContentLoaded", function () {
+    tinymce.init({
+      height: "300",
+      selector: "#event-tinymce-hero, #event-tinymce-about",
+      setup: function (editor) {
+        editor.on("init", function () {
+          const promo = document.querySelector(".tox-promotion");
+          if (promo) promo.remove();
+        });
+      },
+
+      content_style: 'body { font-family: "Inter", sans-serif; }',
+      menubar: "file edit view insert format tools table help",
+      toolbar: [
+        "styleselect fontselect fontsizeselect",
+        "undo redo cut copy paste bold italic |bullist numlist | alignleft aligncenter alignright alignjustify",
+        // "bullist numlist | outdent indent | blockquote subscript superscript | advlist | autolink | lists charmap | print preview |  code",
+      ],
+      plugins:
+        "list advlist autolink link image lists charmap print preview code",
+    });
+    document.querySelectorAll(".tox-promotion").forEach((el) => el.remove());
+    //
+    document
+      .getElementById("save_config")
+      .addEventListener("click", function (el) {
+        var data = {
+          hero_title: document.getElementById("hero_title").value, //tinymce.get('pc-tinymce-4').getContent();
+          hero_desc: tinymce.get("event-tinymce-hero").getContent(),
+          about_title: document.getElementById("about_title").value,
+          about_desc: tinymce.get("event-tinymce-about").getContent(),
+          f_desc: document.getElementById("f_desc").value
+        };
+        console.log(data);
+        $.ajax({
+          url: `/admin/page-setting/home-page/config`,
+          type: "POST",
+          contentType: "application/json",
+          data: JSON.stringify(data),
+          success: (res) => {
+            alert("success");
+            if(res.success){
+              document.getElementById("hero_title").value= res.pf.hero_title;
+              tinymce.get("event-tinymce-hero").setContent(res.pf.hero_desc);
+              document.getElementById("about_title").value = res.pf.about_title;
+              tinymce.get("event-tinymce-about").setContent(res.pf.about_desc);
+              document.getElementById("f_desc").value = res.pf.f_desc;
+            }
+          },
+          error: (err) => {
+            alert("failed");
+          },
+        });
+      });
+    // end
+  });
+</script>

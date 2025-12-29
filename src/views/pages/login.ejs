@@ -158,6 +158,11 @@
                     display: none;
                 }
             }
+            .input-error {
+                border: 1px solid red !important;
+                box-shadow: 0 0 5px rgba(79, 70, 229, 0.2);
+                outline: none;
+            }
         </style>
     </head>
     <body>
@@ -195,7 +200,7 @@
                     </small>
                 </div>
 
-                <button id="cta_register" >Create Account</button>
+                <button id="cta_register">Create Account</button>
                 <p class="switch-text">Bạn đã có tài khoản? <a onclick="toggleForm()">Login</a></p>
             </div>
 
@@ -281,83 +286,98 @@
 </html>
 
 <script>
-        //global scope
-        const btnCreate = document.querySelector('#cta_register');
-        const btnLogin = document.querySelector('#cta_login');
-        const passwordInput = document.getElementById('password');
+    //global scope
+    const btnCreate = document.querySelector('#cta_register');
+    const btnLogin = document.querySelector('#cta_login');
+    const passwordInput = document.getElementById('password');
     const confirmInput = document.getElementById('confirm_password');
     const errorText = document.querySelector('.error-text');
     const submitBtn = document.getElementById('cta_register');
-        let err = ''
-        <%if(typeof err !== 'undefined'){%>
+    let err = '';
+    <%if(typeof err !== 'undefined'){%>
            err = '<%=err%>'
         <%}%>
         if(err.length>0){
           myNotification('warning', err);
         }
-        //
-        function validatePasswordMatch(){
-            const password = passwordInput.value;
-            const confirmPassword = confirmInput.value;
-            if(!confirmPassword){
-                errorText.style.display='none';
-                submitBtn.disabled = true;
-                return;
-            }
-            if(password !== confirmPassword){
-                errorText.style.display ='block';
-                submitBtn.disabled = true;
-            }else{
-                errorText.style.display = 'none'
-                submitBtn.disabled = false;
-            }
+    //
+    function validatePasswordMatch() {
+        const password = passwordInput.value;
+        const confirmPassword = confirmInput.value;
+
+        if (!confirmPassword) {
+            errorText.style.display = 'none';
+            // submitBtn.disabled = true;
+            return;
         }
-        passwordInput.addEventListener('input', validatePasswordMatch);
+        if (password !== confirmPassword) {
+            errorText.style.display = 'block';
+            // submitBtn.disabled = true;
+        } else {
+            errorText.style.display = 'none';
+            submitBtn.disabled = false;
+        }
+    }
+    passwordInput.addEventListener('input', validatePasswordMatch);
     confirmInput.addEventListener('input', validatePasswordMatch);
     //
-        btnCreate.addEventListener('click', (ev) => {
-            // ev.preventDefault();
-            const data = {
-                fullname: document.querySelector('input[name="fullname"]').value,
-                email: document.querySelector('input[name="email"]').value,
-                phone: document.querySelector('input[name="phone"]').value,
-                password: document.querySelector('input[name="password"]').value,
-            };
-            if (!data.email || !data.fullname || !data.password || !data.password) {
-                alert('Please fill the form!');
-                ev.preventDefault();
-                return;
+    btnCreate.addEventListener('click', (ev) => {
+        // ev.preventDefault();
+
+        const data = {
+            fullname: document.querySelector('input[name="fullname"]').value,
+            email: document.querySelector('input[name="email"]').value,
+            phone: document.querySelector('input[name="phone"]').value,
+            password: document.querySelector('input[name="password"]').value,
+            confirm_password: document.querySelector('input[name="confirm_password"]').value
+
+        };
+        Object.entries(data).forEach(([key, value]) => {
+            const input = document.querySelector(`input[name="${key}"]`);
+            if (!value) {
+                console.log('co chay vo day ko');
+                input.classList.add('input-error');
+                console.log(input)
+                input.focus();
+            }else{
+                input.classList.remove('input-error');
             }
-            console.log(data);
-            //
-            $.ajax({
-                url: `/user/register`,
-                method: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify(data),
-                success: (res) => {
-                    console.log('success');
-                    if (res.success) {
-                        document.location.href = res.redirect;
-                        localStorage.setItem('verify_email', data.email);
-                    }else{
-                      myNotification('warning', res.mess);
-                    }
-                },
-                error: (xhr, status, err) => {
-                    console.log(xhr?.responseJSON?.mess||'Server error');
-                    myNotification('warning', xhr?.responseJSON?.mess || 'Server error')
-                },
-            });
-            // alert('create')
         });
-        function myNotification(icon, mess, position = 'center', timer = 2500) {
-            Swal.fire({
-                title: mess,
-                icon: icon,
-                position: position,
-                timer: timer,
-            });
+        if (!data.email || !data.fullname || !data.password || !data.password || !confirmInput.value) {
+            alert('Please fill the form!');
+            ev.preventDefault();
+            return;
         }
-        // myNotification('success', 'hi');
+        console.log(data);
+        //
+        $.ajax({
+            url: `/user/register`,
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            success: (res) => {
+                console.log('success');
+                if (res.success) {
+                    document.location.href = res.redirect;
+                    localStorage.setItem('verify_email', data.email);
+                } else {
+                    myNotification('warning', res.mess);
+                }
+            },
+            error: (xhr, status, err) => {
+                console.log(xhr?.responseJSON?.mess || 'Server error');
+                myNotification('warning', xhr?.responseJSON?.mess || 'Server error');
+            },
+        });
+        // alert('create')
+    });
+    function myNotification(icon, mess, position = 'center', timer = 2500) {
+        Swal.fire({
+            title: mess,
+            icon: icon,
+            position: position,
+            timer: timer,
+        });
+    }
+    // myNotification('success', 'hi');
 </script>

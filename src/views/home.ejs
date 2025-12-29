@@ -1,0 +1,158 @@
+<style>
+  /* Desktop default */
+  .banner-content h2 {
+    font-size: 40px; /* tiêu đề lớn */
+  }
+  .banner-content p {
+    font-size: 20px; /* chữ mô tả */
+  }
+  .banner-content button {
+    font-size: 16px;
+  }
+  section h3 {
+    font-size: 32px;
+  }
+  section p {
+    font-size: 18px;
+  }
+
+  /* ============= HERO SECTION ============= */
+  .banner {
+    height: calc(100vh - 80px);
+    background: url("/imgs/ar-hero.jpg") center/cover no-repeat;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+  .banner::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.18);
+  }
+  .banner-content h2,
+  .banner-content p {
+    color: #fff;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.85);
+    font-weight: 700;
+  }
+  .banner-content {
+    background: rgba(0, 0, 0, 0.15);
+    position: relative;
+    z-index: 1;
+    max-width: 750px;
+    padding: 0 20px;
+  }
+
+  .banner-content h2 {
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    animation: fadeInUp 1s ease forwards;
+  }
+  .banner-content p {
+    margin-bottom: 30px;
+    animation: fadeInUp 1.5s ease forwards;
+    font-weight: 400;
+    line-height: 28px;
+  }
+  .banner-content button {
+    background: #ffcc00;
+    border: none;
+    padding: 14px 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+    animation: fadeInUp 2s ease forwards;
+    border-radius: 6px;
+  }
+  .banner-content button:hover {
+    background: #ff9900;
+    transform: scale(1.05);
+  }
+
+  /* Animation */
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* ============= SECTION ============= */
+  section {
+    padding: 70px 20px;
+    text-align: center;
+    background: #fff;
+    color: #333;
+  }
+  section p {
+    max-width: 700px;
+    margin: 0 auto;
+    line-height: 28px;
+  }
+
+  /* ============= RESPONSIVE ============= */
+  @media (max-width: 768px) {
+    .banner-content h2 {
+      font-size: 28px;
+    }
+    .banner-content p {
+      font-size: 16px;
+      line-height: 24px;
+    }
+    .banner-content button {
+      font-size: 14px;
+    }
+    section h3 {
+      font-size: 26px;
+    }
+    section p {
+      font-size: 16px;
+    }
+  }
+</style>
+
+<div class="banner">
+  <div class="banner-content">
+    <h2><%=hp.hero_title%></h2>
+    <p>
+      <%-hp.hero_desc%>
+    </p>
+    <!-- Optimizing every race – from management, timing, to athlete experience. -->
+    <button onclick="scrollToSection('about')">Explore now</button>
+  </div>
+</div> 
+
+
+<section id="about">
+  <h3><%=hp.about_title%></h3>
+  <p>
+    <%-hp.about_desc%>
+    <!-- We bring comprehensive solutions for running events, combining
+    high-precision timing technology with an intelligent management platform.
+    From organization to race day, every detail is optimized to deliver a smooth
+    and professional experience for both organizers and participants. -->
+  </p>
+</section>
+
+<!-- FontAwesome -->
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+/>
+
+<script>
+  function scrollToSection(id) {
+    document.getElementById(id).scrollIntoView({ behavior: "smooth" });
+  }
+  
+</script>

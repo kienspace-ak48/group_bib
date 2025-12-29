@@ -55,15 +55,16 @@
         <div class="flex items-center justify-between mb-4">
             <h2 class="text-xl font-semibold">Danh sách thành viên</h2>
             <div>
+                <button class="px-5 py-2 text-3 bg-amber-200 rounded-lg shadow" onclick="changePaymentStatus()">Change payment status</button>
                 <button
-                    class="px-5 py-2 bg-green-500 text-white rounded-lg shadow hover:bg-green-700"
+                    class="px-5 py-2 text-3 bg-green-500 text-white rounded-lg shadow hover:bg-green-700"
                     onclick="openImportModal()"
                 >
                     Import data excel
                 </button>
                 <button
                     onclick="openFormAddModal()"
-                    class="px-5 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700"
+                    class="px-5 py-2 text-3 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700"
                 >
                     Thêm thành viên
                 </button>
@@ -74,6 +75,9 @@
             <table id="tableParticipant" class="min-w-full border border-gray-200 rounded-lg overflow-hidden">
                 <thead class="bg-gray-100">
                     <tr class="text-left text-sm text-gray-600">
+                        <th class="px-5 py-3 text-sm font-semibold text-gray-700">
+                            <input type="checkbox" id="checkAll" />
+                        </th>
                         <th class="px-4 py-3 border-b">#</th>
                         <th class="px-4 py-3 border-b">Họ tên</th>
                         <th class="px-4 py-3 border-b">Email</th>
@@ -87,23 +91,21 @@
                 <tbody class="text-sm">
                     <%if(runners && runners.length>0){%> <%runners.forEach((r,i)=>{%>
                     <tr data-id="<%=r._id%>" class="border-b hover:bg-gray-50">
+                        <td class="px-5 py-3"><input type="checkbox"  data-id="<%=r._id%>" class="row-check" /></td>
                         <td class="px-4 py-3"><%=i+1%></td>
-                        <td class="px-4 py-3 font-medium"><%=r.fullname%></td>
+                        <td class="px-4 py-3 font-medium text-indigo-500 cursor-pointer" data-info="info"><%=r.fullname%></td>
                         <%
                         var[local, domain] = r.email.split('@');
                         %>
                         <td class="px-4 py-3"><span class="text-[red]">xx</span><%=local.slice(-6)+'@'+domain%></td>
                         <td class="px-4 py-3"><span class="text-[red]">xx</span><%=r.phone.slice(-4)%></td>
                         
-                        <td class="px-4 py-3"><%=r.distance%></td>
-                        <td class="px-4 py-3">
-                            <%-r.payment_status==='unpaid' ?`<span
-                                class="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs"
-                                >Chờ thanh toán </span
-                            >` :`<span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs"
-                                >Đã thanh toán </span
-                            >` %>
-                        </td>
+                        <td class="px-4 py-3"><%=r.distance_name%></td>
+                        <% if(r.payment_status==="PAID"){%>
+                                    <td class="px-5 py-3 text-[14px] text-[#45c4a0]">Đã thanh toán 🥰</td>
+                                <%}else{%>
+                                    <td class="px-5 py-3 text-[14px] text-[#dc3545]">Chưa thanh toán 😭</td>
+                                <%}%>
                         <td class="px-4 py-3">Thành viên</td>
                     </tr>
                     <%})%> <%}%>
@@ -157,7 +159,7 @@
     </div>
     <!-- formAdd modal -->
     <!-- <button  onclick="openFormAddModal()" class="bg-blue-600 text-white px-4 py-4 rounded">Add Runner</button> -->
-    <div id="formAddModal" class="addRunnerForm fixed inset-0 bg-black/50 hidden justify-center items-center">
+    <div id="formAddModal" class="addRunnerForm fixed inset-0 bg-black/50 hidden justify-center items-center z-[101]" >
         <div class="bg-[#f0f0f8] p-6 rounded-lg shadow-lg w-[90vw] max-h-[90vh] overflow-y-auto">
             <h2 class="text-lg font-bold mb-3">🏃‍♂️‍➡️ Thông Tin Người Đăng Ký | <span id="action_currently" class="text-lg font-bold mb-3">--</span></h2>
             <!--  -->
@@ -331,6 +333,8 @@
         const btnDeleteOneRunner = document.querySelector('#btn-cta-deleteonerunner');
         const btnUpdateOneRunner = document.querySelector('#btn-cta-updateonerunner');
         const participantTable = document.querySelector('#tableParticipant');
+        const checkAll = document.querySelector('#checkAll');
+    const rowCheck = document.querySelectorAll('.row-check');
         let participantDataTable = null;
         const modalFormAddAndEditParticipant = document.querySelector('#formAddModal');
         // a
@@ -364,7 +368,27 @@
                 box.classList.add('scale-100', 'opacity-100');
             }, 10);
         }
+        // change payment status 
+        function changePaymentStatus(){
+            const selected = getSelectedId();
+            console.log(selected);
+            $.ajax({
+                url: `/user/event-detail/<%=group._id%>/confirm-payment`,
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ids: selected}),
+                success: (res)=>{
+                    if(res.success){
+                        console.log('change success')
+                        participantDataTable.ajax.reload(null, false) //null ko cb - fasle -> giu nguyen trang hien tai
+                    }
+                },
+                error: (xhr, status, err)=>{
+                    console.log(xhr?.responseJSON?.mess || "Server error");
+                }
 
+            })
+        }
         // Close modal
         function closeImportModal() {
             const modal = document.getElementById('importModal');
@@ -387,7 +411,18 @@
         document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') closeImportModal();
         });
-
+        // select
+        checkAll.addEventListener('change', ()=>{
+            rowCheck.forEach(cb=>cb.checked=checkAll.checked)
+        });
+        function getSelectedId(){
+            return Array.from(
+                document.querySelectorAll('#tableParticipant .row-check:checked')
+            ).map(cb=>cb.dataset.id);
+        }
+        // setInterval(()=>{
+        //     console.log(getSelectedId())
+        // }, 5000)
         // Show filename
         document.getElementById('excelFile').addEventListener('change', function () {
             const fileName = document.getElementById('fileName');
@@ -429,15 +464,19 @@
         }
         // data table
         $(document).ready(function () {
-            participantDataTable = $('#tableParticipant').DataTable();
+            participantDataTable = $('#tableParticipant').DataTable({
+            columnDefs: [
+                { targets: [0, 1], orderable: false, searchable: false }
+            ],
+        });
         });
         //
         btnAddOneRunner.addEventListener('click', () => {
             AddOneRunner();
         });
-        $('#tableParticipant tbody').on('click', 'tr',async function () {
+        $('#tableParticipant tbody').on('click', 'td[data-info]',async function () {
             // let rowData = participantDataTable.row(this).data();
-            const dataRunnerId = this.getAttribute('data-id');
+            const dataRunnerId = this.closest('tr').getAttribute('data-id');
             // console.log('dataRunnerId', dataRunnerId)
             // console.log('Runner ', rowData);
             //cal api lay info runner
@@ -478,7 +517,7 @@
                 // contentType: 'application/json',
                 success: (res)=>{
                     if(res.success){
-                        console.log(res.data);
+                        // console.log(res.data);
                         runner = res.data;
                     };
                 },
@@ -486,7 +525,7 @@
                     console.log(xhr?.responseJSON?.mess || 'Server error');
                 }
             })
-            console.log(runner)
+            // console.log(runner)
             return runner|| {};
         }
         function AddOneRunner() {

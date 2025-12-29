@@ -6,7 +6,7 @@
             <%let no = 1;%> <% carts.forEach(t => { %> <% for(let i = 0; i < t.qty; i++){ %>
             <!-- Render form nhập thông tin -->
             <!-- Item 2 -->
-            <div class="bg-white rounded-lg shadow p-4" data-item>
+            <div class="bg-white rounded-lg shadow p-4" data-item data-type="runner">
                 <div class="flex items-center justify-between cursor-pointer" data-header>
                     <div class="flex items-center gap-3">
                         <div
@@ -15,6 +15,7 @@
                             <%=no++%>
                         </div>
                         <span class="font-semibold text-gray-800"><%=t.name%></span>
+                        <input type="hidden" name="distance_type" value="<%=t.id%>" />
                     </div>
 
                     <svg
@@ -48,33 +49,52 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="text-sm font-medium">Họ & tên (*)</label>
-                                <input id="fullname" name="fullname" class="w-full border rounded-lg px-3 py-2" />
-                                <p id="err-fullname" class="text-xs text-pink-500 mt-1">Nhập đúng theo CCCD hoặc Giấy khai sinh.</p>
+                                <input
+                                    id="fullname"
+                                    name="fullname"
+                                    class="w-full border border-[#cacfe7] rounded-lg px-3 py-2 focus:border-[#9fbcf0] focus:outline-none"
+                                />
+                                <p id="err-fullname" class="text-xs text-pink-500 mt-1">
+                                    Nhập đúng theo CCCD hoặc Giấy khai sinh.
+                                </p>
                             </div>
 
                             <div>
                                 <label class="text-sm font-medium">Email (*)</label>
-                                <input name="email" class="w-full border rounded-lg px-3 py-2" />
+                                <input
+                                    name="email"
+                                    class="w-full border rounded-lg px-3 py-2 border-[#cacfe7] focus:border-[#9fbcf0] focus:outline-none"
+                                />
                                 <p id="err-email" class="text-xs text-pink-500 mt-1">Nên dùng Gmail để đăng ký.</p>
                             </div>
 
                             <div>
                                 <label class="text-sm font-medium">Số điện thoại (*)</label>
-                                <input name="phone" class="w-full border rounded-lg px-3 py-2" />
-                                <p id="err-phone" class="text-sx text-pink-500 mt-1">Nhập sdt runner </p>
+                                <input
+                                    name="phone"
+                                    class="w-full border rounded-lg px-3 py-2 border-[#cacfe7] focus:border-[#9fbcf0] focus:outline-none"
+                                />
+                                <p id="err-phone" class="text-xs text-pink-500 mt-1">Nhập sdt của người chạy</p>
                             </div>
 
                             <div>
                                 <label class="text-sm font-medium">CCCD hoặc hộ chiếu (*)</label>
-                                <input name="cccd" class="w-full border rounded-lg px-3 py-2" />
-                                <p  id="err-cccd" class="text-xs text-pink-500 mt-1">
+                                <input
+                                    name="cccd"
+                                    class="w-full border rounded-lg px-3 py-2 border-[#cacfe7] focus:border-[#9fbcf0] focus:outline-none"
+                                />
+                                <p id="err-cccd" class="text-xs text-pink-500 mt-1">
                                     Nếu chưa có CCCD, nhập định danh của người giám hộ.
                                 </p>
                             </div>
 
                             <div>
                                 <label class="text-sm font-medium">Quốc tịch (*)</label>
-                                <select name="nationlity" id="nationlity" class="w-full border rounded-lg px-3 py-2">
+                                <select
+                                    name="nationlity"
+                                    id="nationlity"
+                                    class="w-full border rounded-lg px-3 py-2 border-[#cacfe7] focus:border-[#9fbcf0] focus:outline-none"
+                                >
                                     <%if(countries&&countries.length> 0){%>
                                     <option value="VN">Việt Nam</option>
                                     <%countries.forEach(q=>{%>
@@ -85,7 +105,11 @@
 
                             <div>
                                 <label class="text-sm font-medium">Quốc gia đang sinh sống (*)</label>
-                                <select name="nation" id="nation" class="w-full border rounded-lg px-3 py-2">
+                                <select
+                                    name="nation"
+                                    id="nation"
+                                    class="w-full border rounded-lg px-3 py-2 border-[#cacfe7] focus-border[#9fbcf0] focus:outline-none"
+                                >
                                     <option value="VN">Việt Nam</option>
                                     <%if(countries&&countries.length> 0){%> <%countries.forEach(q=>{%>
                                     <option value="<%=q.code%>"><%=q.name%></option>
@@ -95,7 +119,11 @@
 
                             <div>
                                 <label class="text-sm font-medium">Tỉnh/Thành phố đang sinh sống (*)</label>
-                                <select name="city" id="city" class="w-full border rounded-lg px-3 py-2">
+                                <select
+                                    name="city"
+                                    id="city"
+                                    class="w-full border rounded-lg px-3 py-2 border-[#cacfe7] focus:border-[#9fbcf0] outline-none"
+                                >
                                     <option>Hồ Chí Minh</option>
                                     <%if(provinces && provinces.length>0){%> <%provinces.forEach(p=>{%>
                                     <option value="<%=p.name%>"><%=p.name%></option>
@@ -105,16 +133,26 @@
 
                             <div>
                                 <label class="text-sm font-medium">Ngày sinh (*)</label>
-                                <input name="dob" type="date" class="w-full border rounded-lg px-3 py-2" />
+                                <input
+                                    name="dob"
+                                    type="date"
+                                    class="w-full border rounded-lg px-3 py-2 border-[#cacfe7] focus:border-[#9fbcf0] focus:outline-none"
+                                />
+                                <p id="err-dob" class="text-xs text-pink-500 mt-1"></p>
                             </div>
 
                             <div>
                                 <label class="text-sm font-medium">Giới tính (*)</label>
-                                <select name="gender" id="gender" class="w-full border rounded-lg px-3 py-2">
-                                    <option>Chọn thông tin</option>
+                                <select
+                                    name="gender"
+                                    id="gender"
+                                    class="w-full border rounded-lg px-3 py-2 border-[#cacfe7] focus:border-[#9fbcf0] focus:outline-none"
+                                >
+                                    <option value="">Chọn thông tin</option>
                                     <option value="0">Nữ</option>
                                     <option value="1">Nam</option>
                                 </select>
+                                <p id="err-gender" class="text-xs text-pink-500 mt-1"></p>
                             </div>
                         </div>
 
@@ -123,24 +161,38 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="text-sm font-medium">Tên trên BIB</label>
-                                <input name="bib_name" class="w-full border rounded-lg px-3 py-2" />
+                                <input
+                                    name="bib_name"
+                                    id="bib_name"
+                                    class="w-full border rounded-lg px-3 py-2 border-[#cacfe7] focus:border-[#9fbcf0] focus: outline-none"
+                                />
+                                <p id="err-bib_name" class="text-xs text-pink-500 mt-1"></p>
                             </div>
                             <div>
                                 <label class="text-sm font-medium">Distance</label>
-                                <select name="distance" id="distance" class="w-full border rounded-lg px-3 py-2">
-                                    <option>Chọn cự ly</option>
-                                    <option value="5KM">5KM</option>
-                                    <option value="10KM">10KM</option>
-                                    <option value="21Km">21KM</option>
-                                </select>
+                                <!-- <select name="distance" id="distance" class="w-full border rounded-lg px-3 py-2"> -->
+                                <input
+                                    type="text"
+                                    class="w-full border rounded-lg px-3 py-2 text-[red]"
+                                    value="<%=t.name%>"
+                                    disabled
+                                />
                                 <a href="#" class="text-blue-600 text-sm mt-1 inline-block">Chi tiết cỡ áo</a>
                             </div>
                             <div>
                                 <label class="text-sm font-medium">Size áo (*)</label>
-                                <select name="tshirt_size" id="tshirt_size" class="w-full border rounded-lg px-3 py-2">
-                                    <option>Chọn thông tin</option>
+                                <select
+                                    name="tshirt_size"
+                                    id="tshirt_size"
+                                    class="w-full border rounded-lg px-3 py-2 border-[#cacfe7] focus:border-[#9fbcf0] focus:outline-none"
+                                >
+                                    <option value="">Chọn thông tin</option>
+                                    <option value="M">M</option>
+                                    <option value="L">L</option>
+                                    <option value="L">XL</option>
                                 </select>
                                 <a href="#" class="text-blue-600 text-sm mt-1 inline-block">Chi tiết cỡ áo</a>
+                                <p id="err-tshirt_size" class="text-xs text-pink-500 mt-1"></p>
                             </div>
 
                             <!-- 3 input trống -->
@@ -148,25 +200,28 @@
                                 <label for="" class="text-sm font-medium">Tên người liên hệ khẩn cấp</label>
                                 <input
                                     name="patron_name"
-                                    class="w-full border rounded-lg px-3 py-2"
+                                    class="w-full border rounded-lg px-3 py-2 border-[#cacfe7] focus:border-[#9fbcf0] focus:outline-none"
                                     placeholder="Ex: Nguyen Van A"
                                 />
+                                <p id="err-patron_name" class="text-xs text-pink-500 mt-1"></p>
                             </div>
                             <div>
                                 <label for="">SĐT người liên hệ khẩn cấp</label>
                                 <input
                                     name="patron_phone"
-                                    class="w-full border rounded-lg px-3 py-2"
+                                    class="w-full border rounded-lg px-3 py-2 border-[#cacfe7] focus:border-[#9fbcf0] focus:outline-none"
                                     placeholder="Ex: 19001900"
                                 />
+                                <p id="err-patron_phone" class="text-xs text-pink-500 mt-1"></p>
                             </div>
                             <div>
                                 <label for="">Team</label>
                                 <input
                                     name="team"
-                                    class="w-full border rounded-lg px-3 py-2"
+                                    class="w-full border rounded-lg px-3 py-2 border-[#cacfe7] focus:outline-none focus:border-[#9fbcf0]"
                                     placeholder="Ex: Accessrace"
                                 />
+                                <p id="err-team" class="text-xs text-pink-500 mt-1"></p>
                             </div>
                         </div>
 
@@ -175,31 +230,43 @@
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                                 <label for="">Nhóm máu</label>
+                                <p>--</p>
                                 <!-- <input name="blood" class="w-full border rounded-lg px-3 py-2" placeholder="Nhóm máu" /> -->
-                                <select name="blood" id="blood" class="w-full border rounded-lg px-3 py-2">
-                                    <option value="#">--choose--</option>
+                                <select
+                                    name="blood"
+                                    id="blood"
+                                    class="w-full border rounded-lg px-3 py-2 border-[#cacfe7] focus:border-[#9fbcf0] focus:outline-none"
+                                >
+                                    <option value="">--choose--</option>
                                     <option value="O">O</option>
                                     <option value="A">A</option>
                                     <option value="B">B</option>
                                     <option value="AB">AB</option>
                                     <option value="NO">-Không rõ-</option>
                                 </select>
+                                <p id="err-blood" class="text-xs text-pink-500 mt-1"></p>
                             </div>
                             <div>
                                 <label for="">Thông tin y tế</label>
+                                <p><small>(nhập nếu có)</small></p>
                                 <input
                                     name="medical"
-                                    class="w-full border rounded-lg px-3 py-2"
+                                    value="--Không--"
+                                    class="w-full border rounded-lg px-3 py-2 border-[#cacfe7] focus:border-[#9fbcf0] focus:outline-none"
                                     placeholder="Thông tin y tế"
                                 />
+                                <p id="err-medical" class="text-xs text-pink-500 mt-1"></p>
                             </div>
                             <div>
-                                <label for="">Loại thuốc đang dùng</label>
+                                <label for="">Loại thuốc đang dùng </label>
+                                <p><small>(nhập nếu có)</small></p>
                                 <input
                                     name="medicine"
-                                    class="w-full border rounded-lg px-3 py-2"
+                                    value="--Không--"
+                                    class="w-full border rounded-lg px-3 py-2 border-[#cacfe7] focus:border-[#9fbcf0] focus:outline-none"
                                     placeholder="Loại thuốc đang dùng"
                                 />
+                                <p id="err-medicine" class="text-xs text-pink-500 mt-1"></p>
                             </div>
                         </div>
                     </div>
@@ -209,13 +276,34 @@
         </div>
 
         <!-- ==== Right Column (FORM NGƯỜI MUA) ==== -->
-        <div class="space-y-4">
+        <div class="space-y-4" id="buyer_info">
             <h2 class="text-lg font-bold text-gray-700 flex items-center gap-2">🧾 THÔNG TIN NGƯỜI MUA</h2>
 
-            <div class="bg-white rounded-lg shadow p-4 space-y-3">
-                <input type="text" id="buyer_name" placeholder="Họ & tên (*)" class="w-full border p-2 rounded" />
-                <input type="email" id="buyer_email" placeholder="Email (*)" class="w-full border p-2 rounded" />
-                <input type="text" id="buyer_phone" placeholder="Số điện thoại (*)" class="w-full border p-2 rounded" />
+            <div class="bg-white rounded-lg shadow p-4 space-y-3" buyer-data data-type="runner">
+                <input
+                    type="text"
+                    id="buyer_name"
+                    name="buyer_name"
+                    placeholder="Họ & tên (*)"
+                    class="w-full border p-2 rounded border-[#cacfe7] focus:outline-none focus:border-[#9fbcf0]"
+                />
+                <p id="err-buyer_name" class="err text-xs text-pink-500 mt-1"></p>
+                <input
+                    type="email"
+                    id="buyer_email"
+                    name="buyer_email"
+                    placeholder="Email (*)"
+                    class="w-full border p-2 rounded border-[#cacfe7] focus: outline-none focus:border-[#9fbcf0]"
+                />
+                <p id="err-buyer_email" class="err text-xs text-pink-500 mt-1"></p>
+                <input
+                    type="text"
+                    id="buyer_phone"
+                    name="buyer_phone"
+                    placeholder="Số điện thoại (*)"
+                    class="w-full border p-2 rounded border-[#cacfe7] focus: outline-none focus:border-[#9fbcf0]"
+                />
+                <p id="err-buyer_phone" class="err text-xs text-pink-500 mt-1"></p>
             </div>
 
             <h2 class="text-lg font-bold text-gray-700">💳 CHỌN NHÓM THAM GIA</h2>
@@ -227,7 +315,11 @@
                     <span class="font-medium">Thanh toán qua mã QR</span>
                     <span class="text-xs bg-blue-600 text-white px-2 py-1 rounded">Đề xuất</span> -->
                 </label>
-                <select name="" id="group_id" class="w-full border rounded-lg">
+                <select
+                    name=""
+                    id="group_id"
+                    class="w-full border rounded-lg border-[#cacfe7] focus:border-[#9fbcf0] focus:outline-none"
+                >
                     <%if(groups && groups.length>0){%> <%groups.forEach(g=>{%>
                     <option value="<%=g.id%>"><%=g.name%></option>
                     <%})%> <%}%>
@@ -260,13 +352,6 @@
                         <span class="font-medium"><%=t.price%>,000đ</span>
                     </div>
                     <% } %> <% }) %>
-
-                    <!-- Subtotal -->
-                    <!-- <div class="flex justify-between pt-4 text-gray-600">
-        <span>Tạm tính</span>
-        <span class="font-semibold" id="temp_payment">1,316,000đ</span>
-      </div> -->
-
                     <!-- Total -->
                     <div class="flex justify-between mt-1 text-lg font-bold">
                         <span>Tổng thanh toán</span>
@@ -299,120 +384,197 @@
 
 <!-- =========================== JS DROPDOWN =========================== -->
 <script>
-    // global scope
-    const elementModal = document.querySelector('#formAddModal');
-    let shoppingCart = <%-JSON.stringify(carts)%>;
-    const btnCtaCheckout = document.querySelector('#btn_cta_checkout');
+            // global scope
+            const elementModal = document.querySelector('#formAddModal');
+            let shoppingCart = <%-JSON.stringify(carts)%>;
+            const btnCtaCheckout = document.querySelector('#btn_cta_checkout');
 
-    let total = 0;
-    total = shoppingCart.reduce((pre, cur)=>pre+cur.qty*cur.price, 0)
-    // document.querySelector('#temp_payment').innerText = total.toLocaleString('vi-VN')+'.000đ'
-    document.querySelector('#final_payment').innerText = total.toLocaleString('vi-VN')+'.000đ'
-    console.log(shoppingCart)
-    // function openModal() {
-    //     elementModal.classList.remove('hidden');
-    //     elementModal.classList.add('flex');
-    // }
-    // function closeModal() {
-    //     elementModal.classList.remove('flex');
-    //     elementModal.classList.add('hidden');
-    // }
-    document.querySelectorAll('#register_list [data-item]').forEach((item) => {
-        const header = item.querySelector('[data-header]');
-        const content = item.querySelector('[data-content]');
-        const iconDown = item.querySelector('[data-icon-down]');
-        const iconUp = item.querySelector('[data-icon-up]');
+            let total = 0;
+            total = shoppingCart.reduce((pre, cur)=>pre+cur.qty*cur.price, 0)
+            // document.querySelector('#temp_payment').innerText = total.toLocaleString('vi-VN')+'.000đ'
+            document.querySelector('#final_payment').innerText = total.toLocaleString('vi-VN')+'.000đ'
+            console.log(shoppingCart)
+            document.querySelectorAll('#register_list [data-item]').forEach((item) => {
+                const header = item.querySelector('[data-header]');
+                const content = item.querySelector('[data-content]');
+                const iconDown = item.querySelector('[data-icon-down]');
+                const iconUp = item.querySelector('[data-icon-up]');
 
-        header.addEventListener('click', () => {
-            content.classList.toggle('hidden');
-            iconDown.classList.toggle('hidden');
-            iconUp.classList.toggle('hidden');
-        });
-    });
-    //
-    btnCtaCheckout.addEventListener('click', ()=>{
-        const items = document.querySelectorAll('[data-item]');
-    const result = [];
-    items.forEach(item=>{
-        const inputs = item.querySelectorAll('input, select');
-        console.log('inputs co gi? ', inputs)
-        const info={};
-        inputs.forEach(input=>{
-            const name = input.name;
-            //bo cac select ko co name
-            if(!name) return;
-            info[name] = input.value;
-        });
-        result.push(info);
-    })
-    // console.log('xem cac object item', result)
-    submitForm(result);
-    })
-    //==============================Validate here
-    const runnerSchema = Zod.object({
-  fullname: Zod.string().min(5, "Ít nhất 5 ký tự").max(8, 'ko nhieu hon 8 ky tu'),
-  email: Zod.string().email("Email không hợp lệ"),
-  phone: Zod.string().min(9, "Số điện thoại không hợp lệ"),
-  cccd: Zod.string().min(9, "CCCD không hợp lệ")
-});
-    // Lắng nghe tất cả runner
-document.querySelectorAll('#register_list [data-item]').forEach((item, index) => {
-  const inputs = item.querySelectorAll('input, select');
+                header.addEventListener('click', () => {
+                    content.classList.toggle('hidden');
+                    iconDown.classList.toggle('hidden');
+                    iconUp.classList.toggle('hidden');
+                });
+            });
+            //
+            btnCtaCheckout.addEventListener('click', () => {
+                const items = document.querySelectorAll('#register_list [data-item]');
+                // const items2 = document.querySelectorAll('#buyer_info [buyer-data]');
+                const result = [];
+                let hasError = false;
+                // 
+                items.forEach((item, index) => {
+                    const type =item.dataset.type;
+                    const inputs = item.querySelectorAll('input, select');
+                    const info = {};
 
-  inputs.forEach(input => {
-    const fieldName = input.name;
-    if (!fieldName) return;
+                    inputs.forEach(input => {
+                    if (!input.name) return;
+                    info[input.name] = input.value;
+                    });
+                    //fix
+                    const schema = runnerSchema;
 
-    // Realtime validate khi gõ
-    input.addEventListener('input', () => validateField(item, fieldName, input.value));
+                    // 🔴 VALIDATE TOÀN BỘ 1 RUNNER
+                    const parsed = schema.safeParse(info);
 
-    // Validate khi rời input
-    input.addEventListener('blur', () => validateField(item, fieldName, input.value));
-  });
-});
+                    if (!parsed.success) {
+                    hasError = true;
 
-// Hàm validateField
-function validateField(item, fieldName, value) {
-  const fieldSchema = runnerSchema.shape[fieldName];
-  if (!fieldSchema) return;
+                    // show lỗi từng field
+                    parsed.error.errors.forEach(err => {
+                        console.error(`❌ Runner #${index + 1} | Field: ${err.path[0]} | Lỗi: ${err.message}`);
+                        const field = err.path[0];
+                        const input = item.querySelector(`[name="${field}"]`);
+                        const errEl = item.querySelector(`#err-${field}`);
 
-  try {
-    fieldSchema.parse(value); // validate field
-    // Xóa lỗi nếu hợp lệ
-    const input = item.querySelector(`[name="${fieldName}"]`);
-    input.classList.remove('border-red-500');
-    const errEl = item.querySelector(`#err-${fieldName}`);
-    if (errEl) errEl.textContent = '';
-  } catch (err) {
-    const input = item.querySelector(`[name="${fieldName}"]`);
-    input.classList.add('border-red-500');
-    const errEl = item.querySelector(`#err-${fieldName}`);
-    if (errEl) errEl.textContent = err.errors[0].message;
-  }
-}
+                        if (input) input.classList.add('border-red-500');
+                        if (errEl) errEl.textContent = err.message;
+                    });
+                    }
 
-    // submit form
-    function submitForm(data){
-        const buyer = {
-            buyer_name: document.getElementById('buyer_name').value, buyer_email: document.getElementById('buyer_email').value, buyer_phone: document.getElementById('buyer_phone').value, 
-            group_id: document.getElementById('group_id').value,
-            cart: shoppingCart
-        }
-        // data.push({})
-        // const merged = [{...data[0], ...data[1]}] //spread
-        $.ajax({
-            url: `/user/event-detail/<%=slug%>/payment`,
-            method: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({runner: data, buyer}),
-            success: (res)=>{
-                if(res.success){
-                    console.log(res);
+                    result.push(info);
+                });
+
+                // ❌ CÓ LỖI → KHÔNG SUBMIT
+                if (hasError) {
+                    console.log('loi gi? ',hasError)
+                    console.log('Form có lỗi, không submit');
+                    return;
                 }
-            },
-            error: (xhr, status, err)=>{
-                console.log(xhr.responseJSON.mess|| 'Server error');
+                
+                // ✅ HỢP LỆ → SUBMIT
+                submitForm(result);
+                });
+
+            //==============================Validate here
+            const buyerSchema = Zod.object({
+                buyer_name: Zod.string().min(3, 'Tối thiểu 3 ký tự'),
+                buyer_email: Zod.string().email('Nên sửa dụng gmail'),
+                buyer_phone: Zod.string().min(9, { message: "SĐT tối thiểu 9 số" })
+    .refine(val => /^\d+$/.test(val), {
+      message: "SĐT chỉ được chứa số"
+    }),
+            });
+            // zod 2
+            // get all data 
+            function getFormData(){
+                const data ={};
+                document.querySelectorAll('#buyer_info input').forEach(input=>{
+                    data[input.name] = input.value.trim();
+                });
+                return data;
             }
-        })
-    }
+            function resetErrors(){
+                document.querySelectorAll('#buyer_info .err').forEach((el)=>{
+                    el.textContent ="";
+                });
+            }
+            function renderErrors(zodError){
+                console.log('zod error ', zodError);
+                const errors = zodError.flatten().fieldErrors;
+                Object.keys(errors).forEach((field)=>{
+                    const errEl = document.querySelector(`#err-${field}`);
+                    if(errEl){
+                        errEl.textContent = errors[field][0];
+                    }
+                })
+            }
+            
+            const runnerSchema = Zod.object({
+                fullname: Zod.string().min(5, "Ít nhất 5 ký tự").max(40, 'Không quá 40 ký tự'),
+                email: Zod.string().email("Email không hợp lệ"),
+                phone: Zod.string().min(9, "Số điện thoại không hợp lệ(10 digit)"),
+                cccd: Zod.string().min(9, "CCCD không hợp lệ(>= 9 digit)"),
+                gender: Zod.string().min(1, 'Vui lòng chọn giới tính'),
+                dob: Zod.string().refine(val=>!isNaN(Date.parse(val)), {
+                    message: "Ngày sinh không hợp lệ",
+                }),
+                bib_name: Zod.string().min(1, 'Nickname ấn tượng, sao lại để trống 😎').max(30, 'Dài quá ai nhớ nỗi, hic...'),
+                tshirt_size: Zod.string().min(1, 'Vui lòng chọn size'),
+                patron_name: Zod.string().min(2, 'Tối thiểu 2 ký tự').max(40, 'Không quá 40 ký tự'),
+                patron_phone: Zod.string().min(9, "Số điện thoại không hợp lệ(10 digit)").max(20, 'Số điện thoại ngoài hành tinh sao'),
+                blood: Zod.string().min(1, 'Vui lòng chọn nhóm máu'),
+                medical: Zod.string().max(100, 'Không quá 100 ký tự'),
+                medicine: Zod.string().max(100, 'Không quá 100 ký tự')
+            });
+            // Lắng nghe tất cả runner
+        document.querySelectorAll('[data-item]').forEach((item, index) => {
+          const inputs = item.querySelectorAll('input, select');
+
+          inputs.forEach(input => {
+            const fieldName = input.name;
+            if (!fieldName) return;
+
+            // Realtime validate khi gõ
+            input.addEventListener('input', () => validateField(item, fieldName, input.value));
+
+            // Validate khi rời input
+            input.addEventListener('blur', () => validateField(item, fieldName, input.value));
+          });
+        });
+        // Hàm validateField
+        function validateField(item, fieldName, value) {
+          const fieldSchema = runnerSchema.shape[fieldName];
+          if (!fieldSchema) return;
+
+          try {
+            fieldSchema.parse(value); // validate field
+            // Xóa lỗi nếu hợp lệ
+            const input = item.querySelector(`[name="${fieldName}"]`);
+            input.classList.remove('border-red-500');
+            const errEl = item.querySelector(`#err-${fieldName}`);
+            if (errEl) errEl.textContent = '';
+          } catch (err) {
+            const input = item.querySelector(`[name="${fieldName}"]`);
+            input.classList.add('border-red-500');
+            const errEl = item.querySelector(`#err-${fieldName}`);
+            if (errEl) errEl.textContent = err.errors[0].message;
+          }
+        }
+        
+
+            // submit form
+            function submitForm(data){
+                const buyer = {
+                    buyer_name: document.getElementById('buyer_name').value, buyer_email: document.getElementById('buyer_email').value, buyer_phone: document.getElementById('buyer_phone').value,
+                    group_id: document.getElementById('group_id').value,
+                    cart: shoppingCart
+                }
+                resetErrors();
+                const data_check = getFormData();
+                const result = buyerSchema.safeParse(data_check);
+                if(!result.success){
+                    renderErrors(result.error);
+                    return
+                }
+                console.log('data buyer pass')
+                // data.push({})
+                // const merged = [{...data[0], ...data[1]}] //spread
+                $.ajax({
+                    url: `/user/event-detail/<%=slug%>/payment`,
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({runner: data, buyer}),
+                    success: (res)=>{
+                        if(res.success){
+                            console.log(res);
+                            document.location.href="/event";
+                        }
+                    },
+                    error: (xhr, status, err)=>{
+                        console.log(xhr.responseJSON.mess|| 'Server error');
+                    }
+                })
+            }
 </script>

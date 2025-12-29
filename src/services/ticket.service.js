@@ -36,7 +36,7 @@ class TicketService {
             return [];
         }
     }
-    async GetByEventId(id){
+    async GetsByEventId(id){
         try {
             const tickets = await TicketEntity.find({event_id: id}).lean();
             return tickets;

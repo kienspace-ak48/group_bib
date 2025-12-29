@@ -17,6 +17,7 @@ const User = require('../model/User');
 const { sendOtpMail } = require('../services/mail.service');
 const jwt = require('jsonwebtoken');
 const { sendMailDomain } = require('../services/mailDomain.service');
+const ParticipantEntity = require('../model/Participant');
 var userDTO = {
     fullname: 'Kien Vu',
     email: 'test@gmail.com',
@@ -91,29 +92,28 @@ const userController = () => {
             res.render(VNAME + '/login', { layout: VLAYOUT });
         },
         //
-        ReSendCode: async(req, res)=>{
+        ReSendCode: async (req, res) => {
             // console.log('aaa',req.body)
-            const {email}  = req.body;
+            const { email } = req.body;
             try {
                 const exist = await User.findOne({
                     email: email,
-                    is_verified: false
-                })
+                    is_verified: false,
+                });
                 const random = Math.random();
-                console.log("random: ", random)
-                if(!exist) return res.status(400).json({success: false, mess:' Email ont exist'});
-                const OTP = Math.floor(10000+random*900000).toString();
-                exist.code =OTP;
-                exist.verify_expires_at= new Date();
+                console.log('random: ', random);
+                if (!exist) return res.status(400).json({ success: false, mess: ' Email ont exist' });
+                const OTP = Math.floor(10000 + random * 900000).toString();
+                exist.code = OTP;
+                exist.verify_expires_at = new Date();
                 await sendOtpMail(email, OTP);
                 await sendMailDomain(email, OTP);
                 await exist.save();
-                
-                res.json({success: false, mess: 'Check hom thuw'})
+
+                res.json({ success: false, mess: 'Check hom thuw' });
             } catch (error) {
-                console.log(CNAME, error.message)
-                res.json({success: false, mess: error.message|| 'Server error'});
-                
+                console.log(CNAME, error.message);
+                res.json({ success: false, mess: error.message || 'Server error' });
             }
         },
         // ajax
@@ -134,8 +134,7 @@ const userController = () => {
                     phone: data.phone,
                     password: data.password,
                     code: OTP,
-                    verify_expires_at: new Date()
-
+                    verify_expires_at: new Date(),
                 });
                 await user.save();
                 await sendOtpMail(user.email, OTP);
@@ -152,13 +151,14 @@ const userController = () => {
                 const { l_username, l_password } = req.body;
                 // handle login
                 if (!l_username || !l_password)
-                    return res.render(VNAME+'/login', {layout: false, err: 'Enter username and password'});
+                    return res.render(VNAME + '/login', { layout: false, err: 'Enter username and password' });
                 const result = await UserService.GetByConditionEmailOrName(l_username);
 
-                if (!result) return res.render(VNAME+'/login', {layout: false, err: 'Account not exist'});
-                if(!result.is_verified)  return res.render(VNAME+'/login', {layout: false, err: 'Account not verified!'});
-                const isMatch =await result.comparePassword(l_password);
-                if (!isMatch) return res.render(VNAME+'/login', {layout: false, err: 'user or password wrong'});
+                if (!result) return res.render(VNAME + '/login', { layout: false, err: 'Account not exist' });
+                if (!result.is_verified)
+                    return res.render(VNAME + '/login', { layout: false, err: 'Account not verified!' });
+                const isMatch = await result.comparePassword(l_password);
+                if (!isMatch) return res.render(VNAME + '/login', { layout: false, err: 'user or password wrong' });
                 //cap token cho client
                 const token = jwt.sign(
                     {
@@ -201,7 +201,6 @@ const userController = () => {
                 const user = await User.findOne({
                     email: email,
                     code: code,
-
                 });
                 if (!user) {
                     return res.status(400).json({
@@ -209,12 +208,12 @@ const userController = () => {
                         mess: 'Invalid OTP',
                     });
                 }
-                const diffMinutes = (now - user.verify_expires_at)/(1000*60);
+                const diffMinutes = (now - user.verify_expires_at) / (1000 * 60);
                 //cau hinh 2p
-                console.log('time now ',diffMinutes)
-                if(diffMinutes>1){
+                console.log('time now ', diffMinutes);
+                if (diffMinutes > 1) {
                     res.status(500).json({ success: false, mess: 'Code expiried' });
-                    return 
+                    return;
                 }
                 user.code = null;
                 user.is_verified = true;
@@ -280,6 +279,75 @@ const userController = () => {
                 res.render(VNAME + 'user/groupDetail', { layout: VLAYOUT, group: '', runners: [], count: 0 });
             }
         },
+        //ajax get all data runner
+        RunnerDataList: async (req, res) => {
+            const _idGroup = req.params.id;
+            const runner = await ParticipantService.GetAll2(_idGroup);
+            try {
+                const draw = parseInt(req.query.draw) || 1;
+                const start = parseInt(req.query.start) || 0;
+                const length = parseInt(req.query.length) || 10;
+
+                const query = { group: groupId };
+
+                // 🎯 search theo field
+                if (req.query.fullname) {
+                    query.fullname = { $regex: req.query.fullname, $options: 'i' };
+                }
+
+                if (req.query.email) {
+                    query.email = { $regex: req.query.email, $options: 'i' };
+                }
+
+                if (req.query.phone) {
+                    query.phone = { $regex: req.query.phone, $options: 'i' };
+                }
+
+                const recordsTotal = await ParticipantEntity.countDocuments({ group: groupId });
+                const recordsFiltered = await ParticipantEntity.countDocuments(query);
+
+                const runners = await ParticipantEntity.find(query).skip(start).limit(length).lean();
+
+                const data = runners.map((r, i) => ({
+                    id: r._id,
+                    index: start + i + 1,
+                    fullname: r.fullname,
+                    email: r.email,
+                    phone: r.phone,
+                    distance: r.distance_name,
+                    payment: r.payment_status,
+                }));
+
+                res.json({
+                    draw,
+                    recordsTotal,
+                    recordsFiltered,
+                    data,
+                });
+            } catch (err) {
+                console.error(err);
+                res.json({
+                    draw: 1,
+                    recordsTotal: 0,
+                    recordsFiltered: 0,
+                    data: [],
+                });
+            }
+        },
+        ChangePaymentStatus: async (req, res) => {
+            try {
+                const _ids = req.body.ids;
+                const _groupId = req.params.slug;
+                const _user = req.user;
+                console.log(_ids, _groupId, _user);
+                const result = await ParticipantService.ChangePaymentStatus(_ids, _groupId, _user);
+                if (!result) new Error('Change status failed');
+                res.json({ success: true });
+            } catch (error) {
+                console.log(CNAME, error.message);
+                res.json({ success: false, mess: error.message });
+            }
+        },
         GroupDetailImportExcel: async (req, res) => {
             const errors = [];
             const groupId = req.body.group;
@@ -333,7 +401,10 @@ const userController = () => {
             try {
                 const data = req.query.cart;
                 const carts = JSON.parse(data);
+                const event = await EventService.GetBySlug(slug);
+                console.log(event);
                 const group = await GroupService.GetListByEventSlug(slug);
+                const tickets = await TicketService.GetsByEventId(event._id);
                 group.forEach((g, i) => {
                     groupView.push({ id: g._id, name: g.group_name });
                 });
@@ -351,6 +422,7 @@ const userController = () => {
                     provinces: _provinces,
                     countries: _countries,
                     carts: cartView || [],
+                    tickets: tickets || [],
                     groups: groupView,
                 });
             } catch (error) {
@@ -360,14 +432,10 @@ const userController = () => {
                     provinces: _provinces,
                     countries: _countries,
                     carts: [],
+                    tickets: tickets || [],
                     groups: [],
                 });
             }
-
-            // const data =JSON.parse(req.body.cart);
-            // Lưu session
-            // req.session.cart = data;
-            // res.redirect(`/user/event-detail/${slug}/payment`)
         },
         Payment: async (req, res) => {
             let total = 0;
@@ -426,30 +494,34 @@ const userController = () => {
                 const createOrderItems = oiResult.data; //<- list order items co _id
                 //b5 tao paricipant
                 let index = 0;
-                const dataRunner = data.runner.map((d) => ({
-                    ...d,
-                    event_id: event._id,
-                    group_id: group_id,
-                }));
+                const dataRunner = data.runner.map((d) => {
+                    var orderItem = createOrderItems.find((x) => x.ticket_id.toString() === d.distance_type);
+                    const ticketMap = Object.fromEntries(tickets.map((t) => [t._id.toString(), t.name]));
+
+                    const _distanceName = ticketMap[d.distance_type].trim();
+                    return {
+                        ...d,
+                        event_id: event._id,
+                        group_id: group_id,
+                        user_id: user_id,
+                        order_id: orderId,
+                        distance_name: _distanceName,
+                        order_item_id: orderItem._id,
+                    };
+                });
                 console.log('data runner', data.runner);
-                const pResult = await participantPreService.AddByRunner(dataRunner);
+                const pResult = await participantService.AddByRunner(dataRunner);
+                // const pResult = await participantPreService.AddByRunner(dataRunner);
                 console.log('pResult ', pResult);
                 if (pResult.success) {
+                    res.json({ success: true, data });
                 }
-
-                // for(const item of createOrderItems){
-                // for(let i =0; i<item.qty; i++){
-
-                // }
-                // }
-                // console.log('hop le ko', isValid)
-
-                // console.log(req.user)
-                // console.log(user_id)
-                res.json({ success: true, data });
             } catch (error) {
                 console.log(CNAME, error.message);
             }
+        },
+        Transfer: async (req, res) => {
+            res.render(VNAME + 'user/payment', { layout: VLAYOUT });
         },
         testGetAllCountry: (req, res) => {
             // res.json(getAllCountries())

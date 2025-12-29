@@ -5,7 +5,10 @@ const ParticipantSchema = new mongoose.Schema({
     group_id: {type: mongoose.Schema.Types.ObjectId, ref: 'group'},
     user_id: {type: mongoose.Schema.Types.ObjectId, ref: 'user'},
     event_id: {type: mongoose.Schema.Types.ObjectId, ref: 'event'},
-    ticket_type_id: {type: mongoose.Schema.Types.ObjectId, ref: 'ticket_type'},
+    // ticket_type_id: {type: mongoose.Schema.Types.ObjectId, ref: 'ticket_type'},
+    distance_name :String,
+    order_item_id: String,
+    order_id: String,
     fullname: {type: String, require},
     cccd: {type: String, require},
     distance: String,
@@ -24,8 +27,22 @@ const ParticipantSchema = new mongoose.Schema({
     blood: String,
     medical: String,
     medicine: String,
-    payment_status: String
+    verify_by: {type: String, default: null},
+    payment_status: {type: String, default: "PENDING"}
 }, {timestamps: true});
 
 
 module.exports = mongoose.model('participant', ParticipantSchema)
+// 
+// payment_status: {
+//   type: String,
+//   enum: [
+//     'PENDING',
+//     'PROCESSING',
+//     'PAID',
+//     'FAILED',
+//     'EXPIRED',
+//     'REFUNDED'
+//   ],
+//   default: 'PENDING'
+// }

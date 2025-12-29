@@ -1,0 +1,174 @@
+<style>
+    .volunteer {
+        min-height: 75vh;
+        width: 100%;
+        background-color: #f6f6f6;
+        padding: 20px 0;
+    }
+
+    .main-container {
+        width: calc(80% - 32px);
+        max-width: 100%;
+        margin: 0 auto;
+        /* background-color: #ccc; */
+
+    }
+
+    /*  */
+    /* List grid */
+    .card-list {
+        margin: 0 10px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 30px;
+    }
+
+    /* Card */
+    .event-card {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+        overflow: hidden;
+        transition: transform 0.3s ease;
+        height:330px;
+    }
+
+    .event-card:hover {
+        transform: translateY(-5px);
+    }
+
+    /* Banner */
+    .event-image img {
+        padding: 0px 0px 10px 0px;
+        width: 100%;
+        display: inline-block;
+        border-radius: 10px;
+        transition: transform .5s ease;
+    }
+    .event-card:hover{
+        transform: translateY(-5px);
+        transition: ease .2s;
+        box-shadow: 7px 10px 4px rgba(0, 0, 0, 0.12);
+    }
+    .event-card:hover img{
+        transform: scale(1.05);
+    }
+    /* Nội dung card */
+    .event-content {
+        display: flex;
+        padding: 10px;
+        align-items: center;
+    }
+
+    /* Date */
+    .event-date {
+        text-align: center;
+        margin-right: 15px;
+    }
+
+    .event-date .day {
+        display: block;
+        font-size: 28px;
+        font-weight: 700;
+        color: #3a3a3a;
+    }
+
+    .event-date .month {
+        font-size: 14px;
+        color: #666;
+    }
+
+    /* Info */
+    .event-info {
+        flex: 1;
+    }
+
+    .event-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #222;
+        margin-bottom: 6px;
+    }
+
+    .event-location {
+        font-size: 14px;
+        color: #555;
+    }
+
+    .event-location i {
+        color: #0077ff;
+        margin-right: 6px;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+        .card-list {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 600px) {
+        .card-list {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+<section class="volunteer">
+    <div class="main-container">
+        <!-- <h1>Hello</h1> -->
+        <!-- <hr> <br> -->
+        <div id="volunteer-list" class="card-list">
+            <%cp.forEach((e,i)=>{ %>
+                <a href="/e-cert/contest-detail/<%=e.slug%>" data-id="" class="cta-event-detail">
+                    <div class="event-card">
+                    <div class="event-image">
+                        <!-- <img src="https://cdn-vietrace365.vn/uploads/f_65dbf8aac26f782ac4075d3b/thumbnail-700-x-420-20258161512.png"
+                            alt="HCMC Open Club Championship 2025"> -->
+                            <img src="<%=(e&&e.img_thumb)?e.img_thumb:''%>" width="300px" height="190px" style="object-fit: cover;" alt="">
+                    </div>
+                    <div class="event-content">
+                        <!-- <div class="event-date">
+                            <span class="day"></span>
+                            <span class="month"></span>
+                        </div> -->
+                        <div class="event-info">
+                            <h3 class="event-title">
+                                <%=e.title%>
+                            </h3>
+                            <p class="event-location limit-text-3" >
+                                <%=e.desc%>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                </a>
+                <%})%>
+
+        </div>
+</section>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function(){
+        //write down
+        const currentPath ='/e-cert'
+        const cid= '<%#=%>';
+        document.querySelectorAll('.nav-menu li a').forEach(a=>{
+            console.log(a)
+            if(a.getAttribute('href') ===currentPath){
+                a.classList.add('active')
+            }else{
+                a.classList.remove('active')
+            }
+        })
+        document.querySelectorAll('#volunteer-list .cta-event-detail').forEach((card, index)=>{
+        card.addEventListener('click', function(ev){
+            // const id = ev.currentTarget.getAttribute('data-id')
+            // console.log(ev.target)
+            // alert(id)
+        })
+    })
+    //function 
+})
+
+    
+</script>

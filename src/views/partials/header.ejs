@@ -1,3 +1,58 @@
-<header>
-    --Header
+<style>
+  li {
+    list-style: none;
+  }
+  a {
+    text-decoration: none;
+  }
+  
+</style>
+<header id="mainHeader">
+  <div class="logo">
+    <a href="/">
+      <img src="/logo/logo-ar.png" alt="logo" class="logo" />
+    </a>
+  </div>
+
+  <!-- hamburger -->
+  <div class="menu-toggle" id="menuToggle">☰</div>
+
+  <nav class="nav-menu" id="navMenu">
+    <li><a href="/" class="">Home</a></li>
+    <li><a href="/event">Events</a></li>
+    <li>
+      <a href="/about">About</a>
+    </li>
+    <!-- <a href="/volunteer">E-Cert</a> -->
+    <li>
+      <a href="/e-cert">E-Cert</a>
+    </li>
+  </nav>
+
+  <div class="header-icons">
+    <!-- <i class="icon user"></i> -->
+    <!-- <i class="icon globe"></i> -->
+    <span class="lang">VI</span>
+  </div>
 </header>
+
+<script>
+  //
+  const navLinks = document.querySelectorAll(".nav-menu a");
+  var currentPath = window.location.pathname;
+
+  navLinks.forEach((link) => {
+    if (link.getAttribute("href") === currentPath) {
+      link.classList.add("active");
+    } else {
+      link.classList.remove("active");
+    }
+  });
+  //
+  const menuToggle = document.getElementById("menuToggle");
+  const navMenu = document.getElementById("navMenu");
+
+  menuToggle.addEventListener("click", () => {
+    navMenu.classList.toggle("show");
+  });
+</script>

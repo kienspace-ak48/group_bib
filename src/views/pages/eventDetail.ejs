@@ -470,4 +470,36 @@
             }
         });
     });
+    //Countting down
+
+      // 👉 đặt ngày hết hạn (ví dụ JS day: 2026-01-01T23:59:59)
+      const saleEndTime = new Date('2026-01-01T23:59:59').getTime();
+
+      const countdown = setInterval(() => {
+        const now = new Date().getTime();
+        const distance = saleEndTime - now;
+        // Tính toán ngày - giờ - phút - giây
+        let days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        let hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        let minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        let seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+        // Hiển thị
+        // document.getElementById("countdown").innerHTML =
+        //   `${days}d ${hours}h ${minutes}m ${seconds}s`;
+          $("#countdown_date").text(days);
+          $("#countdown_hour").text(hours);
+          $("#countdown_minute").text(minutes);
+          $("#countdown_second").text(seconds)
+        // Hết hạn → hiển thị "Hết giờ"
+        if (distance < 0) {
+          clearInterval(countdown);
+        //   document.getElementById("countdown").innerHTML = "🎉 Hết khuyến mãi 🎉";
+        $("#countdown_date").text('00');
+          $("#countdown_hour").text('00');
+          $("#countdown_minute").text('00');
+          $("#countdown_second").text('00')
+        }
+      }, 1000);
+    //   countdown();
 </script>

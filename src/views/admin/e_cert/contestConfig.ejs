@@ -1,0 +1,1103 @@
+<script src="https://unpkg.com/konva@9/konva.min.js"></script>
+
+<style>
+  /* Overlay mờ nền */
+  .overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    opacity: 0;
+    visibility: hidden;
+    transition: 0.3s;
+    z-index: 999;
+  }
+
+  .overlay.active {
+    /* opacity: 1; */
+    /* visibility: visible; */
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    right: -400px;
+    /* Ẩn ngoài màn hình */
+    width: 350px;
+    height: 100%;
+    background: #fff;
+    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.15);
+    transition: 0.3s;
+    z-index: 1000;
+    overflow-y: auto;
+    padding: 20px;
+  }
+
+  .sidebar.active {
+    right: 0;
+    /* Trượt vào */
+  }
+
+  /* Nút đóng */
+  .close-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    float: right;
+    cursor: pointer;
+  }
+
+  .field {
+    margin-bottom: 15px;
+  }
+
+  .field label {
+    display: block;
+    font-size: 14px;
+    margin-bottom: 5px;
+    color: #555;
+  }
+
+  /* Nội dung chính */
+  .main-container {
+    /* margin-top: 80px; */
+    padding: 10px;
+  }
+
+  body {
+    padding: 0 20px;
+  }
+  .my-card {
+    padding: 20px;
+    background-color: #fafafb;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  }
+</style>
+<div class="modal fade" id="renderCertModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-body text-center">
+        <img src="" alt="Certificate" class="img-fluid rounded shadow" />
+      </div>
+    </div>
+  </div>
+</div>
+<!-- modal edit row -->
+<div id="ecertEditModal" class="modal fade" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-6">
+            <input type="text" placeholder="name" id="ee_name" />
+          </div>
+          <div class="col-6">
+            <input type="text" placeholder="role" id="ee_role" />
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-danger">Delete</button>
+        <button class="btn btn-outline-primary">Savechange</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- content here -->
+<h2 id="handlecontrol-header" class="mb-4 fw-bold">E-Cert Control</h2>
+<section class="control-header">
+  <div class="row g-4">
+    <!-- LEFT SIDE -->
+    <div class="col-md-6">
+      <!-- Certificate Image Upload -->
+      <div class="card shadow-sm mb-3">
+        <div class="card-body">
+          <h5 class="card-title">1.Certificate Image</h5>
+          <div class="mb-3">
+            <label for="choose-certimg" class="form-label"
+              >Choose certificate image</label
+            >
+            <input type="file" id="choose-certimg" class="form-control" />
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-primary w-50" id="cert-img-save">
+              Save Image
+            </button>
+            <!-- <button type="button" class="btn btn-outline-info w-50" data-bs-toggle="modal" data-bs-target="#CertModal">
+              Cert position
+            </button> -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Excel File Upload -->
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">
+            2.Excel File/<small
+              ><a href="/xlsx/ECert_Exemple.xlsx" download=""
+                >Sample File</a
+              ></small
+            >
+          </h5>
+          <div class="mb-3">
+            <label for="fileExcel" class="form-label">Choose excel file</label>
+            <input
+              type="file"
+              id="fileExcel"
+              name="fileExcel"
+              class="form-control"
+            />
+          </div>
+          <button
+            id="btn-submit-data"
+            type="submit"
+            class="btn btn-primary w-50"
+          >
+            Save file
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT SIDE -->
+    <!-- RIGHT SIDE -->
+    <div class="col-md-6">
+      <div class="card shadow-sm" id="cert-preview-modal">
+        <div
+          class="card-body d-flex justify-content-center align-items-center"
+          style="min-height: 300px"
+        >
+          <%if(c && c.img_path){ %>
+          <img
+            src="<%=c.img_path%>"
+            alt="Certificate preview"
+            id="cert-preview"
+            class="img-fluid rounded border"
+          />
+          <%} else { %>
+          <img
+            src=""
+            alt="Certificate preview"
+            id="cert-preview"
+            class="img-fluid rounded border d-none %>"
+          />
+          <span class="text-muted" id="cert-preview-placeholder">
+            Preview will appear here
+          </span>
+          <%}%>
+        </div>
+      </div>
+      <div id="result" class="mt-3"></div>
+    </div>
+  </div>
+</section>
+<!-- section content -->
+<section class="content">
+  <div class="ecert-header mt-2 my-card" style="text-align: left">
+    <label for="" class="form-label d-flex justify-content-between"
+      >Title
+      <button id="contest-edit" class="btn btn-warning">Update card</button></label
+    >
+    <input
+      class="form-control"
+      id="ce_title"
+      type="text"
+      value="<%=(c&&c.title)?c.title:''%>"
+    />
+    <label for="" class="form-label">Desc</label>
+    <textarea name="" id="ce_desc" class="form-control">
+<%=(c&&c.desc)?c.desc: "" %></textarea
+    >
+    <label for="" class="form-label">Image</label>
+    <input class="form-control" type="file" name="" id="ce_image" />
+    <div class="mt-1">
+      <%if(c&&c.img_thumb){%>
+      <img
+        src="<%=c.img_thumb%>"
+        id="ce_imgpreview"
+        alt=""
+        style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px"
+      />
+      <%}else{%>
+      <img
+        src=""
+        id="ce_imgpreview"
+        alt=""
+        style="
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          border-radius: 8px;
+          display: none;
+        "
+      />
+      <%}%>
+    </div>
+  </div>
+  <!--  -->
+  <style>
+    .my-table-wrapper {
+      padding: 20px;
+      border-radius: 12px !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+      overflow: hidden;
+    }
+  </style>
+  <!-- data table lib -->
+  <div class="my-table-wrapper">
+    <table id="cert-tbl" class="table table-striped table-hover mt-3">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Name</th>
+          <th>...</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+    </table>
+  </div>
+</section>
+<!-- sctript test here -->
+<script>
+  var certTbl = null;
+  const ecertEditModalEl = document.querySelector("#ecertEditModal");
+  const ecertEditModal = new bootstrap.Modal(ecertEditModalEl);
+
+  $(document).ready(function () {
+    // ⚙️ Khởi tạo DataTable và lưu instance vào biến
+    certTbl = new DataTable("#cert-tbl", {
+      processing: true,
+      serverSide: true,
+      ajax: {
+        url: `/admin/e-cert/data-table/${c_id}`,
+        type: "POST",
+        data: function (d) {
+          return d;
+        },
+      },
+      columns: [
+        { data: null, render: (data, type, row, meta) => meta.row + 1 },
+        { data: "name" },
+        { data: "field_1" },
+        {
+          data: null,
+          orderable: false,
+          searchable: false,
+          render: (data, type, row) => `
+          <button class="btn btn-outline-info" data-id="${row._id}">Cert</button>
+        `,
+        },
+      ],
+    });
+    //khi click vao mot dong
+    document
+      .querySelector("#cert-tbl tbody")
+      .addEventListener("click", function (ev) {
+        const cell = ev.target.closest("td:nth-child(2)");
+        console.log(cell);
+        if (!cell) return;
+        const row = cell.closest("tr");
+        if (!row) return;
+
+        const rowData = certTbl.row(row).data();
+        if (!rowData) return;
+        document.querySelector("#ee_name").value = rowData.name;
+        document.querySelector("#ee_role").value = rowData.field_1;
+
+        ecertEditModal.show();
+      });
+    // end
+  });
+</script>
+<!-- script test end -->
+<!-- content end -->
+
+<!-- bat modal -->
+<!-- Modal -->
+<div
+  class="modal fade"
+  id="CertModal"
+  tabindex="-1"
+  aria-labelledby="exampleModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-fullscreen">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5 pe-5" id="exampleModalLabel">
+          Config position
+        </h1>
+        <div class="d-flex justify-content-center gap-2">
+          <button class="btn btn-outline-success" id="saveData">
+            Log Position
+          </button>
+          <!-- <button class="btn btn-outline-primary" id="addTextBox">
+            + Thêm text-box
+          </button> -->
+          <button class="btn btn-outline-secondary" onclick="openSidebar()">
+            ⚙ Tùy chỉnh
+          </button>
+        </div>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <!-- Overlay + Sidebar -->
+        <div class="overlay" id="overlay"></div>
+
+        <div class="sidebar" id="sidebar">
+          <button class="close-btn" onclick="closeSidebar()">×</button>
+          <h3>Customize Table</h3>
+          <!-- them -->
+          <div
+            id="textManager"
+            style="margin: 10px 0; padding: 10px; border: 1px solid #ccc"
+          >
+            <!-- <h3>Quản lý Text-Box</h3> -->
+            <ul id="myList"></ul>
+          </div>
+          <!-- end -->
+          <!-- can le align-->
+          <div class="form-group">
+            <label for="">Căn lề</label>
+            <select name="" id="c_align" class="form-select">
+              <option value="left">Trái</option>
+              <option value="center">Giữa</option>
+              <option value="right">Phải</option>
+            </select>
+          </div>
+          <!-- can font-size -->
+          <div class="form-group">
+            <label for="" class="form-label">Căn cỡ chữ</label>
+            <input
+              class="form-range"
+              type="range"
+              id="c_fontSizeRange"
+              min="10"
+              max="1000"
+              step="1"
+              value="24"
+            />
+            <input
+              class="form-control"
+              type="number"
+              id="c_fontSizeInput"
+              min="10"
+              max="1000"
+              step="1"
+              value="24"
+            />
+          </div>
+          <!-- choose font chư -->
+          <div class="form-group">
+            <label class="form-label">Font family</label>
+            <select class="form-control" id="c_fontFamily">
+              <option value="Roboto">Roboto</option>
+              <option value="Arial">Arial</option>
+              <option value="AlexBrush">AlexBrush</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label class="form-label">Màu chữ</label>
+            <input
+              class="form-control"
+              id="c_color"
+              type="color"
+              value="#111827"
+            />
+          </div>
+        </div>
+
+        <!-- Nội dung chính -->
+        <section
+          class="main-container"
+          style="overflow: auto; width: 100w; height: auto"
+        >
+          <!-- <p>Nội dung canvas hoặc text box sẽ nằm ở đây.</p> -->
+          <div id="c-container" style="border: 1px solid #ccc"></div>
+        </section>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==============SCRIPT Konva ==========-->
+<script>
+    var bgECert = "<%=(c && c.img_path)?c.img_path:''%>"
+    var c_id  = "<%= c && c._id %>";
+    //properties global
+    let originalImageWidth = 0;
+    let originalImageHeight = 0;
+    var scaleFactor = 1;
+    var offsetX = 0;
+    var offsetY = 0;
+    var selectedTextNode = null;
+    var stage = null;
+    var layer = null;
+    var transformer = null;
+    //Tạo sẵn các text-box cố định (mapping DB field)
+    var fixedFields = fixedFields=[
+      { field: "name", label: "Tên" },
+      { field: "field_1", label: "Text 01" },
+      { field: "field_2", label: "Text 02" },
+      { field: "field_3", label: "Text 03" },
+      { field: "field_4", label: "Text 04" },
+      { field: "field_5", label: "text 05" },
+      { field: "field_6", label: "text 06" },
+      { field: "field_7", label: "text 07" },
+      { field: "field_8", label: "text 08" },
+      { field: "field_9", label: "text 09" },
+      { field: "field_10", label: "text 10" },
+      { field: "field_11", label: "text 11" },
+      { field: "field_12", label: "text 12" },
+    ];
+    var configData = [];
+    <%if(c && c.config){%>
+      configData = <%- JSON.stringify(c.config) %>;
+      console.log('configData:', configData);
+    <%}%>
+
+    //Tao transformer
+    //------End global
+    // ham huy stage
+    function destroyStage(containerId) {
+      const stage = Konva.stages.find((s) => s.container().id === containerId);
+      if (!stage) {
+        console.log('no stage found');
+        return;
+      }
+      if (stage) {
+        stage.destroy();
+        console.log('destroyed stage');
+      } else {
+        console.log('no stage to destroy');
+      }
+    }
+
+    //=============Initial Konva==========//
+    /*DOCUMENT
+    const textNode = new Konva.Text({
+    text: text,
+    x: x,
+    y: y,
+    width: 200,           // Chiều rộng vùng text-box
+    height: 50,           // Có thể set cố định hoặc để auto
+    fontSize: fontSize,
+    fontFamily: "Arial",  // Có thể dùng font khác nếu load qua CSS
+    fontStyle: "bold",    // hoặc "italic", "normal"
+    draggable: true,
+    fill: "#222",         // Màu chữ
+    stroke: "#555",       // Viền chữ (nếu cần)
+    strokeWidth: 0.5,
+    padding: 5,           // Khoảng cách text tới viền
+    align: "center",      // left | center | right
+    verticalAlign: "middle",
+    wrap: "word",         // Tự xuống dòng khi text dài
+    shadowColor: 'rgba(0,0,0,0.3)', // Hiệu ứng đổ bóng nhẹ
+    shadowBlur: 2,
+    shadowOffset: { x: 1, y: 1 },
+    cornerRadius: 4,      // bo góc nếu có background
+    listening: true,
+  });
+  */
+    // const container = document.getElementById("container");
+    function initKonva(bgUrl) {
+      stage = null;
+      layer = null;
+      transformer = null;
+      // transformer = null;
+      //huy stage neu co
+      destroyStage("c-container");
+      //tao stage
+      stage = new Konva.Stage({
+        container: "c-container",
+        width: 1100,
+        height: 550,
+      });
+      //tao transformer
+      transformer = new Konva.Transformer({
+      enabledAnchors: [
+        "middle-left",
+        "middle-right",
+      ],
+      rotateEnabled: true,
+      padding: 10,
+    });
+      //tao layer
+      layer = new Konva.Layer();
+      //==========Ve luoi grid
+      function drawGrid(size, width, height) {
+        for (let i = 0; i <= width / size; i++) {
+          layer.add(
+            new Konva.Line({
+              points: [i * size, 0, i * size, height],
+              stroke: "#ddd",
+              strokeWidth: 1,
+            })
+          );
+        }
+        for (let j = 0; j <= height / size; j++) {
+          layer.add(
+            new Konva.Line({
+              points: [0, j * size, width, j * size],
+              stroke: "#ddd",
+              strokeWidth: 1,
+            })
+          );
+        }
+      }
+      // Ham load anh len stage
+      function loadImagetoStage(url) {
+        const imageObj = new Image();
+
+        imageObj.onload = function () {
+          //
+          originalImageWidth = imageObj.width;
+          originalImageHeight = imageObj.height;
+          stage.width(originalImageWidth);
+          stage.height(originalImageHeight);
+          ///==================add
+
+
+          const konvaImg = new Konva.Image({
+            image: imageObj,
+            x: 0, //(stage.width() - scaledWidth) / 2
+            y: 0, //(stage.height() - scaledHeight) / 2
+            width: originalImageWidth,
+            height: originalImageHeight
+          });
+          layer.add(konvaImg);
+          konvaImg.moveToBottom();
+          // 🔥 Vẽ lưới full theo ảnh
+          drawGrid(50, originalImageWidth, originalImageHeight);
+          // 🔹 Thêm 2 đường trục giữa ảnh (sau khi có kích thước thật)
+          const centerX = originalImageWidth / 2;
+          const centerY = originalImageHeight / 2;
+
+          const verticalLine = new Konva.Line({
+            points: [centerX, 0, centerX, originalImageHeight],
+            stroke: "#999",
+            strokeWidth: 1,
+            dash: [5, 5]
+          });
+
+          const horizontalLine = new Konva.Line({
+            points: [0, centerY, originalImageWidth, centerY],
+            stroke: "#999",
+            strokeWidth: 1,
+            dash: [5, 5]
+          });
+
+          layer.add(verticalLine);
+          layer.add(horizontalLine);
+          //
+
+          layer.batchDraw();
+        }
+        imageObj.src = url;
+      }
+      // Neu co anh thi load
+      loadImagetoStage(bgUrl);
+      drawGrid(50); // grid cách nhau 50px
+      layer.add(transformer);
+      stage.add(layer);
+      //5. Them text-box -- (bo chuc nang nay)
+      // const addTextBox = document.getElementById("addTextBox");
+      // if (addTextBox) {
+      //   addTextBox.onclick = function (ev) {
+
+      //     //new
+      //     const name = prompt("Nhap ten field vao: ");
+      //     if(name === null || name.trim()==='') return;
+      //     createTextBox(name, name);
+      //     initControlKonva();
+
+      //   }
+      // }
+      // Function tao cac text-box
+      function createTextBox(
+        fieldName,
+        text,
+        x = 50,
+        y = 50,
+        isFixed = false,
+        fontFamily = "Calibri",
+        fontSize = 20,
+        align="center",
+        w = 200,
+        h = 50,
+        color ="00ff00",
+
+      ) {
+        const textNode = new Konva.Text({
+          text: text,
+          name: fieldName,
+          x: x,
+          y: y,
+          fontSize: fontSize,
+          fill: color,
+          width: w,
+          height: h,
+          align: align,
+          verticalAlign: "middle", // căn giữa theo chiều dọc (chỉ hiệu quả nếu có height)
+          fontFamily: "Calibri",
+          // fontStyle: "bold",
+          // shadowColor: "black",
+          // shadowBlur: 10,
+          // shadowOffset: { x: 2, y: 2 },
+          // shadowOpacity: 0.6,
+          // opacity: 0.75,
+          // padding: 10,
+          // textDecoration: "underline",
+
+          draggable: true,
+          ellipsis: true,
+          wrap: "word",
+        });
+
+        // Cho phép sửa text nếu KHÔNG phải field cố định
+        if (!isFixed) {
+          textNode.on("dblclick", () => {
+            const newText = prompt("Nhập text:", textNode.text());
+            if (newText) textNode.text(newText);
+            layer.draw();
+          });
+        }
+        // Bắt sự kiện khi kéo thả
+        textNode.on("dragmove", () => {
+          document.getElementById('result').textContent = `X: ${textNode.x()} | Y:${textNode.y()}`
+          console.log("tọa độ hiện tại:", textNode.x(), textNode.y());
+        });
+        //
+        textNode.on("click", (e) => {
+          // lang nghe su kien nguoi dung click len text-box
+          selectedTextNode = textNode;
+          //dua ra cau hinh ngoai UI
+          transformer.nodes([textNode]); // gắn transformer vào text được chọn
+          updateSidebar(selectedTextNode);
+          layer.draw();
+        });
+        textNode.on("transform", () => {
+          const newWidth = textNode.width() * textNode.scaleX();
+          textNode.width(newWidth);
+          textNode.scaleX(1);
+
+          // giữ nguyên chiều cao, chỉ resize ngang
+          // textNode.height(textNode.height());
+        });
+        //
+        layer.add(textNode);
+        layer.draw();
+      }
+      // Khi click ra ngoài thì bỏ chọn text-box
+      stage.on("click", (e) => {
+        if (e.target === stage) {
+          transformer.nodes([]); // clear transformer
+          selectedTextNode = null;
+          layer.draw();
+        }
+      });
+      // 6. Tạo sẵn các text-box cố định (mapping DB field)
+      // Nếu configData có trong DB thì dùng nó để tạo lại textbox
+      if (configData && configData.length > 0) {
+        configData.forEach((f) => {
+          createTextBox(
+            f.field,
+            f.text || f.label || f.field,
+            f.x || 50,
+            f.y || 50,
+            true, // isFixed
+            "Calibri",
+            f.fontSize || 20,
+            f.align || "center",
+            f.w ||200,
+            f.h || 50,
+            f.fill || "green",
+          );
+        });
+      } else {
+        // Nếu chưa có config thì dùng danh sách mặc định
+        fixedFields.forEach((f, i) => {
+          createTextBox(f.field, f.label, 50, 50 + i * 40, true);
+        });
+      }
+
+    }
+    //=====================Control UI=================//
+    // document
+    //   .getElementById("saveData")
+    //   .addEventListener("click", function () {
+
+    //   });
+    //feature log position -> submit data len server
+    const saveData = document.getElementById("saveData");
+    if (saveData) {
+      saveData.onclick = function (ev) {
+        const data = [];
+        layer.find("Text").forEach((t) => {
+          data.push({
+            field: t.name(),
+            text: t.text(),
+            x: t.x(),
+            y: t.y(),
+            w: t.width(),
+            h: t.height(),
+            fontSize: t.fontSize(),
+            fill: t.fill(),
+            align: t.align(),
+            fontFamily: t.fontFamily()
+          });
+        });
+        SavePosition(data);
+        console.log("data cac field: ", data);
+        alert("Check console.log de xem data JSON ");
+      }
+    }
+    //
+    function SavePosition(data) {
+      console.log(c_id);
+      $.ajax({
+        url: `/admin/e-cert/save-position/${c_id}`, //`/user-cert/save-position`,
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        success: (res) => {
+          if(res.success){
+            configData =data;
+          }
+          showAlert2("Save position config success", 'success', 'center')
+          console.log(res)
+        },
+        error: (err) => {
+          showAlert2(err.responseJSON.mess, 'error', 'center')
+          console.log(err);
+        }
+      })
+    }
+    //update sidebar control
+    function updateSidebar(node){
+      // debugger
+      if(!node) {return}
+      document.getElementById('c_fontSizeRange').value = node.fontSize();
+      document.getElementById('c_fontSizeInput').value = node.fontSize();
+      document.getElementById('c_align').value = node.align();
+      document.getElementById('c_color').value =node.fill();
+      // document.getElementById('c_fontFamily').value =node.fontFamily();
+      // document.getElementById('c_fontFamily').value
+    }
+    //fx lang nghe su kien tu sidebar
+    function initSidebarEvent(){
+      const fontSizeInput = document.getElementById('c_fontSizeInput');
+      const fontRangeInput = document.getElementById('c_fontSizeRange');
+      const colorInput = document.getElementById('c_color');
+      const alignInput = document.getElementById('c_align');
+      const fontFamilyInput = document.getElementById('c_fontFamily');
+
+      function syncFontSize(value){
+        if(!selectedTextNode){return}
+        selectedTextNode.fontSize(parseInt(value))
+        selectedTextNode.getLayer().batchDraw();
+      }
+      //khi thay doi font chu
+      fontRangeInput.addEventListener('input', ()=>{
+        console.log("data input range",fontRangeInput.value);
+        fontSizeInput.value = fontRangeInput.value
+        syncFontSize(fontRangeInput.value)
+      });
+      fontSizeInput.addEventListener('input', ()=>{
+        fontRangeInput.value= fontSizeInput.value
+        syncFontSize(fontSizeInput.value);
+      })
+      // can text
+      alignInput.addEventListener('change', (ev)=>{
+        if(!selectedTextNode){return}
+        console.log("can: ",ev.target.value)
+        selectedTextNode.align(ev.target.value)
+      });
+      //chinh mau chu
+      colorInput.addEventListener('input', (ev)=>{
+        if(!selectedTextNode){return}
+        console.log('color: ',ev.target.value)
+        selectedTextNode.fill(ev.target.value);
+      });
+      //chinh font
+      fontFamilyInput.addEventListener('change', (ev)=>{
+        if(!selectedTextNode)return;
+        console.log(ev.target)
+        console.log('font-family: ',ev.target.value);
+        selectedTextNode.fontFamily(ev.target.value);
+      })
+    }
+    //fx clear sidebar
+    function clearSidebar(){
+      document.getElementById('c_fontSizeInput').value ="";
+    }
+
+    //khoi tao control ui
+    function initControlKonva() {
+      if (selectedTextNode) {
+        console.log("run");
+        document.getElementById("c_fontSizeInput").value =
+          selectedTextNode.fontSize();
+      }
+      const fontSizeInput = document.getElementById("c_fontSizeInput");
+      const onFontSizeChange = (e) => {
+        if (selectedTextNode) {
+          selectedTextNode.fontSize(parseInt(e.target.value));
+          layer.draw();
+        }
+      };
+      // Gỡ listener cũ nếu có
+      fontSizeInput.removeEventListener("input", onFontSizeChange);
+      // Gắn lại
+      fontSizeInput.addEventListener("input", onFontSizeChange);
+
+      // them ui quan ly text-box
+      const allTextBox = stage.find('Text');
+      const ul = document.getElementById("myList");
+      ul.innerHTML = "";
+
+      allTextBox.forEach((t, i) => {
+
+        var li = document.createElement('li');
+        li.innerHTML = t.name();
+        li.style.padding = "5px 0"
+        //
+        var btn = document.createElement('button');
+        btn.textContent = "Delete"
+        btn.style.marginLeft = "10px";
+
+        btn.onclick = () => {
+          t.destroy();
+          layer.draw();
+          li.remove();
+        }
+        li.append(btn)
+        ul.appendChild(li);
+      })
+    }
+    // end konva
+</script>
+
+<script>
+  //global
+  const id = "<%= c && c._id%>";
+  const contestModal = document.getElementById("CertModal");
+
+  const myModal = new bootstrap.Modal(contestModal);
+  //save img
+  document
+    .getElementById("cert-img-save")
+    .addEventListener("click", function (ev) {
+      const fileInput = document.getElementById("choose-certimg");
+      const file = fileInput.files[0];
+      if (!file) {
+        showAlert2("Pls choose image input", "warning");
+        return;
+      }
+      const formData = new FormData();
+      formData.append("ecert_img", file);
+      formData.append("id", id);
+      //jquery ajax
+      $.ajax({
+        url: "/admin/e-cert/upload-image",
+        method: "POST",
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: (res) => {
+          showAlert2("upload image success", "success");
+          console.log(res);
+          //cas cong viec sau khi load anh
+          console.log("bgECert:", res.file);
+          bgECert = res.file;
+          document.querySelector("#cert-preview-modal img").src = res.file;
+        },
+        error: (xhr, status, err) => {
+          console.log("Co loi xay ra khi upload anh");
+          // console.log(err);
+          showAlert2(xhr.responseJSON.mess, "error");
+        },
+      });
+    });
+  function showAlert2(mess, type, position = "center") {
+    Swal.fire({
+      position: position,
+      icon: type,
+      title: mess,
+      width: 350,
+      showConfirmButton: false,
+      timer: 1500,
+    });
+  }
+  function openSidebar() {
+    document.getElementById("sidebar").classList.add("active");
+    document.getElementById("overlay").classList.add("active");
+    //
+    // document.getElementById('fontSizeRange').vallue=fun
+  }
+  function closeSidebar() {
+    document.getElementById("sidebar").classList.remove("active");
+    document.getElementById("overlay").classList.remove("active");
+  }
+  //open modal
+  document
+    .getElementById("cert-preview-modal")
+    .addEventListener("click", function (ev) {
+      // showAlert2('test', 'info', 'top');
+      //o day chua set lai cac gia trj cho initKonva nen mo modal van luu gia tri cu
+      console.log("bgECert: " + bgECert);
+      initKonva(bgECert);
+      initControlKonva();
+      initSidebarEvent();
+
+      myModal.show();
+    });
+  //close control
+  document
+    .querySelector("#handlecontrol-header")
+    .addEventListener("click", function (ev) {
+      const content = document.querySelector(".control-header");
+      if (content.style.display === "none") {
+        content.style.display = "block";
+      } else {
+        content.style.display = "none";
+      }
+    });
+  //submit data
+  document
+    .getElementById("btn-submit-data")
+    .addEventListener("click", function (ev) {
+      // alert('hello');
+      const file = document.getElementById("fileExcel").files[0];
+      if (!file) {
+        myNotification("No file upload!", "error", "top-end");
+      }
+      console.log(file);
+      //
+      const formData = new FormData();
+      formData.append("ecert_xlsx", file);
+      $.ajax({
+        url: `/admin/e-cert/upload-data/${c_id}`,
+        method: "POST",
+        processData: false,
+        contentType: false,
+        data: formData,
+        success: (res) => {
+          console.log("success");
+          if (res.success) {
+            myNotification(res.mess, "success");
+            location.reload();
+          }
+        },
+        error: (xhr, status, err) => {
+          console.log(xhr.responseJSON.mess);
+          console.log("import failed");
+          myNotification(xhr.responseJSON.mess, "error");
+        },
+      });
+    });
+  //=============render search
+
+  //render-cert
+  $(document).on("click", "#cert-tbl button.btn-outline-info", function (ev) {
+    ev.preventDefault();
+    const row = $(this).closest("tr");
+    const userId = row.find("button.btn-outline-info").data("id");
+    console.log("Cert click for user:", userId);
+    renderCert(userId);
+  });
+  function renderCert(rowId) {
+    $.ajax({
+      url: `/admin/e-cert/render-cert?cid=${c_id}&uid=${rowId}`,
+      method: "GET",
+      // contentType: 'application/json',
+      xhrFields: { responseType: "blob" },
+      processData: false,
+      success: (blob) => {
+        const imgURL = URL.createObjectURL(blob);
+        $("#renderCertModal img").attr("src", imgURL);
+        //hien tthi modal
+        const modal = new bootstrap.Modal(
+          document.getElementById("renderCertModal"),
+        );
+        modal.show();
+      },
+      error: (xhr, status, err) => {
+        console.log(xhr.responseJSON.mess);
+      },
+    });
+  }
+  document
+    .querySelector("#contest-edit")
+    .addEventListener("click", function (ev) {
+      // alert('helo')
+      const file = document.querySelector("#ce_image").files[0];
+      if(!file){
+        myNotification('No file upload !', 'warning');
+        return; 
+      }
+      const formData = new FormData();
+      formData.append("title", document.querySelector("#ce_title").value);
+      formData.append("desc", document.querySelector("#ce_desc").value);
+      formData.append("image", document.querySelector("#ce_image").files[0]);
+      formData.append("id", c_id);
+      $.ajax({
+        url: "/admin/e-cert/update-contest",
+        method: "POST",
+        contentType: false,
+        processData: false,
+        data: formData,
+        success: (res) => {
+          myNotification("Edit success", "success");
+        },
+        error: (xhr, status, err) => {
+          console.log(xhr.responseJSON?.mess);
+          myNotification("Server error", "error");
+        },
+      });
+    });
+  document.getElementById("ce_image").addEventListener("change", (ev) => {
+    // debugger
+    const imgPreview = document.querySelector("#ce_imgpreview");
+    const file = document.getElementById("ce_image").files[0];
+    document.querySelector("#ce_imgpreview").style.display = "block";
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      imgPreview.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+  //
+  //toast
+  function myNotification(mess, status, position = "center", time = 1500) {
+    Swal.fire({
+      position: position,
+      icon: status,
+      title: mess,
+      showConfirmButton: false,
+      timer: time,
+    });
+  }
+  //clear modal console
+  document.getElementById("CertModal").addEventListener("hide.bs.modal", () => {
+    document.activeElement.blur();
+  });
+</script>
+
+<!-- //===================Out ==============// -->
