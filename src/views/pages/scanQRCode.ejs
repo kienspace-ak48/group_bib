@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Đọc QR Code trên Web</title>
+        <script src="https://unpkg.com/html5-qrcode"></script>
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+            integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr"
+            crossorigin="anonymous"
+        />
+        <script
+            src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q"
+            crossorigin="anonymous"
+        ></script>
+    </head>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        .scanqr-container {
+            /* /* flex-wrap: wrap; */
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        #reader video {
+            width: 100%;
+            height: 100%;
+            border-radius: 12px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            object-fit: cover;
+        }
+    </style>
+
+    <body>
+        <div class="mb-3">
+  <label class="form-label fw-bold">Chọn camera</label>
+  <select id="cameraSelect" class="form-select"></select>
+</div>
+
+<button id="startScan" class="btn btn-primary mb-3">
+  ▶ Bắt đầu quét
+</button>
+
+        <div class="scanqr-container">
+            <div class="">
+                <h2>📷 Quét mã QR bằng camera</h2>
+                <br />
+                <br />
+                <div id="reader" style="width: 80vw; height: 60vh"></div>
+            </div>
+            <!-- <p id="qr-result"></p> -->
+            <div class="">
+                <div id="result">Kết quả:</div>
+                <textarea class="form-control" name="" rows="5" cols="70" id="qr-result"></textarea>
+            </div>
+        </div>
+
+        <script>
+            //   function onScanSuccess(decodedText, decodedResult) {
+            //     let resultElement = document.getElementById("qr-result");
+            //     // resultElement.innerText=decodedText;
+            //     resultElement.value = decodedText;
+            //   }
+
+            //   function onScanFailure(error) {
+            //     // Có thể log lỗi nếu cần
+            //     // alert(error)
+            //   }
+
+            //   const html5QrCode = new Html5Qrcode("reader");
+            //   html5QrCode.start(
+            //     { facingMode: "environment" }, // dùng camera sau
+            //     {
+            //       fps: 20,
+            //       qrbox: 350,
+            //     },
+            //     onScanSuccess,
+            //     onScanFailure
+            //   );
+            //
+        </script>
+        <!-- script new -->
+        <script>
+  const resultElement = document.getElementById("qr-result");
+  const cameraSelect = document.getElementById("cameraSelect");
+  const startBtn = document.getElementById("startScan");
+
+  const html5QrCode = new Html5Qrcode("reader");
+  let currentCameraId = null;
+
+  function onScanSuccess(decodedText, decodedResult) {
+    resultElement.value = decodedText;
+
+    // Nếu muốn dừng sau khi scan:
+    // html5QrCode.stop();
+  }
+
+  function onScanFailure(error) {
+    // ignore scan errors
+  }
+
+  // Load danh sách camera
+  Html5Qrcode.getCameras()
+    .then((cameras) => {
+      if (!cameras || cameras.length === 0) {
+        alert("❌ Không tìm thấy camera");
+        return;
+      }
+
+      cameras.forEach((cam, index) => {
+        const option = document.createElement("option");
+        option.value = cam.id;
+        option.text = cam.label || `Camera ${index + 1}`;
+        cameraSelect.appendChild(option);
+      });
+
+      // 👉 Ưu tiên camera sau nếu có
+      const backCam = cameras.find((cam) =>
+        cam.label.toLowerCase().includes("back") ||
+        cam.label.toLowerCase().includes("rear")
+      );
+
+      cameraSelect.value = backCam ? backCam.id : cameras[0].id;
+    })
+    .catch((err) => {
+      console.error("Camera ERROR:", err);
+      alert("❌ Không truy cập được camera");
+    });
+
+  // Start scan khi user bấm nút
+  startBtn.addEventListener("click", async () => {
+    if (html5QrCode.isScanning) {
+      await html5QrCode.stop();
+    }
+
+    currentCameraId = cameraSelect.value;
+
+    html5QrCode.start(
+      currentCameraId,
+      {
+        fps: 20,
+        qrbox: 350,
+      },
+      onScanSuccess,
+      onScanFailure
+    );
+  });
+</script>
+
+    </body>
+</html>

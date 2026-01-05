@@ -91,6 +91,106 @@
             a {
                 text-decoration: none !important;
             }
+            /* process */
+            .progress-container {
+    position: relative;
+  }
+
+  .progressbar {
+    display: flex;
+    justify-content: space-between;
+    position: relative;
+    margin: 30px 0;
+  }
+
+  /* Line background */
+  .progressbar::before {
+    content: "";
+    position: absolute;
+    top: 32px;
+    left: 0;
+    width: 100%;
+    height: 6px;
+    background: #e0e0e0;
+    border-radius: 4px;
+    z-index: -1;
+  }
+
+  /* Line filled */
+  .progress-line {
+    content: "";
+    position: absolute;
+    top: 32px;
+    left: 0;
+    height: 6px;
+    background: linear-gradient(90deg, #2196f3, #4caf50);
+    border-radius: 4px;
+    width: 0%;
+    transition: width 0.4s ease;
+    z-index: -1;
+  }
+
+  /* Step box */
+  /* Step box */
+.progress-step {
+  background: #ddd;
+  padding: 10px 15px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #555;
+  text-align: center;
+  min-width: 120px; /* nhỏ hơn một chút */
+  max-width: 160px;
+  word-wrap: break-word;   /* xuống dòng nếu text dài */
+  white-space: normal;     /* cho phép xuống dòng */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  flex: 1;                 /* tự giãn chia đều chiều ngang */
+}
+
+/* Khi màn hình nhỏ thì thu nhỏ box */
+@media (max-width: 768px) {
+  .progressbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 15px;
+  }
+
+  .progressbar::before,
+  .progress-line {
+    top: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 6px;
+    height: 100%;
+  }
+
+  .progress-line {
+    transition: height 0.4s ease;
+  }
+
+  .progress-step {
+    min-width: unset;
+    max-width: 100%;
+  }
+}
+
+  /* Active */
+  .progress-step.active {
+    background: linear-gradient(135deg, #2196f3, #42a5f5);
+    color: #fff;
+    transform: scale(1.05);
+    box-shadow: 0 4px 10px rgba(33, 150, 243, 0.4);
+  }
+
+  /* Finish */
+  .progress-step.finish {
+    background: linear-gradient(135deg, #4caf50, #66bb6a);
+    color: #fff;
+    box-shadow: 0 4px 10px rgba(76, 175, 80, 0.4);
+  }
         </style>
         <!-- end -->
         <script>

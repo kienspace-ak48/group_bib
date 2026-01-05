@@ -441,7 +441,6 @@
             // 👉 Gửi file lên server (Express)
             const formData = new FormData();
             formData.append('excelFile', fileInput.files[0]);
-
             formData.append('group', '<%=group?._id%>');
 
             fetch('/user/group-detail/import-excel', {

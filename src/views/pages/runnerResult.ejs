@@ -1,0 +1,249 @@
+<div class="max-w-7xl mx-auto px-6 py-6">
+
+  <!-- HEADER -->
+  <div class="flex justify-between items-center mb-6">
+    <div>
+      <h1 class="text-3xl font-bold"><%=re?.name%></h1> <!--Da Nang Marathon 2025-->
+      <p class="text-gray-500 mt-1"><%=new Date(re?.date_time).toLocaleString("vi-VN") %> | <%=count%> Person</p>
+    </div>
+    <span class="bg-green-600 text-white px-4 py-1 rounded-full text-sm font-semibold">
+      Live
+    </span>
+  </div>
+
+  <div class="p-6 bg-slate-50 min-h-screen">
+
+  <!-- Distance Tabs -->
+  <div class="flex items-center gap-2 mb-6">
+    <span class="text-sm font-medium text-slate-600">Distance:</span>
+
+    <!-- <button class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold">
+      5KM
+    </button>
+    <button class="px-4 py-2 rounded-lg bg-white border text-sm text-slate-600 hover:bg-slate-100">
+      10KM
+    </button>
+    <button class="px-4 py-2 rounded-lg bg-white border text-sm text-slate-600 hover:bg-slate-100">
+      21KM
+    </button> -->
+    <div class="distance_tab">
+      <%if(re && distances.length > 0){%>
+        <%distances.forEach((r,i)=>{%>
+          <button class="px-4 py-2 rounded-lg bg-white border text-sm text-slate-600 hover:bg-slate-100" data-distance="<%=r.item_id %>"><%=r.title %></button>
+        <%})%>
+      <%}%>
+    </div>
+    
+  </div>
+
+  <!-- CP Columns -->
+  <div class="flex gap-6 overflow-x-auto pb-4">
+
+    <!-- CP ITEM -->
+    <div class="w-[320px] min-w-[320px] bg-white rounded-xl border shadow-sm flex flex-col">
+      
+      <!-- CP Header -->
+      <div class="bg-gradient-to-r from-blue-600 to-blue-500 text-white p-4 rounded-t-xl">
+        <div class="flex items-center justify-between">
+          <h3 class="font-semibold flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs">▶</span>
+            Start
+          </h3>
+        </div>
+        <p class="text-sm text-blue-100 mt-1">12 runners passed</p>
+      </div>
+
+      <!-- Runner List -->
+      <div class="flex-1 overflow-y-auto p-3 space-y-3">
+
+        <!-- Runner Card -->
+        <div class="bg-yellow-50 border-l-4 border-yellow-400 rounded-lg p-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <span class="w-8 h-8 rounded-full bg-yellow-400 text-white text-sm font-bold flex items-center justify-center">
+                1
+              </span>
+              <div>
+                <p class="font-semibold text-sm">Emma Watson</p>
+                <p class="text-xs text-slate-500">#10 · Bib 4</p>
+              </div>
+            </div>
+            <span class="font-mono text-sm font-semibold">08:00:02</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">♀ 0:00/km</p>
+        </div>
+
+        <!-- Runner Card -->
+        <div class="bg-slate-100 rounded-lg p-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <span class="w-8 h-8 rounded-full bg-slate-300 text-slate-700 text-sm font-bold flex items-center justify-center">
+                2
+              </span>
+              <div>
+                <p class="font-semibold text-sm">David Tran</p>
+                <p class="text-xs text-slate-500">#10 · Bib 7</p>
+              </div>
+            </div>
+            <span class="font-mono text-sm font-semibold">08:00:03</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">♂ 0:00/km</p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- CP ITEM (CP1, CP2, Finish...) -->
+    <!-- Bạn chỉ cần loop CP từ data -->
+    <div class="w-[320px] min-w-[320px] bg-white rounded-xl border shadow-sm flex flex-col">
+      
+      <!-- CP Header -->
+      <div class="bg-gradient-to-r from-blue-600 to-blue-500 text-white p-4 rounded-t-xl">
+        <div class="flex items-center justify-between">
+          <h3 class="font-semibold flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs">▶</span>
+            Start
+          </h3>
+        </div>
+        <p class="text-sm text-blue-100 mt-1">12 runners passed</p>
+      </div>
+
+      <!-- Runner List -->
+      <div class="flex-1 overflow-y-auto p-3 space-y-3">
+
+        <!-- Runner Card -->
+        <div class="bg-yellow-50 border-l-4 border-yellow-400 rounded-lg p-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <span class="w-8 h-8 rounded-full bg-yellow-400 text-white text-sm font-bold flex items-center justify-center">
+                1
+              </span>
+              <div>
+                <p class="font-semibold text-sm">Emma Watson</p>
+                <p class="text-xs text-slate-500">#10 · Bib 4</p>
+              </div>
+            </div>
+            <span class="font-mono text-sm font-semibold">08:00:02</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">♀ 0:00/km</p>
+        </div>
+
+        <!-- Runner Card -->
+        <div class="bg-slate-100 rounded-lg p-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <span class="w-8 h-8 rounded-full bg-slate-300 text-slate-700 text-sm font-bold flex items-center justify-center">
+                2
+              </span>
+              <div>
+                <p class="font-semibold text-sm">David Tran</p>
+                <p class="text-xs text-slate-500">#10 · Bib 7</p>
+              </div>
+            </div>
+            <span class="font-mono text-sm font-semibold">08:00:03</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">♂ 0:00/km</p>
+        </div>
+        <!-- Runner Card -->
+        <div class="bg-amber-200 rounded-lg p-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <span class="w-8 h-8 rounded-full bg-slate-300 text-slate-700 text-sm font-bold flex items-center justify-center">
+                2
+              </span>
+              <div>
+                <p class="font-semibold text-sm">David Tran</p>
+                <p class="text-xs text-slate-500">#10 · Bib 7</p>
+              </div>
+            </div>
+            <span class="font-mono text-sm font-semibold">08:00:03</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">♂ 0:00/km</p>
+        </div>
+
+      </div>
+    </div><div class="w-[320px] min-w-[320px] bg-white rounded-xl border shadow-sm flex flex-col">
+      
+      <!-- CP Header -->
+      <div class="bg-gradient-to-r from-blue-600 to-blue-500 text-white p-4 rounded-t-xl">
+        <div class="flex items-center justify-between">
+          <h3 class="font-semibold flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs">▶</span>
+            Start
+          </h3>
+        </div>
+        <p class="text-sm text-blue-100 mt-1">12 runners passed</p>
+      </div>
+
+      <!-- Runner List -->
+      <div class="flex-1 overflow-y-auto p-3 space-y-3">
+
+        <!-- Runner Card -->
+        <div class="bg-yellow-50 border-l-4 border-yellow-400 rounded-lg p-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <span class="w-8 h-8 rounded-full bg-yellow-400 text-white text-sm font-bold flex items-center justify-center">
+                1
+              </span>
+              <div>
+                <p class="font-semibold text-sm">Emma Watson</p>
+                <p class="text-xs text-slate-500">#10 · Bib 4</p>
+              </div>
+            </div>
+            <span class="font-mono text-sm font-semibold">08:00:02</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">♀ 0:00/km</p>
+        </div>
+
+        <!-- Runner Card -->
+        <div class="bg-slate-100 rounded-lg p-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <span class="w-8 h-8 rounded-full bg-slate-300 text-slate-700 text-sm font-bold flex items-center justify-center">
+                2
+              </span>
+              <div>
+                <p class="font-semibold text-sm">David Tran</p>
+                <p class="text-xs text-slate-500">#10 · Bib 7</p>
+              </div>
+            </div>
+            <span class="font-mono text-sm font-semibold">08:00:03</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">♂ 0:00/km</p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+
+<!-- ==============script here ============-->
+ <script>
+  //global scope
+
+  document.querySelector('.distance_tab').addEventListener('click', (e)=>{
+    const btn = e.target.closest('button')
+    if(!btn) return 
+    //
+    const id = btn.getAttribute('data-distance');
+    console.log(btn)
+    getDataByDistance(id);
+  })
+  //
+  const getDataByDistance = (id)=>{
+    $.ajax({
+      url: `/runner/by-distance/${id}`,
+      method: 'POST',
+      contentType: 'application/json',
+      success: (res)=>{
+        console.log(res)
+      },
+      error: (xhr, stauts, err)=>{
+        console.log(xhr?.responseJSON?.mess||'Server serror')
+      }
+    })
+  }
+ </script>

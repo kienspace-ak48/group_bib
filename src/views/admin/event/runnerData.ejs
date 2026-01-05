@@ -1,0 +1,490 @@
+<div class="page-header">
+    <div class="page-block">
+        <div class="row align-items-center">
+            <div class="col-md-12">
+                <div class="page-header-title">
+                    <h5 class="m-b-10">Event</h5>
+                </div>
+                <ul class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="#!">Post</a></li>
+                    <li class="breadcrumb-item"><a href="#!">create new post</a></li>
+                    <!-- <li class="breadcrumb-item" aria-current="page">Home</li> -->
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- breack-crum -->
+<div class="progress-container">
+    <div class="progressbar">
+        <div class="progress-line" id="progress-line"></div>
+
+        <a href="/admin/event/form-edit/mid-night-run-2025-1764298009433">
+            <div data-step="1" class="progress-step active">1. Initial</div>
+        </a>
+        <a href="/admin/event/<%=event_slug%>/athlete-data">
+            <div data-step="2" class="progress-step">2. Manage Athlete</div>
+        </a>
+        <div data-step="3" class="progress-step">3. Send E-mail</div>
+        <div data-step="4" class="progress-step">4. Check-in</div>
+        <div data-step="5" class="progress-step">5. Finish</div>
+    </div>
+</div>
+<!-- stats -->
+<div class="card shadow-sm" style="min-height: 260px">
+    <div class="card-body">
+      <!-- Choose group -->
+       <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+        <select name="" id="" class="form-control">
+          <%#if(groups && groups.length>0){%>
+            <%groups.forEach((g,i)=>{%>
+              <option value="<%=g._id%>"><%=g.name%></option>
+            <%})%>
+          <%#}%>
+          <!-- <option value="">Nhom 1</option>
+          <option value="">Nhom 2</option>
+          <option value="">Nhom 3</option> -->
+        </select>
+        <!--  -->
+        <select class="form-control" id="group-select">
+  <% if (groups && groups.length > 0) { %>
+    <% groups.forEach((g) => { %>
+      <option value="<%= g._id %>"><%= g.name %></option>
+    <% }) %>
+  <% } %>
+</select>
+
+       <input type="text" class="form-control" disabled>
+       </div>
+       <hr>
+        <!-- Header thống kê -->
+        <div class="row text-center mb-3">
+            <div class="col">
+                <p class="text-muted mb-1">Tổng VĐV</p>
+                <h4 class="fw-bold text-primary">--</h4>
+            </div>
+            <div class="col">
+                <p class="text-muted mb-1">Đã checkin</p>
+                <h6 class="fw-bold text-primary">
+                    --
+                    <small>--</small>
+                </h6>
+            </div>
+            <div class="col">
+                <p class="text-muted mb-1">Chưa checkin</p>
+                <h6 class="fw-bold text-primary">
+                    --
+                    <small>--</small>
+                </h6>
+            </div>
+            <div class="col">
+                <p class="text-muted mb-1">Uỷ quyền</p>
+                <h6 class="fw-bold text-primary">...</h6>
+            </div>
+            <div class="col">
+                <p class="text-muted mb-1">Ký miễn trừ</p>
+                <h6 class="fw-bold text-primary">...</h6>
+            </div>
+        </div>
+
+        <!-- Table  overview-->
+        <div id="" class="table-responsive">
+            <table class="table table-bordered table-sm text-center align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Cự ly</th>
+                        <th>Tổng số ( <span class="text-primary">Nam</span> / <span class="text-danger">Nữ</span> )</th>
+                        <th>Đã checkin</th>
+                        <th>Chưa checkin</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<!-- table  athlete-->
+<section class="card shadow-sm p-4">
+    <!-- Tabs -->
+    <div class="d-flex gap-4 fw-bold mb-3">
+        <div class="border-bottom border-3 border-primary pb-1">VĐV</div>
+        <div class="text-muted">Ủy quyền nhóm</div>
+    </div>
+
+    <!-- Search + Checkbox  d-flex justify-content-between align-items-center gap-3 mb-3-->
+    <!-- <div class="d-flex gap-3 mb-3"> 
+      <input type="text" class="form-control w-50" id="input-cta-search-auto" placeholder="Tìm kiếm" />
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" id="uyquyen" />
+        <label class="form-check-label" for="uyquyen">Đã ủy quyền</label>
+      </div>
+       <button class="btn btn-primary" >TÌM KIẾM</button>
+    </div> -->
+
+    <!-- Buttons -->
+    <div class="d-flex justify-content-end gap-2 mb-3">
+        <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#import_runner_xlsx_modal" id="btn_athlete_import_xlsx">IMPORT BY (.xlsx)</button>
+        <button class="btn btn-outline-info" data-bs-toggle="modal"data-bs-target="#modalCreateAthlete"  id="btn_athlete_import_one">THÊM VĐV</button>
+        <button class="btn btn-outline-success" id="btn+athlete_export">EXPORT DATA</button>
+        <!-- <button class="btn btn-warning">ỦY QUYỀN NHÓM</button> -->
+        <!-- <button class="btn btn-info">XUẤT RA EXCEL</button> -->
+    </div>
+
+    <!-- Table -->
+    <div class="table-container">
+        <!-- Your custom table -->
+        <div id="athlete_tbl" class="table-responsive">
+            <table class="table table-bordered align-middle">
+                <thead>
+                    <tr>
+                        <th>BIB/Cự ly</th>
+                        <th>ChipId</th>
+                        <th>Name-CCCD-Email</th>
+                        <th>Size</th>
+                        <th>Checkin-P</th>
+                        <th>Checkin-G</th>
+                        <th>Mail QR</th>
+                        <th>Author</th>
+                        <th>QR Image</th>
+
+                    </tr>
+                </thead>
+                <tbody id="athlete-tbody">
+                    <tr>
+                        <td class="text-danger fw-bold">19<br /><small>2KM</small></td>
+                        <td>3687</td>
+                        <td class="">
+                            <span>Lê Phương Thảo</span> - <span class="text-danger">F</span>
+                            <br />123456789101<br />kienvu.dev@gmail.com
+                        </td>
+                        <td></td>
+                        <td></td>
+                        <td>Nữ</td>
+                        <td></td>
+                        <td></td>
+                        <td>
+                            <button class="btn btn-link text-danger p-0">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+</section>
+<!-- =========== OutDoor ============ -->
+ <!-- Modal -->
+<!-- Modal -->
+<div class="modal fade" id="import_runner_xlsx_modal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="staticBackdropLabel">Import one runner data</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <label for="" class="form-label"><a href="#!">Tải mẫu file ở đây(.xlsx)</a></label>
+        <input type="file" id="ath_file" class="form-control">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" id="ath_import">Import</button>
+      </div>
+    </div>
+  </div>
+</div>
+  <!-- ====================Modal create new athlete -->
+  <div class="modal fade" id="modalCreateAthlete" tabindex="-1">
+    <div class="modal-dialog modal-dialog-scrollable modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Thêm VĐV: | <span id="ath-createAt"></span> </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>
+          <div class="row" style="padding: 0 50px;">
+            <div class="col-6">
+              <input type="checkbox" name="" id=""> <span>Đã checkin</span> <br> <br>
+              <div class="row">
+                <div class="col-6">
+                  <div class="form-group">
+                    <label for="" class="form-label">Cự ly</label>
+                    <input type="text" id="new-distance" class="form-control" id="new_distance">
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="form-group">
+                    <label for="" class="form-label">ChipId</label>
+                    <input type="text" class="form-control" id="new-chip">
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-6">
+                  <div class="form-group"><label for="" class="form-label">Tên</label><input type="text"
+                      class="form-control" id="new-name"></div>
+                </div>
+                <div class="col-6">
+                  <div class="form-group"><label for="" class="form-label">SĐT</label><input type="text"
+                      class="form-control" id="new-phone"></div>
+                </div>
+              </div>
+
+              <div class="form-group"><label for="" class="form-label">Email</label><input type="text"
+                  class="form-control" id="new-email"></div>
+              <div class="form-group"><label for="" class="form-label">CMND/CCCD/Passport/</label><input type="text"
+                  class="form-control" id="new-cccd"></div>
+              <div class="form-group"><label for="" class="form-label">CLB/Nhóm</label><input type="text"
+                  class="form-control" id="new-team"></div>
+              <div class="form-group"><label for="" class="form-label">Tên trên BIB</label><input type="text"
+                  class="form-control" id="new-bibName"></div>
+
+              <input type="checkbox" name="" id=""> <span>Ủy quyền nhận BIB</span>
+
+            </div>
+            <div class="col-6">
+              <input type="checkbox" name="" id=""> <span>checkin theo nhóm</span> <br><br>
+              <div class="row">
+                <div class="col-6">
+                  <div class="form-group"><label for="" class="form-label">BIB</label><input type="text"
+                      class="form-control" id="new-bib"></div>
+                </div>
+                <div class="col-6">
+                  <div class="form-group"><label for="" class="form-label">EPC</label><input type="text"
+                      class="form-control" id="new-epc"></div>
+
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-6">
+                  <div class="form-group">
+                    <label for="" class="form-label">Giới tính</label>
+                    <select class="form-select w-75" name="" id="new-gender">
+                      <option value="true">Nam</option>
+                      <option value="false">Nữ</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="form-group"><label for="" class="form-label">Nhóm máu</label><input type="text"
+                      class="form-control" id="new-blood"></div>
+
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-6">
+                  <div class="form-group"><label for="" class="form-label">DOB <small>(mm/dd/yyyy)</small></label><input
+                      type="date" class="form-control" id="new-dob"></div>
+                </div>
+                <div class="col-6">
+                  <div class="form-group"><label for="" class="form-label">Thông tin y tế</label><input type="text"
+                      class="form-control" id="new-medical"></div>
+
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-6">
+                  <div class="form-group"><label for="" class="form-label">Quốc tịch</label><input type="text"
+                      class="form-control" id="new-nation"></div>
+
+                </div>
+                <div class="col-6">
+                  <div class="form-group w-50"><label for="" class="form-label">Size áo</label><input type="text"
+                      class="form-control" id="new-size"></div>
+
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-6">
+                  <div class="form-group"><label for="" class="form-label">Người liên hệ khẩn cấp</label><input
+                      type="text" class="form-control" id="new-patronName"></div>
+
+                </div>
+                <div class="col-6">
+                  <div class="form-group"><label for="" class="form-label">SĐT người liên hệ khẩn cấp</label><input
+                      type="text" class="form-control" id="new-patronPhone"></div>
+
+                </div>
+              </div>
+
+
+            </div>
+          </div>
+          </p>
+        </div>
+        <div class="modal-footer" >
+          <!-- <div style="display: flex; justify-content: space-between;"> -->
+         
+          <div class="">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              Close
+            </button>
+            <button id="btn-create-ath-onece" type="button" class="btn btn-primary">Add New</button>
+          </div>
+          <!-- </div> -->
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- ==================MODAL QRCode -->
+   <div class="modal fade" id="qrModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">QR Check-in</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body text-center">
+        <p id="qrUid" class="fw-bold"></p>
+        <canvas id="qrCanvas"></canvas>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ===========SCIIPT HERE============= -->
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+
+<script>
+    //global scope
+    var dataTable = null;
+    //
+    document.querySelector('#import_runner_xlsx_modal #ath_import').addEventListener('click', ()=>{
+        // alert('test');
+        const input = document.querySelector("#import_runner_xlsx_modal #ath_file");
+        const file =input.files[0];
+        console.log(file)
+        if(!file) return
+        const data = new FormData();
+        data.append('ath_xlsx', file)
+        $.ajax({
+            url: `/admin/event/:slug/athlete-import`,
+            method: 'POST',
+            processData: false,
+            contentType: false,
+            data: data,
+            success: (res)=>{
+              console.log(res)
+              if(res.success){
+                window.location.reload();
+              }
+            },
+            error: (xhr, status, err)=>{
+                console.log(xhr?.responseJSON?.mess||"Sever error");
+            }
+        })
+    })
+    //
+    dataTable= $('#athlete_tbl table').DataTable({
+      ajax: {
+        url: `/admin/event/:slug/athlete-group`,
+        dataSrc: 'data'
+      },
+      columns: [
+         {
+          data: null,
+          render: (data) => `
+            <div>
+              <strong>${data.bib?data.bib:'--'}</strong><br>
+              <small class="text-muted">${data.distance}</small>
+            </div>
+          `
+        },
+        { 
+          data: null,
+          render: (data)=>``
+         },
+        
+
+        {
+          data: null,
+          render: (data) => `
+            <div>
+              <strong>${data.fullname}</strong><br>
+              <small>${data.cccd}</small><br>
+              <small class="text-muted">${data.email}</small>
+            </div>
+          `
+        },
+
+        { data: 'tshirt_size' },
+
+        {
+          data: 'checkin_packet',
+          render: v => v
+            ? `<span class="badge bg-success">✔</span>`
+            : `<span class="badge bg-secondary">✖</span>`
+        },
+
+        {
+          data: 'checkin_gate',
+          render: v => v
+            ? `<span class="badge bg-success">✔</span>`
+            : `<span class="badge bg-secondary">✖</span>`
+        },
+
+        {
+          data: 'mail_qr',
+          render: v => v
+            ? `<span class="badge bg-success">Sent</span>`
+            : `<span class="badge bg-warning">No</span>`
+        },
+
+        { data: 'user_id' },
+
+        {
+          data: 'uid',
+          render: (uid) => `
+            <span 
+              class="text-primary uid-click"
+              data-uid="${uid}"
+              style="cursor:pointer; font-weight:600"
+            >
+              ${uid}
+            </span>
+          `
+        }
+
+      ]
+    })
+    // 
+    // delegate event cho DataTable
+$('#athlete_tbl table').on('click', '.uid-click', function () {
+  const uid = $(this).data('uid');
+
+  // set text
+  $('#qrUid').text(uid);
+
+  // clear QR cũ
+  const canvas = document.getElementById('qrCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // generate QR
+  QRCode.toCanvas(canvas, uid, {
+    width: 260,
+    margin: 2
+  });
+
+  // show modal
+  const modal = new bootstrap.Modal('#qrModal');
+  modal.show();
+});
+
+</script>

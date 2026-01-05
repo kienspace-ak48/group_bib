@@ -1,0 +1,191 @@
+<div class="max-w-7xl mx-auto px-6 py-6">
+
+  <!-- HEADER -->
+  <div class="flex justify-between items-center mb-6">
+    <div>
+      <h1 class="text-3xl font-bold"><%=re?.name%></h1> <!--Da Nang Marathon 2025-->
+      <p class="text-gray-500 mt-1"><%=new Date(re?.date_time).toLocaleString("vi-VN") %> | <%=count%> Person</p>
+    </div>
+    <span class="bg-green-600 text-white px-4 py-1 rounded-full text-sm font-semibold">
+      Live
+    </span>
+  </div>
+
+  <!-- STATS -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white p-5 rounded-xl shadow-sm flex justify-between">
+      <div>
+        <p class="text-sm text-gray-500">Total Runners</p>
+        <p class="text-3xl font-bold mt-1">45</p>
+      </div>
+      <div class="bg-blue-100 text-blue-600 w-12 h-12 rounded-full flex items-center justify-center">
+        👤
+      </div>
+    </div>
+
+    <div class="bg-white p-5 rounded-xl shadow-sm flex justify-between">
+      <div>
+        <p class="text-sm text-gray-500">Active Runners</p>
+        <p class="text-3xl font-bold mt-1">31</p>
+      </div>
+      <div class="bg-green-100 text-green-600 w-12 h-12 rounded-full flex items-center justify-center">
+        ⚡
+      </div>
+    </div>
+
+    <div class="bg-white p-5 rounded-xl shadow-sm flex justify-between">
+      <div>
+        <p class="text-sm text-gray-500">Finished</p>
+        <p class="text-3xl font-bold mt-1">7</p>
+      </div>
+      <div class="bg-green-100 text-green-600 w-12 h-12 rounded-full flex items-center justify-center">
+        ✔
+      </div>
+    </div>
+
+    <div class="bg-white p-5 rounded-xl shadow-sm flex justify-between">
+      <div>
+        <p class="text-sm text-gray-500">Average Pace</p>
+        <p class="text-3xl font-bold mt-1">6:07/km</p>
+      </div>
+      <div class="bg-orange-100 text-orange-600 w-12 h-12 rounded-full flex items-center justify-center">
+        🕒
+      </div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="flex gap-6 border-b mb-6">
+    <button class="pb-3 border-b-2 border-blue-600 text-blue-600 font-semibold">5KM</button>
+    <button class="pb-3 text-gray-500">10KM</button>
+    <button class="pb-3 text-gray-500">21KM (Half)</button>
+    <button class="pb-3 text-gray-500">42KM (Full)</button>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- TABLE -->
+    <div class="lg:col-span-2 bg-white rounded-xl shadow-sm">
+      <div class="p-5 border-b">
+        <h2 class="text-xl font-bold">Top Runners</h2>
+      </div>
+
+      <table class="w-full text-sm">
+        <thead class="text-gray-500 border-b">
+          <tr>
+            <th class="text-left p-4">Rank</th>
+            <th class="text-left p-4">Bib</th>
+            <th class="text-left p-4">Runner</th>
+            <th class="text-left p-4">Distance</th>
+            <th class="text-left p-4">Pace</th>
+            <th class="text-left p-4">Time</th>
+            <th class="text-left p-4">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+
+          <tr class="border-b">
+            <td class="p-4">🥈 2</td>
+            <td class="p-4 font-semibold">50003</td>
+            <td class="p-4 font-medium">Michael Smith</td>
+            <td class="p-4">5KM</td>
+            <td class="p-4 font-semibold">5:54/km</td>
+            <td class="p-4">0:37:06</td>
+            <td class="p-4">
+              <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold">
+                Finished
+              </span>
+            </td>
+          </tr>
+
+          <tr class="border-b">
+            <td class="p-4">8</td>
+            <td class="p-4 font-semibold">50008</td>
+            <td class="p-4 font-medium">Michael Cường</td>
+            <td class="p-4">5KM</td>
+            <td class="p-4 font-semibold">6:40/km</td>
+            <td class="p-4">0:27:09</td>
+            <td class="p-4">
+              <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold">
+                Running
+              </span>
+            </td>
+          </tr>
+
+          <tr class="border-b">
+            <td class="p-4">23</td>
+            <td class="p-4 font-semibold">50022</td>
+            <td class="p-4 font-medium">Michael Minh</td>
+            <td class="p-4">5KM</td>
+            <td class="p-4 font-semibold">5:43/km</td>
+            <td class="p-4">0:16:06</td>
+            <td class="p-4">
+              <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold">
+                Running
+              </span>
+            </td>
+          </tr>
+
+          <tr>
+            <td class="p-4">43</td>
+            <td class="p-4 font-semibold">50028</td>
+            <td class="p-4 font-medium">Michael Jones</td>
+            <td class="p-4">5KM</td>
+            <td class="p-4 font-semibold">8:43/km</td>
+            <td class="p-4">0:20:46</td>
+            <td class="p-4">
+              <span class="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-semibold">
+                DNF
+              </span>
+            </td>
+          </tr>
+
+        </tbody>
+      </table>
+    </div>
+
+    <!-- SIDE PANEL -->
+    <div class="space-y-6">
+
+      <div class="bg-white rounded-xl shadow-sm p-5">
+        <h3 class="font-bold mb-4">Race Overview</h3>
+        <div class="space-y-3 text-sm">
+          <div class="flex justify-between">
+            <span>Total in this race</span>
+            <span class="font-bold">45</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Currently Running</span>
+            <span class="font-bold text-blue-600">31</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Finished</span>
+            <span class="font-bold text-green-600">7</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Did Not Finish</span>
+            <span class="font-bold text-red-600">7</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm p-5">
+        <h3 class="font-bold mb-4">Legend</h3>
+        <ul class="space-y-2 text-sm">
+          <li class="flex items-center gap-3">
+            <span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded">1</span> 1st Place
+          </li>
+          <li class="flex items-center gap-3">
+            <span class="bg-gray-100 px-3 py-1 rounded">2</span> 2nd Place
+          </li>
+          <li class="flex items-center gap-3">
+            <span class="bg-orange-100 text-orange-700 px-3 py-1 rounded">3</span> 3rd Place
+          </li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+</div>

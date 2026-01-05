@@ -5,12 +5,18 @@ const bcrypt = require('bcrypt');
 const SALT = 12;
 const excelUpload = require('../config/excelUploadM');
 const xlsx = require('xlsx');
-const {sendOtpMail} = require('../services/mail.service');
+const crypto = require('crypto');
+const EventEntity = require('../model/Event');
+const RunnerEntity = require('../model/Runner');
+const ParticipantEntity = require('../model/Participant');
+const { sendOtpMail } = require('../services/mail.service');
+const {sendMailDomainQRCode}= require('../services/mailDomainQRCode.service');
+const QRCode = require('qrcode');
 //fake data database
 //table accounts
 const accounts = [
-    {id:1, username: 'kien', password: '$2b$12$RKmO8HEdn57p6Lt6awFq8em9w2il55dHcOhXm826Ms2m19reITcNe' }, //123
-    {id:2, username: 'sa', password: '$2b$12$kPFvpgzxsfE5e1lvoty2/.Abnuyr.7lxlfVmF5SS7ZkUF/fC2ut8q' }, //12345
+    { id: 1, username: 'kien', password: '$2b$12$RKmO8HEdn57p6Lt6awFq8em9w2il55dHcOhXm826Ms2m19reITcNe' }, //123
+    { id: 2, username: 'sa', password: '$2b$12$kPFvpgzxsfE5e1lvoty2/.Abnuyr.7lxlfVmF5SS7ZkUF/fC2ut8q' }, //12345
 ];
 
 async function hashPassword(password) {
@@ -28,15 +34,15 @@ async function auth(req, res, next) {
     //     console.log('login with cookie success');
     //     return next();
     // }
-    if(req.session.user){
-        console.log(req.session)
+    if (req.session.user) {
+        console.log(req.session);
         return next();
     }
     console.log('pls login');
     res.redirect('/test/login');
 }
 //router.get('/checkin', bibIdentification.Index);
-router.get('/dashboard',auth, (req, res) => {
+router.get('/dashboard', auth, (req, res) => {
     res.render('test/dashboard', { layout: false });
 });
 router.get('/login', (req, res) => {
@@ -61,10 +67,10 @@ router.post('/login', async (req, res) => {
         if (isMatch) {
             console.log('password dung');
             //luu thong tin user vao session
-            req.session.user={
+            req.session.user = {
                 id: result.id,
-                name: result.username
-            }
+                name: result.username,
+            };
             return res.redirect('/test/dashboard');
         }
         console.log('password sai');
@@ -73,18 +79,18 @@ router.post('/login', async (req, res) => {
     console.log('ko co user');
     res.json({ mess: 'ko co user' });
 });
-router.get('/sendgrid',async (req, res)=>{
+router.get('/sendgrid', async (req, res) => {
     try {
         const otp = '123456';
-    console.log('running here')
-    await sendOtpMail('kienvu.dev3@gmail.com', otp);
-    return res.json({success: true, mess: 'ok'});
+        console.log('running here');
+        await sendOtpMail('kienvu.dev@gmail.com', otp);
+        return res.json({ success: true, mess: 'ok' });
     } catch (error) {
-        return res.status(500).json({success: false, mess: 'failed'})
+        return res.status(500).json({ success: false, mess: 'failed' });
     }
-})
+});
 // excel
-router.get('/xlsx', (req, res)=>{
+router.get('/xlsx', (req, res) => {
     res.send(`
         <h1>Form import data</h1>
         <form action="/test/xlsx" method="post" enctype="multipart/form-data">
@@ -92,22 +98,48 @@ router.get('/xlsx', (req, res)=>{
         <input type="file" name="excelFile" id=""> 
         <button type="submit">Submit</button>
     </form>
-        `)
-})
-router.post('/xlsx', excelUpload.single('excelFile'), (req, res)=>{
+        `);
+});
+router.post('/xlsx', excelUpload.single('excelFile'), (req, res) => {
     try {
-        if(!req.file) return res.status(400).send('chua co file');
-        const workbook = xlsx.read(req.file.buffer, {type: 'buffer'});
+        if (!req.file) return res.status(400).send('chua co file');
+        const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
         //lay sheet dau tien
-        const sheetName = workbook.SheetNames[0];//lay sheet dau tien
+        const sheetName = workbook.SheetNames[0]; //lay sheet dau tien
         //lay sheet theo ten
         const worksheet = workbook.Sheets[sheetName];
-        const data = xlsx.utils.sheet_to_json(worksheet);//convert to JSON
+        const data = xlsx.utils.sheet_to_json(worksheet); //convert to JSON
         console.log(data);
-        res.json({mess: 'read file', data})
+        res.json({ mess: 'read file', data });
     } catch (error) {
         console.log(error.message);
-        res.status(500).send(error.message)
+        res.status(500).send(error.message);
     }
+});
+router.get('/api/runner', (req, res) => {
+    const runners = [
+        { id: 1, name: 'Nguyen Van A', bib: '1234' },
+        { id: 2, name: 'Tran Thanh Hai', bib: '1235' },
+        { id: 3, name: 'Nguyen Ba Long', bib: '1236' },
+    ];
+    res.json({ success: true, data: runners });
+});
+//send mail
+router.get('/sendmail/', async (req, res) => {
+    const _eventId = 'event_test';
+    const _groupId = 'group_admin';
+    const event = await EventEntity.findOne({ _id: '69290d190cfdc66e0f753c76' });
+    console.log(event);
+    const pp = await ParticipantEntity.find({ event_id: _eventId, group_id: _groupId }).lean();
+    console.log(pp)
+    const short_id = event.short_id;
+    const qrBase64 =await QRCode.toDataURL('event_test_21c6a70a2f');
+    const sendMail =await sendMailDomainQRCode('kienvu.dev@gmail.com', 'KienVu',qrBase64 )
+    // const randomPart = crypto.randomBytes(5).toString('hex');
+    res.json({ success: true, sendMail, qrBase64});
+});
+router.get('/tool-scan', async(req, res)=>{
+    res.render('pages/scanQRCode', {layout: false});
 })
+//
 module.exports = router;

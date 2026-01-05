@@ -5,6 +5,7 @@ const eventSchema = new mongoose.Schema(
     {
         name: String,
         slug: String,
+        short_id: String,
         desc: String,
         img_thumb: String,
         img_banner: String,

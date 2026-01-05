@@ -1,3 +1,4 @@
+
 <div class="page-header">
     <div class="page-block">
         <div class="row align-items-center">
@@ -15,15 +16,28 @@
     </div>
 </div>
 <!-- breack-crum -->
-
+<div class="progress-container">
+  <div class="progressbar">
+    <div class="progress-line" id="progress-line"></div>
+    
+    <a href="/admin/event/form-edit/<%=slug%>">
+        <div data-step="1" class="progress-step active">1. Initial</div>
+    </a>
+    <a href="/admin/event/<%=slug%>/athlete-data">
+        <div data-step="2" class="progress-step">2. Manage Athlete</div>
+    </a>
+    <div data-step="3" class="progress-step">3. Send E-mail</div>
+    <div data-step="4" class="progress-step">4. Check-in</div>
+    <div data-step="5" class="progress-step">5. Finish</div>
+  </div>
+</div>
 <form id="eventForm" class="container mt-4">
     <div class="row">
         <!-- col-right -->
         <div class="col-8">
-            <div class="card">
+            <div class="card" id="section_one">
                 <div class="card-body">
                     <!--  -->
-
                     <div class="row mb-3">
                         <div class="col-6">
                             <div>
@@ -105,6 +119,13 @@
                     <!--  -->
                 </div>
             </div>
+            <!-- section second -->
+            <div class="card">
+                <div class="card-body">
+                    <!--  -->
+                    aaa
+                </div>
+            </div>    
         </div>
         <!-- col-left -->
         <div class="col-4">

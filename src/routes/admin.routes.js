@@ -12,11 +12,16 @@ const groupController = require('../areas/admin/controller/group.controller')();
 const ecertController = require('../areas/admin/controller/ecert.controller')();
 // 
 const imageUploadMemory = require('../config/imageUploadMemory');
+const excelUpload = require('../config/excelUploadM');
 // group
 router.get('/page-setting', homeController.PageSetting);
 router.post('/page-setting/home-page/config', homeController.ConfigHomePage)
 router.get('/group', groupController.Index);
 // router.get('/', homeController.Index);
+// event
+router.get('/event/:slug/athlete-group', eventController.RunnerDataWithGroup);
+router.get('/event/:slug/athlete-data', eventController.RunnerData);
+router.post('/event/:slug/athlete-import', excelUpload.single('ath_xlsx'), eventController.RunnerImport); //
 router.get('/event/form', eventController.FormAdd);
 router.post('/event/form', eventController.AddEvent);
 router.get('/event/form-edit/:slug', eventController.FormEdit);

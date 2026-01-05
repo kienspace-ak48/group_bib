@@ -1,8 +1,10 @@
 const express = require('express');
 const router = express.Router();
+const crypto = require('crypto');
 const authRoute = require('../middleware/auth.middleware');
 const uploadImageMemory = require('../config/imageUploadMemory');
 const excelUploadMemory = require('../config/excelUploadM');
+const runnerResultController = require('../controller/runnerResult.controller')();
 
 const homeController = require('../controller/home.controller')();
 const bibIdentitficationController = require('../controller/bibIdentification.controller')();
@@ -53,6 +55,10 @@ router.get('/e-cert/contest-detail/:slug', homeController.ECetDetail);
 router.post('/e-cert/data-table/:slug', homeController.DataTable);
 router.get('/e-cert/render-cert', homeController.RenderCertificate);
 
+// Runner Result 
+router.get('/runner/by-distance/:distance', runnerResultController.GetByDistance)
+router.get('/runner/result', runnerResultController.CallAPI);
+router.get('/runner', runnerResultController.Index);
 
 // test
 router.get('/test/getCountry', userController.testGetAllCountry)
