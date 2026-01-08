@@ -23,9 +23,17 @@
     <a href="/admin/event/form-edit/<%=slug%>">
         <div data-step="1" class="progress-step active">1. Initial</div>
     </a>
-    <a href="/admin/event/<%=slug%>/athlete-data">
-        <div data-step="2" class="progress-step">2. Manage Athlete</div>
-    </a>
+    <%if(event && event.race_function){%>
+        <%if(event.race_function ==='ticket'){%>
+            <a href="/admin/event/<%=slug%>/athlete-data">
+                <div data-step="2" class="progress-step">2. Manage Athlete</div>
+            </a>
+        <%}else{%>
+            <a href="/admin/event/type-checkin/<%=slug%>/athlete-data">
+                <div data-step="2" class="progress-step">2. Manage Athlete</div>
+            </a>
+        <%}%>
+    <%}%>
     <div data-step="3" class="progress-step">3. Send E-mail</div>
     <div data-step="4" class="progress-step">4. Check-in</div>
     <div data-step="5" class="progress-step">5. Finish</div>
@@ -52,13 +60,27 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Description</label>
-                        <textarea name="description"   class="form-control" rows="4"><%=event?.desc%></textarea>
+                        <textarea name="description" id="desc_area"  class="form-control" rows="4"><%=event?.desc%></textarea>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label">Location</label>
                         <input type="text" value="<%=event?.location%>"  name="location" class="form-control" />
                     </div>
+                    <!--  -->
+                    <div class="row mb-3">
+                        <div class="col">
+                            <div class="mb-3">
+                        <label class="form-label">Location</label>
+                        <input type="text" value="<%=event?.location%>"  name="location" class="form-control" />
+                    </div>
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Short_ID<small> (3-5 digit)</small></label>
+                            <input type="text" name="short_id" value="<%=event?.short_id%>" placeholder="[Midnight Run 2025 -> MNR]" class="form-control" />
+                        </div>
+                    </div>
+                    <!--  -->
                     <div class="row mb-3">
                         <div class="col">
                             <label class="form-label">Start Date</label>
@@ -138,6 +160,14 @@
                         </div>
                     </div>
                     <div class="mb-3">
+                        <label for="" class="form-label">Type</label>
+                        <select  name="race_function" id="" class="form-select">
+                            <!-- <option value="">-- Choose --</option> -->
+                            <option value="checkin" <%= event?.race_function ==='checkin'?'selected': '' %>>Race check-in</option>
+                            <option value="ticket" <%= event?.race_function ==='ticket'?'selected': '' %>>Race ticket</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label">Img Thumbnail (URL)</label>
                         <input type="text" value="<%=event?.img_thumb%>" name="img_thumb" class="form-control" />
                     </div>
@@ -163,7 +193,7 @@
 <script>
     tinymce.init({
         height: '300',
-        selector: '#event-tinymce-4',
+        selector: '#desc_area',
         content_style: 'body { font-family: "Inter", sans-serif; }',
         menubar: false,
         toolbar: [
@@ -178,6 +208,7 @@
         e.preventDefault();
         const formData = new FormData(this);
         formData.set('is_show', document.getElementById('switchCheckDefault').checked? true: false)
+        formData.set('desc', tinymce.get('desc_area').getContent())
         const data = Object.fromEntries(formData.entries());
         const slug = document.querySelector('input[name="slug_hidden"]').value;
         $.ajax({

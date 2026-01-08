@@ -1,0 +1,276 @@
+<div class="main-container">
+    <div class="bg-white shadow-md rounded-lg p-8">
+        <!-- Lưu ý -->
+        <div class="bg-blue-100 text-blue-800 p-4 rounded mb-6 text-sm">
+            <strong>Lưu ý:</strong> Vui lòng chọn đúng tên nhóm của bạn. Bạn sẽ không thể xóa nhóm sau khi đã tạo. Bạn
+            phải cam kết rằng các thông tin trên là đúng và không thể chỉnh sửa sau khi đã tạo nhóm!
+        </div>
+
+        <!-- Hướng dẫn -->
+        <p class="mb-4 text-sm text-gray-700">
+            Vui lòng thêm qua hướng dẫn
+            <a href="#" class="text-blue-600 underline">tại đây</a>
+        </p>
+
+        <!-- Tiêu đề sự kiện -->
+        <h3 class="text-lg font-medium mb-6">
+            Bạn đang tạo nhóm Đăng ký cho Sự kiện
+            <span class="text-blue-600 font-bold">TIỀN PHONG HALF MARATHON 2025 - EARLY BIRD</span>
+            <span class="text-red-500"> (sẽ kết thúc đăng ký vào 23:59 04/12/2025)</span>
+        </h3>
+
+        <!-- Form -->
+        <form id="groupForm" class="space-y-6">
+            <!-- Tên trưởng nhóm -->
+            <div>
+                <label class="block text-gray-700 font-medium mb-1"
+                    >Họ và tên trưởng nhóm <span class="text-red-500">*</span></label
+                >
+                <input
+                    type="text"
+                    name="leader_name"
+                    placeholder="Vũ Kiến"
+                    class="w-full border border-gray-300 rounded px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                />
+            </div>
+
+            <!-- Email và SĐT -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-gray-700 font-medium mb-1"
+                        >Email <span class="text-red-500">*</span></label
+                    >
+                    <input
+                        type="email"
+                        name="leader_email"
+                        placeholder="kienidkcgo1001@gmail.com"
+                        class="w-full border border-gray-300 rounded px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                    />
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium mb-1"
+                        >Số điện thoại <span class="text-red-500">*</span></label
+                    >
+                    <input
+                        type="tel"
+                        name="leader_phone"
+                        placeholder="Nhập số điện thoại"
+                        class="w-full border border-gray-300 rounded px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                    />
+                </div>
+            </div>
+
+            <!-- Ngày sinh và CCCD -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-gray-700 font-medium mb-1"
+                        >Ngày sinh <span class="text-red-500">*</span></label
+                    >
+                    <input
+                        type="date"
+                        name="leader_dob"
+                        class="w-full border border-gray-300 rounded px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                    />
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium mb-1"
+                        >CCCD hoặc hộ chiếu <span class="text-red-500">*</span></label
+                    >
+                    <input
+                        type="text"
+                        name="leader_identity"
+                        placeholder="Nhập CCCD hoặc hộ chiếu"
+                        class="w-full border border-gray-300 rounded px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                    />
+                </div>
+            </div>
+
+            <!-- Zalo và Facebook -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-gray-700 font-medium mb-1"
+                        >Liên kết Zalo nhóm <span class="text-red-500">*</span></label
+                    >
+                    <input
+                        type="url"
+                        name="zalo_link"
+                        placeholder="Nhập link Zalo nhóm"
+                        class="w-full border border-gray-300 rounded px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                    />
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium mb-1">Liên kết Facebook nhóm</label>
+                    <input
+                        type="url"
+                        name="facebook_link"
+                        placeholder="Nhập link Facebook nhóm"
+                        class="w-full border border-gray-300 rounded px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                    />
+                </div>
+            </div>
+
+            <!-- Điều chỉnh giá nhóm -->
+            <div class="border-t pt-6 mt-6">
+                <h3 class="text-lg font-semibold mb-4">Điều chỉnh giá nhóm cho các cự ly</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="block text-gray-700 text-sm mb-1">Chọn % giảm giá</label>
+                        <select
+                            name="discount_percent"
+                            class="border-gray-300 focus:outline-none w-75 border rounded px-4 py-2 focus:ring-2 focus:ring-blue-400 "
+                        >
+                            <option value="0">0%</option>
+                            <option value="5">5%</option>
+                            <option value="10">10%</option>
+                        </select>
+                    </div>
+                    <!--  -->
+                    <div class="flex items-center gap-4">
+                        <!-- QR Image preview -->
+                        <div class="flex-none">
+                            <img src="/uploads/images/momo.jp" id="previewQR" alt="qr-bank" class="h-32 w-32 object-cover border rounded">
+                        </div>
+
+                        <!-- Upload box -->
+                        <label class="flex flex-1 border-2 border-dashed border-gray-400 rounded-lg h-32 flex-col justify-center items-center cursor-pointer text-gray-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M16 10l-4-4m0 0L8 10m4-4v12" />
+                            </svg>
+                            <span id="fileName">QR-Vietcombank-768x994.jpg</span>
+                            <input type="file" class="hidden" id="fileQR" name="imageQR"/>
+                        </label>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Thông tin chuyển khoản -->
+            <div class="mt-6">
+                <h3 class="text-lg font-semibold mb-4">Thông tin thanh toán của Trưởng nhóm</h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <input
+                        type="text"
+                        name="bank_account_name"
+                        placeholder="Chủ tài khoản (*)"
+                        class="border-gray-300 w-full border rounded px-4 py-2 focus:ring-2 focus:ring-blue-400"
+                    />
+                    <input
+                        type="text"
+                        name="bank_name"
+                        placeholder="Tên ngân hàng (*)"
+                        class="border-gray-300 w-full border rounded px-4 py-2 focus:ring-2 focus:ring-blue-400"
+                    />
+                    <input
+                        type="text"
+                        name="bank_account_number"
+                        placeholder="Số tài khoản (*)"
+                        class="border-gray-300 w-full border rounded px-4 py-2 focus:ring-2 focus:ring-blue-400"
+                    />
+                    <input
+                        type="text"
+                        name="transfer_code_prefix"
+                        placeholder="Tiền tố nội dung chuyển khoản (*)"
+                        class="border-gray-300 w-full border rounded px-4 py-2 focus:ring-2 focus:ring-blue-400"
+                    />
+                    
+                </div>
+
+                <!-- Upload QR -->
+                 
+                <input type="file" name="qr_image" class="hidden" id="qrUpload" />
+            </div>
+
+            <!-- Thông tin nhóm -->
+            <div class="border-t pt-6 mt-6">
+                <h3 class="text-lg font-semibold mb-4">Thông tin Nhóm</h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <select
+                        name=""
+                        class="border-gray-300 focus:outline-none border rounded w-full px-4 py-2 focus:ring-2 focus:ring-blue-400"
+                    >
+                        <option value="">Chọn thông tin</option>
+                    </select>
+                    <div class="grid grid-cols-3 gap-2">
+                        <input
+                            type="date"
+                            name="expiry_date"
+                            class="border-gray-300 border rounded col-span-2 px-4 py-2 focus:ring-2 focus:ring-blue-400"
+                        />
+                        <input
+                            type="time"
+                            name="expiry_time"
+                            class="border-gray-300 border rounded px-4 py-2 focus:ring-2 focus:ring-blue-400"
+                        />
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div class="">
+                        <!-- <input type="checkbox" name="is_new_group" value="1" class="h-4 w-4" />
+                        <label class="text-sm">Tạo nhóm mới</label> block text-gray-700 font-medium mb-1 -->
+                        <label for="" class="block text-gray-700 font-medium mb-1">Tên nhóm <span class=" text-[10px] text-red-700">(*)</span> </label>
+                        <input type="text" name="group_name" placeholder="HCM Night Run" class=" border-gray-300 px-4 py-2 w-full border rounded focus:ring-2 focus:ring-blue-400 focus:outline-none">
+                    </div>
+                    <input
+                        type="text"
+                        name="group_password"
+                        placeholder="Mật khẩu (tuỳ chọn)"
+                        class="border-gray-300 border rounded w-full px-4 py-2 focus:ring-2 focus:ring-blue-400"
+                    />
+                </div>
+
+                <div class="text-center mt-6">
+                    <button
+                        type="submit"
+                        class="bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold px-10 py-3 rounded-full shadow hover:opacity-90 transition"
+                    >
+                        XÁC NHẬN 🚀
+                    </button>
+                    <input type="hidden" name="slug_hidden" value="<%=slug?slug:''%>">
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+<!-- ============Script here =============== -->
+<script>
+    // global scope
+    const fileQR = document.getElementById('fileQR');
+    const previewQR = document.getElementById('previewQR');
+    const fileName = document.getElementById('fileName');
+    fileQR.addEventListener('change', function(ev){
+        const file = ev.target.files[0];
+        if(file){
+            previewQR.src =URL.createObjectURL(file);
+            fileName.textContent = file.name
+            
+        }
+    })
+    $('#groupForm').on('submit', function (e) {
+        e.preventDefault();
+        // const data = Object.fromEntries(new FormData(this).entries());
+        const formData = new FormData(this);
+
+        const slug = document.querySelector('input[name="slug_hidden"]').value;
+        $.ajax({
+            url: `/group-bib/form-add`,
+            method: 'POST',
+            contentType: false,
+            processData: false,
+            data: formData,//JSON.stringify(data),
+            success: (res) => {
+                // console.log(res);
+                if(res.success){
+                    document.location.href=`/user/group-management`
+                }
+            },
+            error: (xhr, status, err) => {
+                console.log(xhr.responseJSON?.mess || 'Server error');
+            },
+        });
+    });
+    // 
+    
+</script>

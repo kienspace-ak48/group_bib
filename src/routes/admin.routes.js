@@ -13,13 +13,16 @@ const ecertController = require('../areas/admin/controller/ecert.controller')();
 // 
 const imageUploadMemory = require('../config/imageUploadMemory');
 const excelUpload = require('../config/excelUploadM');
-// group
+// page setting
 router.get('/page-setting', homeController.PageSetting);
 router.post('/page-setting/home-page/config', homeController.ConfigHomePage)
+// group 
+router.get('/group/list', groupController.GetAllEvent);
 router.get('/group', groupController.Index);
 // router.get('/', homeController.Index);
 // event
 router.get('/event/:slug/athlete-group', eventController.RunnerDataWithGroup);
+router.post('/event/:slug/type-checkin/send-mail', eventController.SendMail)
 router.get('/event/:slug/athlete-data', eventController.RunnerData);
 router.post('/event/:slug/athlete-import', excelUpload.single('ath_xlsx'), eventController.RunnerImport); //
 router.get('/event/form', eventController.FormAdd);
@@ -27,7 +30,22 @@ router.post('/event/form', eventController.AddEvent);
 router.get('/event/form-edit/:slug', eventController.FormEdit);
 router.put('/event/form-edit/:slug', eventController.UpdateEvent);
 router.delete('/event/:id', eventController.DeleteEvent);
-router.get('/event', eventController.Index);
+
+//event action[check in]
+router.get('/event/:slug/type-checkin/send-mail', eventController.SendMailCheckin);
+router.post('/event/:slug/athlete-checkin-import', excelUpload.single('ath_xlsx'), eventController.RunnerCheckinImport)
+router.get('/event/type-checkin/:slug/athlete-data', eventController.RunnerCheckinData);
+router.get('/event/:slug/athlete-checkin', eventController.RunnerDataCheckin);
+router.post('/event/:slug/type-chekin/add-person', eventController.CheckinAddPerson);
+router.delete('/event/:slug/type-checkin/delete-person/:id', eventController.CheckinDeletePerson);
+router.put('/event/:slug/type-checking/update-person/:id', eventController.CheckinUpdatePerson)
+router.get('/event/:slug/type-checking/edit-person/:id', eventController.CheckinEditPerson);
+// 
+router.post('/event/:slug/type-checkin/mail-config',eventController.CheckinMailConfigSave);
+//feature checkin
+router.post('/event/type-checkin/:slug/add-group', eventController.RunnerCheckinData)
+router.get('/event/type-checkin', eventController.EventCheckin);
+router.get('/event', eventController.EventTicket);
 // image
 router.get('/image/delete/:name', imageController.Delete);
 router.post('/image', uploadImageMiddleware.single('file'), imageController.Upload);

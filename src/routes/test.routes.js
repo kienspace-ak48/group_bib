@@ -132,9 +132,8 @@ router.get('/sendmail/', async (req, res) => {
     console.log(event);
     const pp = await ParticipantEntity.find({ event_id: _eventId, group_id: _groupId }).lean();
     console.log(pp)
-    const short_id = event.short_id;
     const qrBase64 =await QRCode.toDataURL('event_test_21c6a70a2f');
-    const sendMail =await sendMailDomainQRCode('kienvu.dev@gmail.com', 'KienVu',qrBase64 )
+    const sendMail =await sendMailDomainQRCode('kienvu.dev@gmail.com', 'Nguyen Van A',qrBase64 )
     // const randomPart = crypto.randomBytes(5).toString('hex');
     res.json({ success: true, sendMail, qrBase64});
 });

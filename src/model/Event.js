@@ -14,6 +14,7 @@ const eventSchema = new mongoose.Schema(
         end_date: Date,
         isShow: { type: Boolean, default: false },
         status: String,
+        race_function: {type: String, enum: ['checkin', 'ticket'], default: 'ticket'},
         race_type: String,
         organizer_name: String,
         organizer_web: String,

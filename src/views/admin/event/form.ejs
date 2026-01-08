@@ -30,12 +30,18 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Description</label>
-                        <textarea name="description" class="form-control" rows="4"></textarea>
+                        <textarea name="description" id="desc_area" class="form-control" rows="4"></textarea>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label">Location</label>
-                        <input type="text" name="location" class="form-control" />
+                    <div class="row mb-3">
+                        <div class="col">
+                            <label class="form-label">Location</label>
+                            <input type="text" name="location" class="form-control" />
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Short_ID<small> (3-5 digit)</small></label>
+                            <input type="text" name="short_id" placeholder="[Midnight Run 2025 -> MNR]" class="form-control" />
+                        </div>
                     </div>
                     <div class="row mb-3">
                         <div class="col">
@@ -104,9 +110,23 @@
                 <div class="card-body">
                     <div class="mb-3">
                         <div class="form-check form-switch">
-                            <input class="form-check-input" name="is_show" type="checkbox" role="switch" id="switchCheckDefault" />
+                            <input
+                                class="form-check-input"
+                                name="is_show"
+                                type="checkbox"
+                                role="switch"
+                                id="switchCheckDefault"
+                            />
                             <label class="form-check-label" for="switchCheckDefault">Show on website</label>
                         </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="" class="form-label">Type</label>
+                        <select name="race_function" id="" class="form-select">
+                            <option value="">-- Choose --</option>
+                            <option value="checkin">Race check-in</option>
+                            <option value="ticket">Race ticket</option>
+                        </select>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Img Thumbnail (URL)</label>
@@ -133,7 +153,7 @@
 <script>
     tinymce.init({
         height: '300',
-        selector: '#event-tinymce-4',
+        selector: '#desc_area',
         content_style: 'body { font-family: "Inter", sans-serif; }',
         menubar: false,
         toolbar: [
@@ -147,21 +167,22 @@
     document.querySelector('#eventForm').addEventListener('submit', function (e) {
         e.preventDefault();
         const formData = new FormData(this);
-        formData.set('is_show', document.getElementById('switchCheckDefault').checked? true: false)
+        formData.set('desc', tinymce.get('desc_area').getContent())
+        formData.set('is_show', document.getElementById('switchCheckDefault').checked ? true : false);
         const data = Object.fromEntries(formData.entries());
         $.ajax({
-          url: '/admin/event/form',
-          method: 'POST',
-          contentType: 'application/json',
-          data: JSON.stringify(data),
-          success: (res)=>{
-            if(res.success){
-              document.location.href="/admin/event"
-            }
-          },
-          error: (xhr, status, err)=>{
-            console.log(xhr.responseJSON?.mess||'Server error')
-          }
-        })
+            url: '/admin/event/form',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            success: (res) => {
+                if (res.success) {
+                    document.location.href = '/admin/event';
+                }
+            },
+            error: (xhr, status, err) => {
+                console.log(xhr.responseJSON?.mess || 'Server error');
+            },
+        });
     });
 </script>

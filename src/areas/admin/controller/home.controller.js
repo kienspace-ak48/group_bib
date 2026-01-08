@@ -1,8 +1,8 @@
 // areas/ home.controller.js
-const stringValue = require('../../../config/stringvalue.config');
-const PageSettingEntity = require('../../../model/PageSetting');
 const VNAME = 'admin/home/';
 const VLAYOUT = 'layouts/adminLayout';
+const stringValue = require('../../../config/stringvalue.config');
+const PageSettingEntity = require('../../../model/PageSetting');
 
 const homeController = ()=>{
     return {

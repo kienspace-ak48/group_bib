@@ -35,7 +35,10 @@
         <%}%>
     <%}%>
         <!--  -->
-        <div data-step="3" class="progress-step">3. Send E-mail</div>
+    <a href="/admin/event/<%=event_slug%>/type-checkin/send-mail">
+                <div data-step="2" class="progress-step">3. Send E-Mail</div>
+            </a>
+        <!-- <div data-step="3" class="progress-step">3. Send E-mail</div> -->
         <div data-step="4" class="progress-step">4. Check-in</div>
         <div data-step="5" class="progress-step">5. Finish</div>
     </div>
@@ -43,30 +46,6 @@
 <!-- stats -->
 <div class="card shadow-sm" style="min-height: 260px">
     <div class="card-body">
-      <!-- Choose group -->
-       <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
-        <select name="" id="" class="form-control">
-          <%#if(groups && groups.length>0){%>
-            <%groups.forEach((g,i)=>{%>
-              <option value="<%=g._id%>"><%=g.name%></option>
-            <%})%>
-          <%#}%>
-          <!-- <option value="">Nhom 1</option>
-          <option value="">Nhom 2</option>
-          <option value="">Nhom 3</option> -->
-        </select>
-        <!--  -->
-        <select class="form-control" id="group-select">
-  <% if (groups && groups.length > 0) { %>
-    <% groups.forEach((g) => { %>
-      <option value="<%= g._id %>"><%= g.name %></option>
-    <% }) %>
-  <% } %>
-</select>
-
-       <input type="text" class="form-control" disabled>
-       </div>
-       <hr>
         <!-- Header thống kê -->
         <div class="row text-center mb-3">
             <div class="col">
@@ -156,20 +135,20 @@
             <table class="table table-bordered align-middle">
                 <thead>
                     <tr>
-                        <th>BIB/Cự ly</th>
-                        <th>ChipId</th>
+                        <th>Code</th>
+                        <th>Category</th>
                         <th>Name-CCCD-Email</th>
-                        <th>Size</th>
-                        <th>Checkin-P</th>
-                        <th>Checkin-G</th>
+                        <th>Vật phẩm/Size áo</th>
+                        <th>Checkin</th>
+                        <!-- <th>Checkin-G</th> -->
                         <th>Mail QR</th>
-                        <th>Author</th>
                         <th>QR Image</th>
+                        <th>Action</th>
 
                     </tr>
                 </thead>
                 <tbody id="athlete-tbody">
-                    <tr>
+                    <!-- <tr>
                         <td class="text-danger fw-bold">19<br /><small>2KM</small></td>
                         <td>3687</td>
                         <td class="">
@@ -186,7 +165,7 @@
                                 <i class="bi bi-trash"></i>
                             </button>
                         </td>
-                    </tr>
+                    </tr> -->
                 </tbody>
             </table>
         </div>
@@ -219,25 +198,26 @@
     <div class="modal-dialog modal-dialog-scrollable modal-xl">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Thêm VĐV: | <span id="ath-createAt"></span> </h5>
+          <h5 class="modal-title">Add persons <small>(Thêm người)</small>: | <span id="ath-createAt"></span> </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <p>
           <div class="row" style="padding: 0 50px;">
+            <!-- left -->
             <div class="col-6">
               <input type="checkbox" name="" id=""> <span>Đã checkin</span> <br> <br>
               <div class="row">
                 <div class="col-6">
                   <div class="form-group">
-                    <label for="" class="form-label">Cự ly</label>
+                    <label for="" class="form-label">Category(Mục)</label>
                     <input type="text" id="new-distance" class="form-control" id="new_distance">
                   </div>
                 </div>
                 <div class="col-6">
                   <div class="form-group">
                     <label for="" class="form-label">ChipId</label>
-                    <input type="text" class="form-control" id="new-chip">
+                    <input type="text" class="form-control" disabled placeholder="disable" id="new-chip">
                   </div>
                 </div>
               </div>
@@ -256,24 +236,25 @@
                   class="form-control" id="new-email"></div>
               <div class="form-group"><label for="" class="form-label">CMND/CCCD/Passport/</label><input type="text"
                   class="form-control" id="new-cccd"></div>
-              <div class="form-group"><label for="" class="form-label">CLB/Nhóm</label><input type="text"
+              <div class="form-group"><label for="" class="form-label">Club/Company</label><input type="text"
                   class="form-control" id="new-team"></div>
-              <div class="form-group"><label for="" class="form-label">Tên trên BIB</label><input type="text"
+              <div class="form-group"><label for="" class="form-label">Nickname</label><input type="text"
                   class="form-control" id="new-bibName"></div>
 
               <input type="checkbox" name="" id=""> <span>Ủy quyền nhận BIB</span>
 
             </div>
+            <!-- right -->
             <div class="col-6">
               <input type="checkbox" name="" id=""> <span>checkin theo nhóm</span> <br><br>
               <div class="row">
                 <div class="col-6">
-                  <div class="form-group"><label for="" class="form-label">BIB</label><input type="text"
+                  <div class="form-group"><label for="" class="form-label">Code</label><input type="text"
                       class="form-control" id="new-bib"></div>
                 </div>
                 <div class="col-6">
-                  <div class="form-group"><label for="" class="form-label">EPC</label><input type="text"
-                      class="form-control" id="new-epc"></div>
+                  <div class="form-group"><label for=""  class="form-label">EPC</label><input type="text"
+                      class="form-control" id="new-epc" placeholder="disabled" disabled ></div>
 
                 </div>
               </div>
@@ -311,7 +292,7 @@
 
                 </div>
                 <div class="col-6">
-                  <div class="form-group w-50"><label for="" class="form-label">Size áo</label><input type="text"
+                  <div class="form-group w-50"><label for="" class="form-label">Size áo/Vật phẩm</label><input type="text"
                       class="form-control" id="new-size"></div>
 
                 </div>
@@ -348,6 +329,192 @@
       </div>
     </div>
   </div>
+  <!-- ===================Modal edit============= -->
+   <!-- ==================== Modal EDIT athlete -->
+<!-- ==================== Modal EDIT athlete -->
+<div class="modal fade" id="modalEditAthlete" tabindex="-1">
+  <div class="modal-dialog modal-dialog-scrollable modal-xl">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">
+          Edit persons <small>(Chỉnh sửa)</small> |
+          <span id="ath-editAt"></span>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <p>
+        <input type="hidden" id="edit-id">
+
+        <div class="row" style="padding: 0 50px;">
+
+          <!-- LEFT -->
+          <div class="col-6">
+            <input type="checkbox" id="edit-checkin">
+            <span>Đã checkin</span>
+            <br><br>
+
+            <div class="row">
+              <div class="col-6">
+                <div class="form-group">
+                  <label class="form-label">Category(Mục)</label>
+                  <input type="text" id="edit-distance" class="form-control">
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="form-group">
+                  <label class="form-label">ChipId</label>
+                  <input type="text" class="form-control" disabled placeholder="disable">
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-6">
+                <div class="form-group">
+                  <label class="form-label">Tên</label>
+                  <input type="text" class="form-control" id="edit-name">
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="form-group">
+                  <label class="form-label">SĐT</label>
+                  <input type="text" class="form-control" id="edit-phone">
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input type="text" class="form-control" id="edit-email">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">CMND/CCCD/Passport</label>
+              <input type="text" class="form-control" id="edit-cccd">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Club/Company</label>
+              <input type="text" class="form-control" id="edit-team">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Nickname</label>
+              <input type="text" class="form-control" id="edit-bibName">
+            </div>
+
+            <input type="checkbox" id="edit-authorize">
+            <span>Ủy quyền nhận BIB</span>
+          </div>
+
+          <!-- RIGHT -->
+          <div class="col-6">
+            <input type="checkbox" disabled>
+            <span>checkin theo nhóm</span>
+            <br><br>
+
+            <div class="row">
+              <div class="col-6">
+                <div class="form-group">
+                  <label class="form-label">Code</label>
+                  <input type="text" class="form-control" id="edit-bib">
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="form-group">
+                  <label class="form-label">EPC</label>
+                  <input type="text" class="form-control" disabled placeholder="disabled">
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-6">
+                <div class="form-group">
+                  <label class="form-label">Giới tính</label>
+                  <select class="form-select w-75" id="edit-gender">
+                    <option value="true">Nam</option>
+                    <option value="false">Nữ</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="form-group">
+                  <label class="form-label">Nhóm máu</label>
+                  <input type="text" class="form-control" id="edit-blood">
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-6">
+                <div class="form-group">
+                  <label class="form-label">
+                    DOB <small>(mm/dd/yyyy)</small>
+                  </label>
+                  <input type="date" class="form-control" id="edit-dob">
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="form-group">
+                  <label class="form-label">Thông tin y tế</label>
+                  <input type="text" class="form-control" id="edit-medical">
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-6">
+                <div class="form-group">
+                  <label class="form-label">Quốc tịch</label>
+                  <input type="text" class="form-control" id="edit-nation">
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="form-group w-50">
+                  <label class="form-label">Size áo/Vật phẩm</label>
+                  <input type="text" class="form-control" id="edit-size">
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-6">
+                <div class="form-group">
+                  <label class="form-label">Người liên hệ khẩn cấp</label>
+                  <input type="text" class="form-control" id="edit-patronName">
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="form-group">
+                  <label class="form-label">SĐT người liên hệ khẩn cấp</label>
+                  <input type="text" class="form-control" id="edit-patronPhone">
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+        </p>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">
+          Close
+        </button>
+        <button id="btn-update-athlete" class="btn btn-warning">
+          Update
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
   <!-- ==================MODAL QRCode -->
    <div class="modal fade" id="qrModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
@@ -384,7 +551,7 @@
         const data = new FormData();
         data.append('ath_xlsx', file)
         $.ajax({
-            url: `/admin/event/:slug/athlete-import`,
+            url: `/admin/event/<%=event_slug%>/athlete-checkin-import`,
             method: 'POST',
             processData: false,
             contentType: false,
@@ -403,8 +570,11 @@
     //
     dataTable= $('#athlete_tbl table').DataTable({
       ajax: {
-        url: `/admin/event/:slug/athlete-group`,
+        url: `/admin/event/<%=event_slug%>/athlete-checkin`, 
         dataSrc: 'data'
+      },
+      createdRow: function(row, data, dataIndex){
+        $(row).attr('data-id', data._id);
       },
       columns: [
          {
@@ -412,20 +582,21 @@
           render: (data) => `
             <div>
               <strong>${data.bib?data.bib:'--'}</strong><br>
-              <small class="text-muted">${data.distance}</small>
             </div>
           `
         },
         { 
           data: null,
-          render: (data)=>``
+          render: (data)=>`
+            <div>${data.distance}</div>
+          `
          },
         
 
         {
           data: null,
           render: (data) => `
-            <div>
+            <div class="click_info">
               <strong>${data.fullname}</strong><br>
               <small>${data.cccd}</small><br>
               <small class="text-muted">${data.email}</small>
@@ -436,48 +607,42 @@
         { data: 'tshirt_size' },
 
         {
-          data: 'checkin_packet',
-          render: v => v
+          data: 'checkin_status',
+          render: (v) => v
             ? `<span class="badge bg-success">✔</span>`
             : `<span class="badge bg-secondary">✖</span>`
         },
-
-        {
-          data: 'checkin_gate',
-          render: v => v
-            ? `<span class="badge bg-success">✔</span>`
-            : `<span class="badge bg-secondary">✖</span>`
-        },
-
         {
           data: 'mail_qr',
-          render: v => v
+          render: data => data
             ? `<span class="badge bg-success">Sent</span>`
             : `<span class="badge bg-warning">No</span>`
         },
 
-        { data: 'user_id' },
-
-        {
-          data: 'uid',
+        { data: 'uid',
           render: (uid) => `
             <span 
               class="text-primary uid-click"
               data-uid="${uid}"
               style="cursor:pointer; font-weight:600"
             >
-              ${uid}
+              <a href="#!">Share</a>
             </span>
+          ` },
+
+        {
+          data: null,
+          render: (data) => `
+          <button class="btn btn-outline-danger cta-delete">Delete</button>
           `
         }
 
       ]
     })
-    // 
+  // 
     // delegate event cho DataTable
 $('#athlete_tbl table').on('click', '.uid-click', function () {
   const uid = $(this).data('uid');
-
   // set text
   $('#qrUid').text(uid);
 
@@ -491,10 +656,166 @@ $('#athlete_tbl table').on('click', '.uid-click', function () {
     width: 260,
     margin: 2
   });
-
   // show modal
   const modal = new bootstrap.Modal('#qrModal');
   modal.show();
 });
+//delete
+$('#athlete_tbl table').on('click', '.cta-delete', function(){
+  const tr = $(this).closest('tr');
+  const id = tr.data('id');
+  // alert(id);
+  Swal.fire({
+    icon: 'error',
+  title: "Do you want Delete it?",
+  // showDenyButton: true,
+  showCancelButton: true,
+  confirmButtonText: "Delete",
+  denyButtonText: `Cancel `
+}).then((result) => {
+  if (result.isConfirmed) {
+    Swal.fire("Delete success", "", "success");
+    $.ajax({
+    url: `/admin/event/<%=event_slug%>/type-checkin/delete-person/${id}`,
+    method: 'DELETE',
+    contentType: 'application/json',
+    data: null,
+    success: (res)=>{
+      console.log(res)
+      if(res.success){
+        document.location.reload();
+      }
+    },
+    error: (xhr, status, error)=>{
+      console.log(xhr.responseJSON?.mess||'Server error');
+    }
+  })
+  }
+});
+  // 
+  
+})
+// edit
+  $('#athlete_tbl table').on('click', '.click_info', function(){
+    const tr = $(this).closest('tr');
+    const id = tr.data('id');
+    console.log(id);
+    const data = dataTable.row(tr).data();
+    console.log(data);
+    $.ajax({
+      url: `/admin/event/:slug/type-checking/edit-person/${id}`,
+      method: 'GET',
+      contentType: 'application/json',
+      data: null,
+      success: (res)=>{
+        console.log(res);
+        const d = res.data;
+      $("#edit-checkin").prop('checked',d.checkin_status)
+      $('#edit-id').val(d._id);
+      $('#edit-distance').val(d.distance);
+      $('#edit-name').val(d.fullname);
+      $('#edit-phone').val(d.phone);
+      $('#edit-email').val(d.email);
+      $('#edit-cccd').val(d.cccd);
+      $('#edit-team').val(d.team);
+      $('#edit-bibName').val(d.bib_name);
+      $('#edit-bib').val(d.bib);
+      $('#edit-gender').val(String(d.gender));
+      $('#edit-blood').val(d.blood);
+      $('#edit-dob').val(d.dob ? d.dob.split('T')[0] : '');
+      $('#edit-medical').val(d.medical);
+      $('#edit-nation').val(d.nation);
+      $('#edit-size').val(d.tshirt_size);
+      $('#edit-patronName').val(d.patron_name);
+      $('#edit-patronPhone').val(d.patron_phone);
 
+      $('#modalEditAthlete').modal('show');
+      },
+      error: (xhr, status, err)=>{
+        console.log(xhr.responseJSON?.mess||'Server error')
+      }
+    })
+  })
+  //update
+  $('#btn-update-athlete').on('click', function () {
+  const id = $('#edit-id').val();
+
+  const payload = {
+    checkin_status:$('#edit-checkin').is(':checked'),
+    fullname: $('#edit-name').val(),
+    phone: $('#edit-phone').val(),
+    email: $('#edit-email').val(),
+    cccd: $('#edit-cccd').val(),
+    distance: $('#edit-distance').val(),
+    bib: $('#edit-bib').val(),
+    bib_name: $('#edit-bibName').val(),
+    gender: $('#edit-gender').val() === 'true',
+    blood: $('#edit-blood').val(),
+    dob: $('#edit-dob').val(),
+    medical: $('#edit-medical').val(),
+    nation: $('#edit-nation').val(),
+    tshirt_size: $('#edit-size').val(),
+    patron_name: $('#edit-patronName').val(),
+    patron_phone: $('#edit-patronPhone').val(),
+    team:  $('#edit-team').val()
+  };
+console.log(payload);
+  $.ajax({
+    url: `/admin/event/<%=event_slug%>/type-checking/update-person/${id}`,
+    method: 'PUT',
+    contentType: 'application/json',
+    data: JSON.stringify(payload),
+    success: (res) =>{ 
+      console.log(res)
+      if(res.success){ location.reload()}},
+    error: (xhr, status, err) => alert(xhr?.responseJSON?.mess||'Update failed')
+  });
+});
+
+  //add
+  document.querySelector('#btn-create-ath-onece').addEventListener('click', (ev)=>{
+    const data = {
+      // checkbox
+      daCheckin: document.querySelector('#checkin')?.checked ?? false,
+      // uyQuyenNhanBib: document.querySelector('#uy-quyen')?.checked ?? false,
+      // checkinTheoNhom: document.querySelector('#checkin-nhom')?.checked ?? false,
+
+      // left
+      category: document.getElementById('new-distance').value,
+      chipId: document.getElementById('new-chip').value,
+      name: document.getElementById('new-name').value,
+      phone: document.getElementById('new-phone').value,
+      email: document.getElementById('new-email').value,
+      cccd: document.getElementById('new-cccd').value,
+      team: document.getElementById('new-team').value,
+      nickname: document.getElementById('new-bibName').value,
+
+      // right
+      bibCode: document.getElementById('new-bib').value,
+      epc: document.getElementById('new-epc').value,
+      gender: document.getElementById('new-gender').value, // "true" | "false"
+      blood: document.getElementById('new-blood').value,
+      dob: document.getElementById('new-dob').value,
+      medical: document.getElementById('new-medical').value,
+      nation: document.getElementById('new-nation').value,
+      size: document.getElementById('new-size').value,
+      patronName: document.getElementById('new-patronName').value,
+      patronPhone: document.getElementById('new-patronPhone').value,
+    };
+    console.log(data);
+    //
+    $.ajax({
+      url: `/admin/event/<%=event_slug%>/type-chekin/add-person`,
+      method: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify(data),
+      success: (res)=>{
+        console.log(res);
+        document.location.reload();
+      },
+      error: (xhr, status, err)=>{
+        console.log(xhr.responseJSON?.mess|| 'Server error')
+      }
+    })
+  })
 </script>

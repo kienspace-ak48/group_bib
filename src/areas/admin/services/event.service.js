@@ -23,6 +23,24 @@ class EventService {
             return {};
         }
     }
+    async GetByEventTicket() {
+        try {
+            const result = await EventEntity.find({ race_function: 'ticket' }).lean();
+            return result;
+        } catch (error) {
+            console.log(CNAME, error.message);
+            return [];
+        }
+    }
+    async GetByEventCheckin() {
+        try {
+            const result = await EventEntity.find({ race_function: 'checkin' }).lean();
+            return result;
+        } catch (error) {
+            console.log(CNAME, error.message);
+            return [];
+        }
+    }
     async GetBySlug(slug) {
         try {
             const result = await EventEntity.findOne({ slug: slug }).lean();
@@ -76,10 +94,10 @@ class EventService {
             return false;
         }
     }
-    async GetAllEventForCreateTicketDropdown(){
+    async GetAllEventForCreateTicketDropdown() {
         try {
             const events = await EventEntity.find().select('name id start_date end_date').lean();
-            return events
+            return events;
         } catch (error) {
             console.log(CNAME, error.message);
             return [];
