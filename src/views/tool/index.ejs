@@ -1,0 +1,199 @@
+<style>
+    .hidden {
+        display: none;
+    }
+
+    #scanModal {
+        height: 100vh;
+        /* width: 100vw; */
+        position: fixed;
+        inset: 0;
+        background: black;
+        z-index: 9999;
+        overflow: hidden;
+    }
+
+    #qr-reader,
+    #qr-reader > div {
+        width: 100% !important;
+        height: 100% !important;
+        position: absolute !important;
+        inset: 0;
+    }
+
+    #qr-reader video {
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: cover;
+    }
+
+    /* nút đóng */
+    .close-btn {
+        position: fixed;
+        left: 50%;
+        bottom: 80px;
+        transform: translateX(-50%);
+        z-index: 10000;
+        background: rgba(0, 0, 0, 0.6);
+        color: white;
+        border: 2px solid #4caf50;
+        font-size: 20px;
+        padding: 6px 12px;
+        border-radius: 12px;
+        cursor: pointer;
+        min-width: 150px;
+    }
+    /* THÊM ĐOẠN NÀY VÀO */
+    .overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100vh;
+        pointer-events: none; /* Quan trọng: không chặn click vào scanner */
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+</style>
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<!-- header -->
+<div class="p-4 bg-white rounded-lg shadow">
+    <div class="grid grid-cols-10 gap-4">
+        <div class="col-span-4">
+            <div class="overflow-hidden"><img src="<%=mc.banner_img%>" alt="" class="object-cover" /></div>
+            <p>Thời gian:</p>
+            <p>20/01/2026</p>
+        </div>
+        <div class="col-span-6">
+            <p>-Sự kiện-</p>
+            <h2><%=event.name%>></h2>
+            <p>Hệ thống checkin</p>
+        </div>
+    </div>
+</div>
+<!-- control  -->
+<div class="p-4 bg-white shadow mt-4">
+    <div class="grid grid-cols-2 gap-2">
+        <input
+            type="search"
+            name=""
+            id=""
+            placeholder="Tìm kiếm Code, Tên, SDT, Email"
+            class="px-4 py-3 rounded-xl border-[#ccc] col-span-1"
+        />
+        <div class="col-span-1">
+            <button class="px-4 py-3 bg-blue-100 rounded-xl">Tìm kiếm</button>
+            <button class="px-4 py-3 border-amber-300 border rounded-xl" id="openScan">Quét QR</button>
+        </div>
+    </div>
+</div>
+<!-- data source -->
+<div class="p-4 bg-white shadow mt-4">
+    <div class="table_warrap overflow-x-auto">
+        <table class="min-w-full">
+            <thead class="bg-slate-100 text-slate-600 text-xs">
+                <tr>
+                    <th class="px-4 py-3 text-left">#</th>
+                    <th class="px-4 py-3 text-left">Fullname</th>
+                    <th class="px-4 py-3 text-left">Code</th>
+                    <th class="px-4 py-3 text-left">Category</th>
+                    <th class="px-4 py-3 text-left">Phone/Email</th>
+                    <th class="px-4 py-3 text-left">Checkin</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y">
+                <tr class="hover:bg-slate-50">
+                    <td class="px-4 py-3">1</td>
+                    <td class="px-4 py-3">Nguyen Van A</td>
+                    <td class="px-4 py-3">100</td>
+                    <td class="px-4 py-3">AccessRace</td>
+                    <td class="px-4 py-3">
+                        <p class="text-[12px]">0123456789</p>
+                        <p class="text-[12px]">test@gmail.com</p>
+                    </td>
+                    <td class="px-4 py-3">
+                        <input type="checkbox" name="" />
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<!-- ======FORM SUBMIT ẨN===== -->
+<form action="/tool-checkin/check-in" method="POST" style="display: none" id="checkinForm" target="checkinWindow">
+    <input type="text" name="code" id="code_hidden" />
+</form>
+<!-- ======MODAL===== -->
+<div id="scanModal" class="hidden">
+    <div id="qr-reader"></div>
+
+    <div class="overlay">
+        <div class="scan-box"></div>
+    </div>
+
+    <button id="closeScan" class="close-btn">Đóng</button>
+</div>
+
+<!-- script -->
+<script>
+    // global
+    let checkinTab = null;
+    document.getElementById('openScan').onclick = startScan;
+    document.getElementById('closeScan').onclick = stopScan;
+
+    //
+    let html5QrCode;
+    let isScanning = false;
+    function startScan() {
+        if (isScanning) return;
+        document.getElementById('scanModal').classList.remove('hidden');
+        html5QrCode = new Html5Qrcode('qr-reader');
+
+        Html5Qrcode.getCameras().then((devices) => {
+            console.log('DS camera: ', devices);
+            const camera = devices[1] || devices[0];
+
+            html5QrCode.start(camera.id, { fps: 10, qrbox: 260 }, (decodedText) => {
+                stopScan();
+                // callApi(decodedText);
+                submitForm(decodedText);
+            });
+            isScanning = true;
+        });
+    }
+    //
+    function stopScan() {
+        if (!isScanning) return;
+
+        html5QrCode.stop().then(() => {
+            html5QrCode.clear();
+            document.getElementById('scanModal').classList.add('hidden');
+            isScanning = false;
+        });
+    }
+    //
+    function submitForm(code) {
+        document.querySelector('#code_hidden').value = code;
+        //
+        if (!checkinTab || checkinTab.closed) {
+            checkinTab = window.open('', 'checkinWindow');
+        }
+        document.querySelector('#checkinForm').submit();
+    }
+    //
+
+    function callApi(code) {
+        const payload = { code: code };
+        $.ajax({
+            url: `/tool-checkin/check-in`,
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(payload),
+            success: (res) => console.log(res),
+            error: (xhr, status, err) => console.log(xhr.responseJSON?.mess || 'Server error'),
+        });
+    }
+</script>

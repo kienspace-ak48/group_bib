@@ -4,25 +4,8 @@
             <td align="center">
                 <!-- FLUID CONTAINER -->
                 <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; background: #ffffff">
+                    <!-- BANNER_OR_TEXT_PLACEHOLDER -->
                     <!-- BANNER -->
-                    <tr>
-                        <td align="center">
-                            <img
-                                src="cid:banner"
-                                alt="AccessRace Banner"
-                                width="100%"
-                                width="120"
-                                style="display: block; height: auto"
-                            />
-                        </td>
-                    </tr>
-                    <!-- banner text -->
-                     <tr>
-                        <td align="center">
-                            <h1>{{banner_text}}</h1>
-                        </td>
-                     </tr>
-                    <!--  -->
                     <tr>
                         <td style="padding: 20px; font-family: Arial, sans-serif; font-size: 14px; color: #333333">
                             <h1 align="center">{{event_name}}</h1>
@@ -35,9 +18,7 @@
                                 <img src="cid:qrcode" width="220" style="display: block" />
                             </p>
                             <!--  -->
-                            <p align="center">Datetime: {{start_date}} - {{end_date}}</p>
-                        
-                            <!--  -->
+                            <p align="center">Vui lòng mang mã QR này để check-in.</p>
                             <!-- Thông tin VĐV -->
                             <div style="padding: 5px 20px">
                                 <table style="width: 100%; border-collapse: collapse; font-size: 15px">
@@ -68,18 +49,18 @@
                                     </tr>
                                     <tr style="background: #f9f9f9">
                                         <td style="padding: 10px; border: 1px solid #ddd"><b>📅 Ngày sự kiện</b></td>
-                                        <td style="padding: 10px; border: 1px solid #ddd">15/10/2025</td>
+                                        <td style="padding: 10px; border: 1px solid #ddd">{{start_date}} - {{end_date}}</td>
                                     </tr>
                                 </table>
                             </div>
                             <!--  -->
                             <p>{{content_2}}</p>
-                            <!--  -->
-                            <p>Vui lòng mang mã QR này để check-in.</p>
+                            <!--  -->           
 
-                            <p>Trân trọng,<br /><b>BTC AccessRace</b></p>
+                            <p>Trân trọng,<br /><b>{{sender_name}}</b></p>
                         </td>
                     </tr>
+
                 </table>
             </td>
         </tr>

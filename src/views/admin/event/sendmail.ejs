@@ -72,17 +72,43 @@
 
             </div>
             <div class="col-6">
-                <input type="checkbox" name="" id="banner_option" <%= mc.banner_option ? 'checked' : ''%> /> non tick = Hình
-                <label for="" class="form-label">Banner Text</label>
+                <div class="form-check mb-2" >
+                    <input type="checkbox" class="form-check-input" name="" id="banner_option" <%= mc.banner_option ? 'checked' : ''%> /> 
+                    <label class="form-check-label" for="defaultCheck1">
+                        Tick = Hình
+                    </label>
+                </div>
+                
+                <!-- <label for="" class="form-label">Banner Text</label> -->
                 <input type="text" class="form-control" id="banner_text" value="<%=mc.banner_text%>" />
                 <hr />
-
-                <label class="form-control">Choose img
-                </label>
-                <input type="file" name="banner" id="banner_img" />
-                <div class="img_preview">
-                    <img src="" alt="X">
+                <div class="row pb-3">
+                    <div class="col-8">
+                        <input type="input" name="" value="<%=mc.banner_img%>" disabled class="form-control" id="banner_img_hidden">
+                    </div>
+                    <div class="col-4">
+                        <button class="btn btn-outline-info" id="btn_cta_upload_img">upload image</button>
+                    </div>
                 </div>
+                <!-- Preview -->
+                <%if(mc._banner_img !=""){%>
+                    <div id="preview" style="margin-top: 20px; overflow: hidden;">
+                    <img id="previewImg" src="<%=mc.banner_img%>" style="width: 100%; display: block; object-fit: cover; border: 1px solid #ccc; "  >
+                    <div id="fileInfo"></div>
+                </div>
+                <%}else{%>
+                    <!-- preview -->
+                    <div id="preview" style="margin-top: 20px; overflow: hidden;">
+                        <img id="previewImg" style="width: 100%; display: none; object-fit: cover; "  >
+                        <div id="fileInfo"></div>
+                    </div>
+                <%}%>
+                <!--  -->
+                    <label for="banner_img" class="form-control" style="border: 1px dashed #ccc; padding:50px; text-align: center;">
+                        <input type="file" accept="image/*" name="banner" id="banner_img" onchange="previewImg(event)" />
+                    </label>
+                
+                
             </div>
         </div>
     </div>
@@ -90,6 +116,44 @@
 <!-- ==========script here======= -->
 <script>
     // ==global
+    const fileInput = document.querySelector('#banner_img');
+    const preview = document.querySelector('#previewImg')
+    const fileInfo = document.querySelector('#fileInfo');
+    //
+    function previewImg(event){
+        const file = event.target.files[0];
+        if(file && file.type.startsWith('image/')){
+            const reader = new FileReader();
+            reader.onload = function(e){
+                preview.src = e.target.result;
+                preview.style.display='block';
+                // Hiển thị thông tin ảnh
+                const sizeInKB = Math.round(file.size / 1024);
+                const dimensions = preview.naturalWidth + ' x ' + preview.naturalHeight;
+                
+                fileInfo.innerHTML = `
+                    <div><strong>Tên:</strong> ${file.name}</div>
+                    <div><strong>Kích thước:</strong> ${sizeInKB} KB</div>
+                    <div><strong>Định dạng:</strong> ${file.type}</div>
+                    <div><strong>Kích thước ảnh:</strong> ${dimensions} px</div>
+                `;
+            }
+            reader.readAsDataURL(file)
+        }else{
+            preview.style.display= 'none'
+        }
+         // Xử lý khi ảnh load xong để lấy dimensions
+        preview.onload = function() {
+            if (fileInfo.innerHTML.includes('Kích thước ảnh:')) {
+                const dimensions = this.naturalWidth + ' x ' + this.naturalHeight;
+                const currentInfo = fileInfo.innerHTML;
+                fileInfo.innerHTML = currentInfo.replace(
+                    /Kích thước ảnh:.*px/,
+                    `Kích thước ảnh: ${dimensions} px`
+                );
+            }
+        };
+    }
     //my notification
     function myNotification(title, icon, timer = 2500, position = 'center') {
         Swal.fire({
@@ -114,7 +178,7 @@
     });
     // save
     document.querySelector('#btn_cta_mailconfig_save').addEventListener('click', (ev)=>{
-        console.log('hi');
+        // console.log('hi');
         const payload  ={
             sender_name: document.querySelector('#sender_name').value,
             title: document.querySelector('#mail_title').value,
@@ -122,7 +186,7 @@
             content_2: document.querySelector('#content_2').value,
             banner_option: document.querySelector('#banner_option').checked,
             banner_text: document.querySelector('#banner_text').value,
-            banner_img: document.querySelector('#banner_img').value,
+            banner_img: document.querySelector('#banner_img_hidden').value,
         }
         console.log(payload);
         $.ajax({
@@ -130,8 +194,28 @@
             method: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(payload),
-            success: (res)=>{console.log(res)},
+            success: (res)=>{document.location.reload()},
             error: (xhr, status, err)=>console.log(xhr.responseJSON?.mess||"Server error")
+        })
+    })
+    // upload img
+    document.querySelector('#btn_cta_upload_img').addEventListener('click', (ev)=>{
+        const payload = new FormData();
+        const file =fileInput.files[0];
+        if(!file){
+            alert('vui long chon file')
+            return;
+        } 
+        payload.append('file', file);
+        payload.append('path_img', document.querySelector('#banner_img_hidden').value)
+        $.ajax({
+            url:`/admin/event/<%=event_slug%>/type-checkin/banner-mail`,
+            method: 'POST',
+            contentType: false,
+            processData: false,
+            data: payload,
+            success: (res)=>document.location.reload(),
+            error: (xhr, status, err)=> console.log(xhr.responseJSON?.mess||'Server error')
         })
     })
     // myNotification('hi', 'success');

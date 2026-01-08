@@ -21,6 +21,7 @@ const ParticipantCheckin = require('../../../model/ParticipantCheckin');
 const eventService = require('../services/event.service');
 const participantCheckinService = require('../services/participantCheckin.service');
 const MailConfig = require('../../../model/MailConfig');
+const { setDefaultAutoSelectFamilyAttemptTimeout } = require('net');
 
 //function helper
 function validateRow(row) {
@@ -446,7 +447,7 @@ const eventController = () => {
         },
         CheckinUpdatePerson: async (req, res) => {
             const _id = req.params.id;
-            console.log(_id)
+            console.log(_id);
             const _slug = req.params.slug;
             try {
                 const data = req.body;
@@ -467,54 +468,111 @@ const eventController = () => {
                     tshirt_size: data.tshirt_size,
                     patron_name: data.patron_name,
                     patron_phone: data.patron_phone,
-                    team: data.team
-                }
-                const result =await participantCheckinService.Update(pcDTO, _id);
-                if(!result) return res.status(500).json({success: false, mess: 'update process failed'})
-                res.json({success: true})
+                    team: data.team,
+                };
+                const result = await participantCheckinService.Update(pcDTO, _id);
+                if (!result) return res.status(500).json({ success: false, mess: 'update process failed' });
+                res.json({ success: true });
             } catch (error) {
                 console.log(CNAME, error.message);
-                res.status(500).json({success: false, mess: error.message})
+                res.status(500).json({ success: false, mess: error.message });
             }
         },
-        CheckinMailConfigSave: async(req, res)=>{
+        CheckinMailConfigSave: async (req, res) => {
             try {
                 const data = req.body;
                 const _eventSlug = req.params.slug;
-                const event =await EventService.GetBySlug(_eventSlug);
+                const event = await EventService.GetBySlug(_eventSlug);
                 const _eventId = event._id;
                 console.log(data);
-                console.log(_eventId)
-                const mailDTO = new MailConfig({
-                    sender_name: data.sender_name,
-                    title: data.title,
-                    banner_img: data.banner_img,
-                    banner_text: data.banner_text,
-                    banner_option: data.banner_option,
-                    content_1: data.content_1,
-                    content_2: data.content_2,
-                    event_id: _eventId,
-                }) ;
+                console.log(_eventId);
+                // const mailDTO = new MailConfig({
+                //     sender_name: data.sender_name,
+                //     title: data.title,
+                //     banner_img: data.banner_img,
+                //     banner_text: data.banner_text,
+                //     banner_option: data.banner_option,
+                //     content_1: data.content_1,
+                //     content_2: data.content_2,
+                //     event_id: _eventId,
+                // });
                 // await mailDTO.save();
-                res.json({success: true})
+                await MailConfig.findOneAndUpdate(
+                    { event_id: _eventId }, //dieu kien kiem tra ton tai
+                    {
+                        $set: {
+                            sender_name: data.sender_name,
+                            title: data.title,
+                            banner_img: data.banner_img,
+                            banner_text: data.banner_text,
+                            banner_option: data.banner_option,
+                            content_1: data.content_1,
+                            content_2: data.content_2,
+                        },
+                        $setOnInsert: {
+                            event_id: _eventId, // chi set khi insert moi
+                        },
+                    },
+                    {
+                        upsert: true, //neu ko co thi insert
+                        new: true, //tra ve doc sau khi update/insert
+                    },
+                );
+                res.json({ success: true });
             } catch (error) {
                 console.log(CNAME, error.message);
-                res.status(500).json({success: false, mess: error.message})
+                res.status(500).json({ success: false, mess: error.message });
+            }
+        },
+        CheckinMailUploadImage: async (req, res) => {
+            try {
+                const file = req.file;
+                const path_img = req.body.path_img;
+                console.log('path_img ', path_img);
+                // console.log(file);
+                console.log('slug ', req.params.slug);
+                const prefixDirPath = '/email_img/';
+                const dirPath = myPathConfig.root + 'public' + prefixDirPath;
+                const event = await EventService.GetBySlug(req.params.slug);
+                const mc = await MailConfig.findOne({ event_id: event._id });
+                //remove anh truoc khi update
+                if (mc.banner_img === path_img &&path_img !=="") {
+                    const pathDirDelete = myPathConfig.root + 'public' + mc.banner_img;
+                    if (fs.existsSync(pathDirDelete)) {
+                        fs.unlinkSync(pathDirDelete);
+                    }
+                }
+                if (file) {
+                    const fileName = file.originalname;
+                    let unique = Math.round(Math.random() * 1e9) + '-' + fileName;
+                    const pathDirSave = dirPath + unique;
+                    const pathDBSave = prefixDirPath + unique;
+                    fs.writeFileSync(pathDirSave, file.buffer);
+                    await MailConfig.findOneAndUpdate(
+                        { event_id: event._id },
+                        { $set: { banner_img: pathDBSave } },
+                        { upsert: false },
+                    );
+                }
+                res.json({ success: true });
+            } catch (error) {
+                console.log(CNAME, error.message);
+                res.status(500).json({ success: false, mess: error.message });
             }
         },
         SendMailCheckin: async (req, res) => {
             const _eventSlug = req.params.slug;
             const event = await EventService.GetBySlug(_eventSlug);
             const _eventId = event._id;
-            console.log('a ',_eventId.toString())
-            const mailConfig =await MailConfig.findOne({event_id: _eventId});
-            console.log(mailConfig)
+            console.log('a ', _eventId.toString());
+            const mailConfig = await MailConfig.findOne({ event_id: _eventId });
+            console.log(mailConfig);
             try {
                 const event = await EventService.GetBySlug(_eventSlug);
                 res.render(VNAME + 'sendmail', { layout: VLAYOUT, event, event_slug: _eventSlug, mc: mailConfig });
             } catch (error) {
                 console.log(CNAME, error.message);
-                res.render(VNAME + 'sendmail', { layout: VLAYOUT, event: {}, event_slug: _eventSlug, mc:{} });
+                res.render(VNAME + 'sendmail', { layout: VLAYOUT, event: {}, event_slug: _eventSlug, mc: {} });
             }
         },
         //ajax
@@ -523,10 +581,7 @@ const eventController = () => {
             console.log('even slug ', _eventSlug);
             try {
                 const templatePath = myPathConfig.root + '/src/views/mail_template/template_one.html';
-                const bannerBase64 = fs.readFileSync(
-                    myPathConfig.root + '/public/email_img/banner.jpg', //C:\Workspaces\my_projects\group_bib\public\email_img\banner.jpg
-                    { encoding: 'base64' },
-                );
+                
                 const event = await EventService.GetBySlug(_eventSlug);
                 if (!event) {
                     return res.status(404).json({ success: false, message: 'Event not found' });
@@ -535,8 +590,42 @@ const eventController = () => {
                 const _eventLocation = event.location;
                 const _eventStart = formatDate(event.start_date);
                 const _eventEnd = formatDate(event.end_date);
-                const mailConfig = await MailConfig.findOne({event_id: event._id});
-                console.log('check mail ',mailConfig)
+                const mailConfig = await MailConfig.findOne({ event_id: event._id });
+                let _bannerText = mailConfig.banner_text;
+                let bannerBase64 ='';
+                if(mailConfig.banner_img){
+                    bannerBase64 = fs.readFileSync(
+                    myPathConfig.root + 'public'+mailConfig.banner_img, //C:\Workspaces\my_projects\group_bib\public\email_img\banner.jpg
+                    { encoding: 'base64' },
+                );
+                }
+                
+                let showBanner = mailConfig.banner_option; //true -> image || false ->text
+                let bannerOrTextSection = '';
+                if(showBanner){
+                    bannerOrTextSection = `<tr>
+                        <td align="center">
+                            <img
+                                src="cid:banner"
+                                alt="AccessRace Banner"
+                                width="600"
+                                style="display: block; 
+                                    max-width: 600px; 
+                                    width: 100%; 
+                                    height: auto;
+                                    -ms-interpolation-mode: bicubic;"  
+                            />
+                        </td>
+                    </tr>`;
+                }else{
+                    bannerOrTextSection=`<tr>
+                        <td align="left" style="padding: 0 20px; font-family: Arial, sans-serif; font-size: 14px; color: #333333">
+                            <h1>${_bannerText}</h1>
+                        </td>
+                     </tr>`
+                }
+                
+                // console.log('check mail ', mailConfig);
                 //
                 const runners = await ParticipantCheckin.find({ event_id: event._id });
 
@@ -562,9 +651,11 @@ const eventController = () => {
                             .replace('{{location}}', _eventLocation)
                             .replace('{{start_date}}', _eventStart)
                             .replace('{{end_date}}', _eventEnd)
-                            .replace('{{banner_text}}', mailConfig.banner_text)
+                            // .replace('{{banner_text}}', mailConfig.banner_text)
                             .replace('{{content_1}}', mailConfig.content_1)
                             .replace('{{content_2}}', mailConfig.content_2)
+                            .replace('{{sender_name}}', mailConfig.sender_name)
+                            .replace('<!-- BANNER_OR_TEXT_PLACEHOLDER -->', bannerOrTextSection);
                         //
                         //
                         return {
@@ -575,22 +666,32 @@ const eventController = () => {
                             },
                             subject: mailConfig.title,
                             html: htmlTemplate,
-                            attachments: [
-                                {
-                                    content: bannerBase64,
-                                    filename: 'banner.png',
-                                    type: 'image/png',
-                                    disposition: 'inline',
-                                    content_id: 'banner',
-                                },
-                                {
-                                    content: base64Data,
-                                    filename: 'qrcode.png',
-                                    type: 'image/png',
-                                    disposition: 'inline',
-                                    content_id: 'qrcode',
-                                },
-                            ],
+                            attachments: showBanner
+                                ? [
+                                      {
+                                          content: bannerBase64,
+                                          filename: 'banner.png',
+                                          type: 'image/png',
+                                          disposition: 'inline',
+                                          content_id: 'banner',
+                                      },
+                                      {
+                                          content: base64Data,
+                                          filename: 'qrcode.png',
+                                          type: 'image/png',
+                                          disposition: 'inline',
+                                          content_id: 'qrcode',
+                                      },
+                                  ]
+                                : [
+                                      {
+                                          content: base64Data,
+                                          filename: 'qrcode.png',
+                                          type: 'image/png',
+                                          disposition: 'inline',
+                                          content_id: 'qrcode',
+                                      },
+                                  ],
                         };
                     }),
                 );

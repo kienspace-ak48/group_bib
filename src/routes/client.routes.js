@@ -4,6 +4,9 @@ const crypto = require('crypto');
 const authRoute = require('../middleware/auth.middleware');
 const uploadImageMemory = require('../config/imageUploadMemory');
 const excelUploadMemory = require('../config/excelUploadM');
+const Event = require('../model/Event');
+const MailConfigEntity = require('../model/MailConfig');
+const ParticipantCheckin = require('../model/ParticipantCheckin');
 const runnerResultController = require('../controller/runnerResult.controller')();
 
 const homeController = require('../controller/home.controller')();
@@ -59,6 +62,32 @@ router.get('/e-cert/render-cert', homeController.RenderCertificate);
 router.get('/runner/by-distance/:distance', runnerResultController.GetByDistance)
 router.get('/runner/result', runnerResultController.CallAPI);
 router.get('/runner', runnerResultController.Index);
+
+//tools
+router.post('/tool-checkin/check-in', async(req, res)=>{
+    try {
+        const data = req.body;
+        console.log('data', data)
+        const pc = await ParticipantCheckin.findOne({uid: data.code}).lean();
+        console.log(pc)
+        // res.json({success: true, data: pc})
+        res.render('tool/checkin', {layout: 'layouts/main', info: pc})
+    } catch (error) {
+        console.log(error.message);
+        res.render('tool/checkin', {layout: 'layouts/main', info: {}})
+
+    }
+})
+// router.get('tool')
+router.get('/tool-checkin/scan-qr', async(req, res)=>{
+    res.render('tool/scanQRCode', {layout: false})
+})
+router.get('/tool-checkin/', async(req, res)=>{
+    const event = await Event.findOne({race_function: 'checkin'});
+    // console.log(event)
+    const mc = await MailConfigEntity.findOne({event_id: event._id});
+    res.render('tool/index', {layout: 'layouts/main', event, mc: mc||{}})
+})
 
 // test
 router.get('/test/getCountry', userController.testGetAllCountry)

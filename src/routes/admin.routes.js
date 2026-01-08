@@ -40,8 +40,9 @@ router.post('/event/:slug/type-chekin/add-person', eventController.CheckinAddPer
 router.delete('/event/:slug/type-checkin/delete-person/:id', eventController.CheckinDeletePerson);
 router.put('/event/:slug/type-checking/update-person/:id', eventController.CheckinUpdatePerson)
 router.get('/event/:slug/type-checking/edit-person/:id', eventController.CheckinEditPerson);
-// 
+router.post('/event/:slug/type-checkin/banner-mail', imageUploadMemory.single('file'), eventController.CheckinMailUploadImage)
 router.post('/event/:slug/type-checkin/mail-config',eventController.CheckinMailConfigSave);
+// 
 //feature checkin
 router.post('/event/type-checkin/:slug/add-group', eventController.RunnerCheckinData)
 router.get('/event/type-checkin', eventController.EventCheckin);

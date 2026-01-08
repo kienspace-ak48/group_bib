@@ -1,0 +1,63 @@
+<style>
+  *{
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+  }
+  #qr-reader {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* video do html5-qrcode sinh ra */
+#qr-reader video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;   /* QUAN TRỌNG */
+}
+</style>
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<div id="qr-reader"></div>
+<div class="overlay">
+    <div class="scan-box"></div>
+    <!-- <div class="scan-text">Đưa mã QR vào khung để quét</div> -->
+</div>
+
+<!-- script here -->
+ <script>
+    const html5QrCode = new Html5Qrcode("qr-reader");
+
+    Html5Qrcode.getCameras().then(devices => {
+      console.log('DS cameras ',[devices])
+      if (!devices.length) {
+        alert("Không tìm thấy camera");
+        return;
+      }
+
+      const camera = devices //.find(d => d.label.toLowerCase().includes("back")) || devices[0];
+
+      html5QrCode.start(
+        camera[1].id,
+        {
+          fps: 10,
+          qrbox: { width: 260, height: 260 },
+          aspectRatio: 1.0
+        },
+        (decodedText) => {
+          console.log("QR:", decodedText);
+
+          // Dừng camera sau khi quét
+          html5QrCode.stop();
+
+          alert("Quét thành công: " + decodedText);
+        },
+        (err) => {
+          // ignore scan errors
+        }
+      );
+    });
+  </script>
