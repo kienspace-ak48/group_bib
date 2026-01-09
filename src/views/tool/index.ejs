@@ -123,7 +123,7 @@
     </div>
 </div>
 <!-- ======FORM SUBMIT ẨN===== -->
-<form action="/tool-checkin/check-in" method="POST" style="display: none" id="checkinForm" target="checkinWindow">
+<form action="/tool-checkin/info" method="GET" style="display: none" id="checkinForm" target="checkinWindow">
     <input type="text" name="code" id="code_hidden" />
 </form>
 <!-- ======MODAL===== -->
@@ -188,8 +188,8 @@
     function callApi(code) {
         const payload = { code: code };
         $.ajax({
-            url: `/tool-checkin/check-in`,
-            method: 'POST',
+            url: `/tool-checkin/info`,
+            method: 'GET',
             contentType: 'application/json',
             data: JSON.stringify(payload),
             success: (res) => console.log(res),

@@ -1,1 +1,409 @@
-<pre><%= JSON.stringify(info, null, 2) %></pre>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+     <!-- CDN DataTable -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+<script src="https://unpkg.com/html5-qrcode"></script>
+    <!--  -->
+    <style>
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        .sidebar-gradient {
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+        }
+        .table-hover tr:hover {
+            background-color: #f8fafc;
+        }
+        .dataTables_wrapper{
+            padding: 20px;
+        }
+        @media (max-width: 768px) {
+            .hide-on-tablet {
+                display: none;
+            }
+        }
+        /*  */
+        .hidden {
+        display: none;
+    }
+
+    #scanModal {
+        height: 100vh;
+        /* width: 100vw; */
+        position: fixed;
+        inset: 0;
+        background: black;
+        z-index: 9999;
+        overflow: hidden;
+    }
+
+    #qr-reader,
+    #qr-reader > div {
+        width: 100% !important;
+        height: 100% !important;
+        position: absolute !important;
+        inset: 0;
+    }
+
+    #qr-reader video {
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: cover;
+    }
+
+    /* nút đóng */
+    .close-btn {
+        position: fixed;
+        left: 50%;
+        bottom: 80px;
+        transform: translateX(-50%);
+        z-index: 10000;
+        background: rgba(0, 0, 0, 0.6);
+        color: white;
+        border: 2px solid #4caf50;
+        font-size: 20px;
+        padding: 6px 12px;
+        border-radius: 12px;
+        cursor: pointer;
+        min-width: 150px;
+    }
+    /* THÊM ĐOẠN NÀY VÀO */
+    .overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100vh;
+        pointer-events: none; /* Quan trọng: không chặn click vào scanner */
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    </style>
+<!-- <body class="bg-gray-50"> -->
+    <div class=" ">
+        
+        <!-- Main Content -->
+        <div class="">
+            
+            <!-- Main Content Area -->
+            <div class="flex-1 p-4 md:p-6 lg:p-8">
+                <!-- Event Info Cards -->
+                <!-- <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    <div class="bg-white rounded-xl shadow-md p-5">
+                        <div class="flex items-center mb-3">
+                            <div class="bg-indigo-100 p-3 rounded-lg mr-4">
+                                <i class="fas fa-flag-checkered text-indigo-600 text-lg"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-sm text-gray-500 font-medium">Sự kiện</h3>
+                                <p class="text-lg font-semibold text-gray-800">Test Send Email</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-xl shadow-md p-5">
+                        <div class="flex items-center mb-3">
+                            <div class="bg-blue-100 p-3 rounded-lg mr-4">
+                                <i class="fas fa-calendar-day text-blue-600 text-lg"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-sm text-gray-500 font-medium">Thời gian</h3>
+                                <p class="text-lg font-semibold text-gray-800">09/01/2026</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-xl shadow-md p-5">
+                        <div class="flex items-center mb-3">
+                            <div class="bg-green-100 p-3 rounded-lg mr-4">
+                                <i class="fas fa-qrcode text-green-600 text-lg"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-sm text-gray-500 font-medium">Quầy Checkin</h3>
+                                <p class="text-lg font-semibold text-gray-800">Sẵn sàng</p>
+                            </div>
+                        </div>
+                    </div>
+                </div> -->
+                
+                <!-- Search and Actions -->
+                <div class="bg-white rounded-xl shadow-md p-5 mb-6">
+                    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                        <div class="flex-1">
+                            <!-- <h2 class="text-xl font-bold text-gray-800 mb-4 lg:mb-0">Tìm kiếm</h2> -->
+                            <!-- <p class="text-gray-600">Tìm theo BIB, Tên, SĐT, Email</p> -->
+                        </div>
+                        
+                        <div class="flex flex-col sm:flex-row gap-3">
+                            <button id="openScan" class="bg-indigo-600 text-white font-medium px-5 py-3 rounded-lg hover:bg-indigo-700 transition flex items-center justify-center">
+                                <i class="fas fa-qrcode mr-3"></i>
+                                Quét QR
+                            </button>
+                            <!-- <button class="bg-green-600 text-white font-medium px-5 py-3 rounded-lg hover:bg-green-700 transition flex items-center justify-center">
+                                <i class="fas fa-plus mr-3"></i>
+                                Thêm VĐV
+                            </button> -->
+                        </div>
+                    </div>
+                    
+                    <!-- Search Bar -->
+                    <div class="mt-6">
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-search text-gray-400"></i>
+                            </div>
+                            <input 
+                                type="text" 
+                                placeholder="Nhập..." 
+                                class="w-full pl-10 pr-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg"
+                            >
+                            <button class="absolute right-2 top-2 bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition">
+                                Tìm kiếm
+                            </button>
+                        </div>
+                        
+                        <!-- Filter Tags -->
+                        <div class="flex flex-wrap gap-2 mt-4">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
+                                <i class="fas fa-hashtag mr-1"></i> Code
+                                <button class="ml-2 text-blue-600 hover:text-blue-800">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </span>
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
+                                <i class="fas fa-user mr-1"></i> Tên
+                                <button class="ml-2 text-green-600 hover:text-green-800">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </span>
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-purple-100 text-purple-800">
+                                <i class="fas fa-phone mr-1"></i> SĐT
+                                <button class="ml-2 text-purple-600 hover:text-purple-800">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </span>
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-amber-100 text-amber-800">
+                                <i class="fas fa-envelope mr-1"></i> Email
+                                <button class="ml-2 text-amber-600 hover:text-amber-800">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Results Summary -->
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <!-- <h3 class="text-lg font-semibold text-gray-800">Danh sách</h3> -->
+                        <!-- <p class="text-gray-600">Tìm thấy <span class="font-bold text-indigo-600">1</span> kết quả</p> -->
+                    </div>
+                    <!-- <div class="flex items-center space-x-2">
+                        <button class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                            <i class="fas fa-filter"></i>
+                            <span class="hidden sm:inline ml-2">Lọc</span>
+                        </button>
+                        <button class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                            <i class="fas fa-sort-amount-down"></i>
+                            <span class="hidden sm:inline ml-2">Sắp xếp</span>
+                        </button>
+                    </div> -->
+                </div>
+                
+                <!-- Athletes Table -->
+                <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                    <!-- Table Header -->
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200" id="participant_tbl">
+                            <thead>
+                                <tr>
+                                    <th>Fullname</th>
+                                    <th>BIB</th>
+                                    <th>Status</th>
+                                    <!-- <th>ID/PP</th> -->
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- du lieu dc do o day -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                </div>
+                
+                <!-- Quick Stats Footer -->
+                <!-- <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-white rounded-lg p-4 shadow border border-gray-100">
+                        <div class="text-sm text-gray-500 mb-1">Tổng VĐV</div>
+                        <div class="text-2xl font-bold text-gray-800">125</div>
+                    </div>
+                    <div class="bg-white rounded-lg p-4 shadow border border-gray-100">
+                        <div class="text-sm text-gray-500 mb-1">Đã check-in</div>
+                        <div class="text-2xl font-bold text-green-600">89</div>
+                    </div>
+                    <div class="bg-white rounded-lg p-4 shadow border border-gray-100">
+                        <div class="text-sm text-gray-500 mb-1">Chờ check-in</div>
+                        <div class="text-2xl font-bold text-yellow-600">36</div>
+                    </div>
+                    <div class="bg-white rounded-lg p-4 shadow border border-gray-100">
+                        <div class="text-sm text-gray-500 mb-1">Check-in hôm nay</div>
+                        <div class="text-2xl font-bold text-blue-600">24</div>
+                    </div>
+                </div> -->
+            </div>
+        </div>
+    </div>
+<!-- </body> -->
+ <!-- ======MODAL===== -->
+<div id="scanModal" class="hidden">
+    <div id="qr-reader"></div>
+
+    <div class="overlay">
+        <div class="scan-box"></div>
+    </div>
+
+    <button id="closeScan" class="close-btn">Đóng</button>
+</div>
+
+ <!-- ======FORM SUBMIT ẨN===== -->
+<form action="/tool-checkin/info" method="GET" style="display: none" id="checkinForm" target="checkinWindow">
+    <input type="text" name="code" id="code_hidden" />
+</form>
+<!-- script here -->
+ <!-- 1. Load jQuery TRƯỚC -->
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+ <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+ 
+<script>
+    //
+    let dataTable = null;
+    // 
+    const data0 =[
+        ["Nguyễn Văn A", "100", "Đã check-in"],
+            ["Trần Thị B", "101", "Chờ check-in"],
+            ["Lê Văn C", "102", "Đã check-in"],
+            ["Phạm Thị D", "103", "Chờ check-in"],
+            ["Hoàng Văn E", "104", "Đã check-in"],
+            ["Vũ Thị F", "105", "Chờ check-in"]
+    ]
+    const data2 = [
+  { name: 'Nguyen Van A', bib: '100', status: 'checkin' },
+  { name: 'Tran Thi B', bib: '101', status: 'checkout' },
+  { name: 'Le Van C', bib: '102', status: 'checkin' },
+  { name: 'Pham Thi D', bib: '103', status: 'pending' },
+  { name: 'Hoang Van E', bib: '104', status: 'checkin' },
+  { name: 'Nguyen Thi F', bib: '105', status: 'checkout' },
+  { name: 'Do Van G', bib: '106', status: 'checkin' },
+  { name: 'Bui Thi H', bib: '107', status: 'pending' },
+  { name: 'Vo Van I', bib: '108', status: 'checkin' },
+  { name: 'Dang Thi J', bib: '109', status: 'checkout' },
+   { name: 'Vo Van I', bib: '108', status: 'checkin' },
+    { name: 'Vo Van I', bib: '108', status: 'checkin' },
+     { name: 'Vo Van I', bib: '108', status: 'checkin' },
+      { name: 'Vo Van I', bib: '108', status: 'checkin' },
+       { name: 'Vo Van I', bib: '108', status: 'checkin' },
+];
+
+    dataTable= $("#participant_tbl").DataTable({
+        // data: data2,
+        processing: true,
+        serverSide: true,
+        ajax: '/tool-checkin/get-data',
+        info: false,
+        searching: true,
+        columns:[
+            {title: 'Fullname', data: 'fullname'},
+            {title: "Code", data: 'bib'},
+            {title: "Phone/Email", data: 'email', render: function(data, type, row){
+                return `<p>${row.phone}</p><p>${row.email}</p><p>${row.cccd}</p>`
+            }},
+            // {title: 'ID/PP', data: 'cccd', render: function(data){
+            //     return data
+            // }},
+            {data: 'checkin_status'}
+
+        ],
+        createdRow: function(row, data, dataIndex){
+            let uid = data.uid
+            console.log('Data:', data);
+            if(uid){
+                $(row).attr({
+                    'data-uid': uid
+                })
+            }
+        },
+        stateSave: true,
+    });
+    // 
+    $('#participant_tbl').on('click', 'tbody tr td', function(ev) {
+        ev.stopPropagation();
+        
+        const $cell = $(this);
+        const $row = $cell.closest('tr');
+        const columnIndex = $cell.index();
+        const uid = $row.attr('data-uid');
+        console.log('uid ',uid);
+        
+        
+        // Lấy dữ liệu từ DataTable
+        const rowData = dataTable.row($row).data();
+        
+        if (!rowData) {
+            console.warn('No data available for this row');
+            return;
+        }
+        submitForm(uid)
+        console.log('=== CLICK EVENT ===');
+    })
+    // 
+    let checkinTab =null;
+    function submitForm(code) {
+        document.querySelector('#code_hidden').value = code;
+        //
+        if (!checkinTab || checkinTab.closed) {
+            checkinTab = window.open('', 'checkinWindow');
+        }
+        document.querySelector('#checkinForm').submit();
+    }
+    // 
+    // global
+    // let checkinTab = null;
+    document.getElementById('openScan').onclick = startScan;
+    document.getElementById('closeScan').onclick = stopScan;
+
+    //
+    let html5QrCode;
+    let isScanning = false;
+    function startScan() {
+        if (isScanning) return;
+        document.getElementById('scanModal').classList.remove('hidden');
+        html5QrCode = new Html5Qrcode('qr-reader');
+
+        Html5Qrcode.getCameras().then((devices) => {
+            console.log('DS camera: ', devices);
+            const camera = devices[1] || devices[0];
+
+            html5QrCode.start(camera.id, { fps: 10, qrbox: 260 }, (decodedText) => {
+                stopScan();
+                // callApi(decodedText);
+                submitForm(decodedText);
+            });
+            isScanning = true;
+        });
+    }
+    //
+    function stopScan() {
+        if (!isScanning) return;
+
+        html5QrCode.stop().then(() => {
+            html5QrCode.clear();
+            document.getElementById('scanModal').classList.add('hidden');
+            isScanning = false;
+        });
+    }
+    //
+</script>
