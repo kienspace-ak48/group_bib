@@ -1,30 +1,35 @@
-
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-     <!-- CDN DataTable -->
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<!-- CDN DataTable -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
 <script src="https://unpkg.com/html5-qrcode"></script>
-    <!--  -->
-    <style>
-        * {
-            font-family: 'Inter', sans-serif;
+<!--  -->
+<style>
+    * {
+        font-family: 'Inter', sans-serif;
+    }
+    .sidebar-gradient {
+        background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+    }
+    .table-hover tr:hover {
+        background-color: #f8fafc;
+    }
+    #participant_tbl thead th{
+        font-size: 13px;
+    }
+    #participant_tbl tbody td{
+        font-size: 12px;
+    }
+    .dataTables_wrapper {
+        padding: 20px;
+    }
+    @media (max-width: 768px) {
+        .hide-on-tablet {
+            display: none;
         }
-        .sidebar-gradient {
-            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
-        }
-        .table-hover tr:hover {
-            background-color: #f8fafc;
-        }
-        .dataTables_wrapper{
-            padding: 20px;
-        }
-        @media (max-width: 768px) {
-            .hide-on-tablet {
-                display: none;
-            }
-        }
-        /*  */
-        .hidden {
+    }
+    /*  */
+    .hidden {
         display: none;
     }
 
@@ -81,17 +86,15 @@
         align-items: center;
         justify-content: center;
     }
-    </style>
+</style>
 <!-- <body class="bg-gray-50"> -->
-    <div class=" ">
-        
-        <!-- Main Content -->
-        <div class="">
-            
-            <!-- Main Content Area -->
-            <div class="flex-1 p-4 md:p-6 lg:p-8">
-                <!-- Event Info Cards -->
-                <!-- <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+<div class=" ">
+    <!-- Main Content -->
+    <div class="">
+        <!-- Main Content Area -->
+        <div class="flex-1 p-4 md:p-6 lg:p-8">
+            <!-- Event Info Cards -->
+            <!-- <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                     <div class="bg-white rounded-xl shadow-md p-5">
                         <div class="flex items-center mb-3">
                             <div class="bg-indigo-100 p-3 rounded-lg mr-4">
@@ -128,80 +131,79 @@
                         </div>
                     </div>
                 </div> -->
-                
-                <!-- Search and Actions -->
-                <div class="bg-white rounded-xl shadow-md p-5 mb-6">
-                    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                        <div class="flex-1">
-                            <!-- <h2 class="text-xl font-bold text-gray-800 mb-4 lg:mb-0">Tìm kiếm</h2> -->
-                            <!-- <p class="text-gray-600">Tìm theo BIB, Tên, SĐT, Email</p> -->
-                        </div>
-                        
-                        <div class="flex flex-col sm:flex-row gap-3">
-                            <button id="openScan" class="bg-indigo-600 text-white font-medium px-5 py-3 rounded-lg hover:bg-indigo-700 transition flex items-center justify-center">
-                                <i class="fas fa-qrcode mr-3"></i>
-                                Quét QR
-                            </button>
-                            <!-- <button class="bg-green-600 text-white font-medium px-5 py-3 rounded-lg hover:bg-green-700 transition flex items-center justify-center">
-                                <i class="fas fa-plus mr-3"></i>
-                                Thêm VĐV
-                            </button> -->
-                        </div>
-                    </div>
-                    
+
+            <!-- Search and Actions -->
+            <div class="flex flex-wrap justify-between items-center gap-3 bg-white rounded-xl shadow-md p-5 mb-6">
+                <h2 class="text-xl text-indigo-500 font-bold"><%=event.name%></h2>
+                <div class="flex flex-wrap items-center justify-between gap-4 w-full">
                     <!-- Search Bar -->
-                    <div class="mt-6">
+                    <div class="flex-2">
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <i class="fas fa-search text-gray-400"></i>
                             </div>
-                            <input 
-                                type="text" 
-                                placeholder="Nhập..." 
+                            <input
+                                type="text"
+                                placeholder="Nhập..."
                                 class="w-full pl-10 pr-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg"
+                            />
+                            <button
+                                class="absolute right-2 top-2.5 bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition"
                             >
-                            <button class="absolute right-2 top-2 bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition">
                                 Tìm kiếm
                             </button>
                         </div>
-                        
-                        <!-- Filter Tags -->
-                        <div class="flex flex-wrap gap-2 mt-4">
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
-                                <i class="fas fa-hashtag mr-1"></i> Code
-                                <button class="ml-2 text-blue-600 hover:text-blue-800">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </span>
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
-                                <i class="fas fa-user mr-1"></i> Tên
-                                <button class="ml-2 text-green-600 hover:text-green-800">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </span>
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-purple-100 text-purple-800">
-                                <i class="fas fa-phone mr-1"></i> SĐT
-                                <button class="ml-2 text-purple-600 hover:text-purple-800">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </span>
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-amber-100 text-amber-800">
-                                <i class="fas fa-envelope mr-1"></i> Email
-                                <button class="ml-2 text-amber-600 hover:text-amber-800">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </span>
-                        </div>
+                    </div>
+                    <!--  -->
+                    <div class="flex-1">
+                        <!-- <div class=""> -->
+                            <button
+                                id="openScan"
+                                class="w-full bg-indigo-600 text-white font-medium px-5 py-4 rounded-lg hover:bg-indigo-700 transition flex items-center justify-center"
+                            >
+                                <i class="fas fa-qrcode mr-3"></i>
+                                Quét QR
+                            </button>
+                        <!-- </div> -->
                     </div>
                 </div>
-                
-                <!-- Results Summary -->
-                <div class="flex items-center justify-between mb-4">
-                    <div>
-                        <!-- <h3 class="text-lg font-semibold text-gray-800">Danh sách</h3> -->
-                        <!-- <p class="text-gray-600">Tìm thấy <span class="font-bold text-indigo-600">1</span> kết quả</p> -->
-                    </div>
-                    <!-- <div class="flex items-center space-x-2">
+                <!--  -->
+                <!-- Filter Tags -->
+                <div class="flex flex-wrap gap-2 mt-4">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
+                        <i class="fas fa-hashtag mr-1"></i> Code
+                        <button class="ml-2 text-blue-600 hover:text-blue-800">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </span>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
+                        <i class="fas fa-user mr-1"></i> Tên
+                        <button class="ml-2 text-green-600 hover:text-green-800">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </span>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-purple-100 text-purple-800">
+                        <i class="fas fa-phone mr-1"></i> SĐT
+                        <button class="ml-2 text-purple-600 hover:text-purple-800">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </span>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-amber-100 text-amber-800">
+                        <i class="fas fa-envelope mr-1"></i> Email
+                        <button class="ml-2 text-amber-600 hover:text-amber-800">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Results Summary -->
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <!-- <h3 class="text-lg font-semibold text-gray-800">Danh sách</h3> -->
+                    <!-- <p class="text-gray-600">Tìm thấy <span class="font-bold text-indigo-600">1</span> kết quả</p> -->
+                </div>
+                <!-- <div class="flex items-center space-x-2">
                         <button class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
                             <i class="fas fa-filter"></i>
                             <span class="hidden sm:inline ml-2">Lọc</span>
@@ -211,54 +213,33 @@
                             <span class="hidden sm:inline ml-2">Sắp xếp</span>
                         </button>
                     </div> -->
+            </div>
+
+            <!-- Athletes Table -->
+            <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                <!-- Table Header -->
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200" id="participant_tbl">
+                        <thead>
+                            <tr>
+                                <th>Fullname</th>
+                                <th>BIB</th>
+                                <th>Status</th>
+                                <!-- <th>ID/PP</th> -->
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="">
+                            <!-- du lieu dc do o day -->
+                        </tbody>
+                    </table>
                 </div>
-                
-                <!-- Athletes Table -->
-                <div class="bg-white rounded-xl shadow-md overflow-hidden">
-                    <!-- Table Header -->
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200" id="participant_tbl">
-                            <thead>
-                                <tr>
-                                    <th>Fullname</th>
-                                    <th>BIB</th>
-                                    <th>Status</th>
-                                    <!-- <th>ID/PP</th> -->
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- du lieu dc do o day -->
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                </div>
-                
-                <!-- Quick Stats Footer -->
-                <!-- <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div class="bg-white rounded-lg p-4 shadow border border-gray-100">
-                        <div class="text-sm text-gray-500 mb-1">Tổng VĐV</div>
-                        <div class="text-2xl font-bold text-gray-800">125</div>
-                    </div>
-                    <div class="bg-white rounded-lg p-4 shadow border border-gray-100">
-                        <div class="text-sm text-gray-500 mb-1">Đã check-in</div>
-                        <div class="text-2xl font-bold text-green-600">89</div>
-                    </div>
-                    <div class="bg-white rounded-lg p-4 shadow border border-gray-100">
-                        <div class="text-sm text-gray-500 mb-1">Chờ check-in</div>
-                        <div class="text-2xl font-bold text-yellow-600">36</div>
-                    </div>
-                    <div class="bg-white rounded-lg p-4 shadow border border-gray-100">
-                        <div class="text-sm text-gray-500 mb-1">Check-in hôm nay</div>
-                        <div class="text-2xl font-bold text-blue-600">24</div>
-                    </div>
-                </div> -->
             </div>
         </div>
     </div>
+</div>
 <!-- </body> -->
- <!-- ======MODAL===== -->
+<!-- ======MODAL===== -->
 <div id="scanModal" class="hidden">
     <div id="qr-reader"></div>
 
@@ -269,98 +250,98 @@
     <button id="closeScan" class="close-btn">Đóng</button>
 </div>
 
- <!-- ======FORM SUBMIT ẨN===== -->
+<!-- ======FORM SUBMIT ẨN===== -->
 <form action="/tool-checkin/info" method="GET" style="display: none" id="checkinForm" target="checkinWindow">
     <input type="text" name="code" id="code_hidden" />
 </form>
 <!-- script here -->
- <!-- 1. Load jQuery TRƯỚC -->
+<!-- 1. Load jQuery TRƯỚC -->
 <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
- <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
- 
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
 <script>
     //
     let dataTable = null;
-    // 
-    const data0 =[
-        ["Nguyễn Văn A", "100", "Đã check-in"],
-            ["Trần Thị B", "101", "Chờ check-in"],
-            ["Lê Văn C", "102", "Đã check-in"],
-            ["Phạm Thị D", "103", "Chờ check-in"],
-            ["Hoàng Văn E", "104", "Đã check-in"],
-            ["Vũ Thị F", "105", "Chờ check-in"]
-    ]
+    //
     const data2 = [
-  { name: 'Nguyen Van A', bib: '100', status: 'checkin' },
-  { name: 'Tran Thi B', bib: '101', status: 'checkout' },
-  { name: 'Le Van C', bib: '102', status: 'checkin' },
-  { name: 'Pham Thi D', bib: '103', status: 'pending' },
-  { name: 'Hoang Van E', bib: '104', status: 'checkin' },
-  { name: 'Nguyen Thi F', bib: '105', status: 'checkout' },
-  { name: 'Do Van G', bib: '106', status: 'checkin' },
-  { name: 'Bui Thi H', bib: '107', status: 'pending' },
-  { name: 'Vo Van I', bib: '108', status: 'checkin' },
-  { name: 'Dang Thi J', bib: '109', status: 'checkout' },
-   { name: 'Vo Van I', bib: '108', status: 'checkin' },
-    { name: 'Vo Van I', bib: '108', status: 'checkin' },
-     { name: 'Vo Van I', bib: '108', status: 'checkin' },
-      { name: 'Vo Van I', bib: '108', status: 'checkin' },
-       { name: 'Vo Van I', bib: '108', status: 'checkin' },
-];
+        { name: 'Nguyen Van A', bib: '100', status: 'checkin' },
+        { name: 'Tran Thi B', bib: '101', status: 'checkout' },
+        { name: 'Le Van C', bib: '102', status: 'checkin' },
+        { name: 'Pham Thi D', bib: '103', status: 'pending' },
+        { name: 'Hoang Van E', bib: '104', status: 'checkin' },
+        { name: 'Nguyen Thi F', bib: '105', status: 'checkout' },
+        { name: 'Do Van G', bib: '106', status: 'checkin' },
+        { name: 'Bui Thi H', bib: '107', status: 'pending' },
+        { name: 'Vo Van I', bib: '108', status: 'checkin' },
+        { name: 'Dang Thi J', bib: '109', status: 'checkout' },
+        { name: 'Vo Van I', bib: '108', status: 'checkin' },
+        { name: 'Vo Van I', bib: '108', status: 'checkin' },
+        { name: 'Vo Van I', bib: '108', status: 'checkin' },
+        { name: 'Vo Van I', bib: '108', status: 'checkin' },
+        { name: 'Vo Van I', bib: '108', status: 'checkin' },
+    ];
 
-    dataTable= $("#participant_tbl").DataTable({
+    dataTable = $('#participant_tbl').DataTable({
         // data: data2,
         processing: true,
         serverSide: true,
         ajax: '/tool-checkin/get-data',
         info: false,
         searching: true,
-        columns:[
-            {title: 'Fullname', data: 'fullname'},
-            {title: "Code", data: 'bib'},
-            {title: "Phone/Email", data: 'email', render: function(data, type, row){
-                return `<p>${row.phone}</p><p>${row.email}</p><p>${row.cccd}</p>`
-            }},
+        columns: [
+            {
+                title: 'Fullname',
+                data: 'fullname',
+                render: function (data, type, row) {
+                    return `<p class="click_info font-extrabold text-indigo-600 hover:text-indigo-800 tracking-wide hover:tracking-wider transition-all duration-200">${data}</p>`;
+                },
+            },
+            { title: 'Code', data: 'bib' },
+            {
+                title: 'Phone/Email',
+                data: 'email',
+                render: function (data, type, row) {
+                    return `<p>${row.phone}</p><p>${row.email}</p>`;
+                },
+            },
             // {title: 'ID/PP', data: 'cccd', render: function(data){
             //     return data
             // }},
-            {data: 'checkin_status'}
-
+            { data: 'checkin_status' },
         ],
-        createdRow: function(row, data, dataIndex){
-            let uid = data.uid
+        createdRow: function (row, data, dataIndex) {
+            let uid = data.uid;
             console.log('Data:', data);
-            if(uid){
+            if (uid) {
                 $(row).attr({
-                    'data-uid': uid
-                })
+                    'data-uid': uid,
+                });
             }
         },
         stateSave: true,
     });
-    // 
-    $('#participant_tbl').on('click', 'tbody tr td', function(ev) {
+    //
+    $('#participant_tbl').on('click', 'tbody tr td .click_info', function (ev) {
         ev.stopPropagation();
-        
+
         const $cell = $(this);
         const $row = $cell.closest('tr');
         const columnIndex = $cell.index();
         const uid = $row.attr('data-uid');
-        console.log('uid ',uid);
-        
-        
+        console.log('uid ', uid);
+
         // Lấy dữ liệu từ DataTable
         const rowData = dataTable.row($row).data();
-        
+
         if (!rowData) {
             console.warn('No data available for this row');
             return;
         }
-        submitForm(uid)
+        submitForm(uid);
         console.log('=== CLICK EVENT ===');
-    })
-    // 
-    let checkinTab =null;
+    });
+    //
+    let checkinTab = null;
     function submitForm(code) {
         document.querySelector('#code_hidden').value = code;
         //
@@ -369,7 +350,7 @@
         }
         document.querySelector('#checkinForm').submit();
     }
-    // 
+    //
     // global
     // let checkinTab = null;
     document.getElementById('openScan').onclick = startScan;

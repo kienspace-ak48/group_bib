@@ -1,7 +1,15 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.min.js" integrity="sha384-G/EV+4j2dNv+tEPo3++6LCgdCROaejBqfUeNjuKAiuXbjrxilcCdDz6ZAVfHWe1Y" crossorigin="anonymous"></script>
+<script
+    src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+    integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
+    crossorigin="anonymous"
+></script>
+<script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.min.js"
+    integrity="sha384-G/EV+4j2dNv+tEPo3++6LCgdCROaejBqfUeNjuKAiuXbjrxilcCdDz6ZAVfHWe1Y"
+    crossorigin="anonymous"
+></script>
 <style>
     * {
         font-family: 'Inter', sans-serif;
@@ -55,25 +63,24 @@
                 </div> -->
 
                 <!-- Right column: Athlete details -->
-                <div class="lg:w-2/3">
+                <div class="">
                     <div class="bg-white rounded-xl shadow-md overflow-hidden">
                         <!-- Header with status -->
                         <div class="bg-gradient-to-r from-indigo-500 to-purple-600 p-6">
                             <div class="flex flex-row md:flex-row justify-between items-start md:items-center">
                                 <div>
-                                    <h2 class="text-2xl font-bold text-white mb-2">Thông tin chi tiết</h2>
+                                    <h2 class="text-2xl font-bold text-white mb-2"><%=event.name%></h2>
                                     <%if(pc.checkin_status){%>
-                                        <div class="inline-flex items-center px-3 py-1 rounded-full mt-4 badge-success">
+                                    <div class="inline-flex items-center px-3 py-1 rounded-full mt-4 badge-success">
                                         <i class="fas fa-circle-check mr-2"></i>
-                                        <span class="font-medium text-[12px] mt-">Đã checkin : <%=pc.checkin_status%></span>
+                                        <span class="font-medium text-[12px] mt-">Đã checkin</span>
                                     </div>
                                     <%}else{%>
-                                        <div class="inline-flex items-center px-3 py-1 rounded-full mt-4 badge-warning">
+                                    <div class="inline-flex items-center px-3 py-1 rounded-full mt-4 badge-warning">
                                         <i class="fas fa-exclamation-triangle mr-2"></i>
-                                        <span class="font-medium text-[12px] mt-">Chưa checkin : <%=pc.checkin_status%></span>
+                                        <span class="font-medium text-[12px] mt-">Chưa checkin</span>
                                     </div>
                                     <%}%>
-    
                                 </div>
 
                                 <div class="mt-4 md:mt-0">
@@ -93,25 +100,20 @@
                                 <!-- Personal Info -->
                                 <div class="space-y-6">
                                     <h3 class="text-lg font-bold text-gray-800 border-b pb-2">Thông tin cá nhân</h3>
-                                    <input id="code_hidden" type="hidden" value="<%=pc.uid%>">
+                                    <input id="code_hidden" type="hidden" value="<%=pc.uid%>" />
                                     <div class="space-y-4">
                                         <div>
-                                            <p class="text-sm text-gray-500">Họ tên </p>
+                                            <p class="text-sm text-gray-500">Họ tên</p>
                                             <span class="text-lg font-semibold text-gray-800"><%=pc.fullname%></span>
-                                            
                                         </div>
                                         <div>
                                             <p class="text-sm text-gray-500">Giới tính</p>
                                             <span class="font-medium text-gray-800"><%=pc.gender?'Nam':'Nữ'%></span>
-                                            
                                         </div>
                                         <div>
                                             <p class="text-sm text-gray-500">Size áo/Vật phẩm</p>
                                             <p class="font-medium text-gray-800"><%=pc.tshirt_size%></p>
                                         </div>
-
-                                            
-                                       
 
                                         <div>
                                             <p class="text-sm text-gray-500">Nickname</p>
@@ -161,7 +163,6 @@
                                     </div>
                                 </div>
                             </div>
-                            
 
                             <!-- Additional notes -->
                             <!-- <div class="mt-8 p-4 bg-amber-50 border border-amber-200 rounded-lg">
@@ -179,142 +180,238 @@
                             </div> -->
                         </div>
                     </div>
-
-                    
-                    
                 </div>
-                <!-- Chup hinh va ky -->
-                <div class="">
-                    <div class="bg-white rounded-xl shadow-md overflow-hidden">
-                        <div class="p-6">
-                            <div class="grid grid-cols-2 gap-6">
-                                <div>
-                                    <button class="btn btn-outline-success" id="openCamera">Mở camera</button>
-
-                                <div id="cameraBox" style="display:none">
-                                <video id="video" autoplay playsinline></video>
-                                <br />
-                                <button id="capture">Chụp</button>
+                <!-- Bot column  -->
+                <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                    <div class="p-6">
+                        <div class="grid grid-cols-2 gap-6">
+                            <div>
+                                <button id="btn_cta_openmodal"  class="bg-green-600 text-white px-4 py-2 rounded-lg">
+                                    Check-in
+                                </button>
+                                <!--  -->
+                                <div id="previewBoxShow" style="display:none">
+                                    <img id="preview" />
+                                    <br />
+                                    <button id="retake">Chụp lại</button>
+                                    <button id="upload">Upload</button>
                                 </div>
 
-                                <div id="previewBox" style="display:none">
-                                <img id="preview" />
-                                <br />
-                                <button id="retake">Chụp lại</button>
-                                <button id="upload">Upload</button>
-                                </div>
-
-                                <canvas id="canvas" hidden></canvas>
-
                             </div>
-                            </div>
-                            </div>
-                                                                
-                                                                <!-- Chu ky -->
-                                                                
-                     <!-- test -->
-                    <script>
-                                                    const openBtn = document.getElementById('openCamera');
-                                const video = document.getElementById('video');
-
-                                let stream;
-
-                                openBtn.onclick = async () => {
-                                stream = await navigator.mediaDevices.getUserMedia({
-                                    video: { facingMode: 'environment' }, // camera sau
-                                    audio: false
-                                });
-
-                                video.srcObject = stream;
-                                document.getElementById('cameraBox').style.display = 'block';
-                                };
-                                // 
-                                const captureBtn = document.getElementById('capture');
-                                const canvas = document.getElementById('canvas');
-                                const preview = document.getElementById('preview');
-
-                                captureBtn.onclick = () => {
-                                canvas.width = video.videoWidth;
-                                canvas.height = video.videoHeight;
-
-                                const ctx = canvas.getContext('2d');
-                                ctx.drawImage(video, 0, 0);
-
-                                const imageData = canvas.toDataURL('image/jpeg');
-
-                                preview.src = imageData;
-
-                                document.getElementById('cameraBox').style.display = 'none';
-                                document.getElementById('previewBox').style.display = 'block';
-                                };
-                                // 
-                                document.getElementById('retake').onclick = () => {
-                                document.getElementById('previewBox').style.display = 'none';
-                                document.getElementById('cameraBox').style.display = 'block';
-                                };
-                                // 
-                                // =================CHU ky
-
-                 </script>
+                        </div>
+                    </div>
                 </div>
                 <!-- GROUP ACTION -->
-                 <!-- group acction -->
+                <!-- group acction -->
                 <div>
                     <!-- Quick actions footer -->
-                     <%if(pc.checkin_status){%>
-                        <div class="mt-6 flex gap-4 justify-center items-center ">
-                            <a href="/tool-checkin" class=" justify-center-safe inline-block">
-                                <button class=" bg-purple-600 text-white font-medium py-3 px-4 rounded-lg hover:bg-purple-700 transition flex items-center justify-center">
-                            <i class="fas fa-edit mr-3"></i>
-                            Trở về
-                        </button>
-                            </a>
-                        </div>
-                        
-                     <%}else{%>
-                        <div class="mt-6 flex flex-row gap-4">
-                       
-                            <a href="/tool-checkin" class=" justify-center-safe inline-block flex-1">
-                                <button class=" bg-purple-600 text-white font-medium py-3 px-4 rounded-lg hover:bg-purple-700 transition flex items-center justify-center">
-                            <i class="fas fa-edit mr-3"></i>
-                            Trở về
-                        </button>
-                            </a>
-                        
-                        <button id="btn_cta_checkin"
+                    <%if(pc.checkin_status){%>
+                    <div class="mt-6 flex gap-4 justify-center items-center">
+                        <a href="/tool-checkin" class="justify-center-safe inline-block">
+                            <button
+                                class="bg-purple-600 text-white font-medium py-3 px-4 rounded-lg hover:bg-purple-700 transition flex items-center justify-center"
+                            >
+                                <i class="fas fa-edit mr-3"></i>
+                                Trở về
+                            </button>
+                        </a>
+                    </div>
+
+                    <%}else{%>
+                    <div class="mt-6 flex flex-row gap-4">
+                        <a href="/tool-checkin" class="justify-center-safe flex flex-1">
+                            <button
+                                class="w-full bg-purple-600 text-white font-medium py-3 px-4 rounded-lg hover:bg-purple-700 transition flex items-center justify-center"
+                            >
+                                <i class="fas fa-edit mr-3"></i>
+                                Trở về
+                            </button>
+                        </a>
+
+                        <button
+                            id="btn_cta_checkin"
                             class="flex-1 bg-green-600 text-white font-medium py-3 px-4 rounded-lg hover:bg-green-700 transition flex items-center justify-center"
                         >
                             <i class="fas fa-check-circle mr-3"></i>
                             Xác nhận Checkin
                         </button>
                     </div>
-                     <%}%>
+                    <%}%>
                 </div>
             </div>
         </main>
     </div>
 
-<!--  -->
-<script>
-        // Xử lý sự kiện click cho các nút chính
-        document.querySelector('#btn_cta_checkin').addEventListener('click', (ev)=>{
-            const payload = {
-                code: document.querySelector('#code_hidden').value.trim()
+    <!-- ==============MODAL=================== -->
+    <!-- Overlay -->
+    <div id="modal" class="fixed inset-0 bg-black/50 flex items-center justify-center hidden z-50">
+        <!-- Modal box -->
+        <div class="bg-white rounded-xl w-full max-w-md p-6 transform transition-all scale-95 opacity-0" id="modalBox">
+            <!-- Header -->
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold">Xác nhận Check-in</h2>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">✕</button>
+            </div>
+            <!-- Content -->
+            <div class="py-6 flex flex-col items-center justify-center gap-10">
+                <!-- <p class="text-gray-600 mb-6">
+        </p> -->
+                <!-- <button class="border border-gray-300 rounded-lg px-4 py-3" id="openCamera">Mở camera</button> -->
+                <div id="cameraBox">
+                    <video id="video" autoplay playsinline class="aspect-video border border-gray-300"></video>
+                </div>
+                <div id="previewBox" class="w-[80%] h-[auto]" style="display: none">
+                    <img id="preview" />
+                    <!-- <br /> -->
+                    <!-- <button id="retake">Chụp lại</button> -->
+                    <!-- <button id="upload">Upload</button> -->
+                </div>
+
+                <!-- Thêm canvas ẩn để chụp ảnh -->
+                <canvas id="canvas" class="hidden"></canvas>
+                <!-- group actins -->
+                <div class="flex justify-between w-full">
+                    <button id="capture" class="border">chụp</button>
+                    <button id="recapture" class="border">chụp lại</button>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="flex gap-3">
+                <button id="btn_close_modal" class="flex-1 border border-gray-300 rounded-lg py-2 hover:bg-gray-100">
+                    Huỷ
+                </button>
+
+                <button class="flex-1 bg-green-600 text-white rounded-lg py-2 hover:bg-green-700" id="capture_confirm">Xác nhận</button>
+            </div>
+        </div>
+    </div>
+
+    <!--  -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // global scope
+            let stream;
+            let tempImage = null;
+            const btnCheckin = document.querySelector('#btn_cta_checkin');
+            const modal = document.getElementById('modal');
+            const modalBox = document.getElementById('modalBox');
+            const video = document.querySelector('#video');
+            const canvas = document.querySelector('#canvas');
+            const preview = document.querySelector('#preview');
+            const btnCloseCam = document.querySelector('#closeCamera');
+            const btnCaptureCamera = document.querySelector('#capture');
+            const btnRetake = document.querySelector('#recapture');
+            const btnCaptureConfirm = document.querySelector('#capture_confirm');
+
+            async function openCamera() {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter((x) => x.kind === 'videoinput');
+                console.log(videoDevices);
+                const selectDeviceId = videoDevices[1].deviceId || videoDevices[0].deviceId;
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        // facingMode: 'environment',
+                        deviceId: { exact: selectDeviceId },
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                    },
+                });
+                video.srcObject = stream;
             }
-            // alert(payload)
-            $.ajax({
-                url: `/tool-checkin/check-in`,
-                method: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify(payload),
-                success: (res)=>{
-                    console.log(res)
-                    if(res.success){
-                        document.location.reload();
-                    }
-                },
-                error: (xhr, status, err)=>console.log(xhr.responseJSON?.mess||'Server error')
+            // capture
+            btnCaptureCamera.addEventListener('click', () => {
+                console.log('runn');
+                // Kiểm tra video có đang stream không
+                if (!video.srcObject) {
+                    alert('Camera chưa được mở!');
+                    return;
+                }
+                //
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0);
+                tempImage = canvas.toDataURL('image/jpeg');
+                preview.src = tempImage;
+                // stopCamera(); //ko stop neu muon chup lai
+                document.getElementById('cameraBox').style.display = 'none';
+                document.getElementById('previewBox').style.display = 'block';
+            });
+
+
+            // stop
+            function stopCamera() {
+                stream?.getTracks().forEach((track) => track.stop());
+            }
+            // recape
+            // Chức năng retake (chụp lại)
+            btnRetake.addEventListener('click', async () => {
+                console.log('Retake button clicked');
+
+                // reset UI
+                document.getElementById('previewBox').style.display = 'none';
+                document.getElementById('cameraBox').style.display = 'block';
+
+                tempImage = null;
+
+                // nếu stream còn track chạy → resume
+                if (stream && stream.getTracks().some((t) => t.readyState === 'live')) {
+                    video.srcObject = stream;
+                    await video.play(); // 🔴 CỰC QUAN TRỌNG
+                } else {
+                    // nếu stream chết → mở lại camera
+                    await openCamera();
+                    await video.play();
+                }
+            });
+            //
+            document.querySelector('#btn_cta_openmodal').addEventListener('click', ()=>{
+                openModal();
             })
-        })
+            document.querySelector('#btn_close_modal').addEventListener('click', ()=>{
+                closeModal();
+            })
+            function openModal() {
+                document.body.classList.add('overflow-hidden');
+                modal.classList.remove('hidden');
+                openCamera();
+
+                setTimeout(() => {
+                    modalBox.classList.remove('scale-95', 'opacity-0');
+                    modalBox.classList.add('scale-100', 'opacity-100');
+                }, 10);
+            }
+
+            function closeModal() {
+                document.body.classList.remove('overflow-hidden');
+                modalBox.classList.add('scale-95', 'opacity-0');
+
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                }, 200);
+            }
+            // Xử lý sự kiện click cho các nút chính
+            btnCheckin.addEventListener('click', (ev) => {
+                const payload = {
+                    code: document.querySelector('#code_hidden').value.trim(),
+                };
+                // alert(payload)
+                $.ajax({
+                    url: `/tool-checkin/check-in`,
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(payload),
+                    success: (res) => {
+                        console.log(res);
+                        if (res.success) {
+                            document.location.reload();
+                        }
+                    },
+                    error: (xhr, status, err) => console.log(xhr.responseJSON?.mess || 'Server error'),
+                });
+            });
+        });
     </script>
 </body>

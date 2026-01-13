@@ -159,10 +159,12 @@ router.get('/tool-checkin/info', async (req, res) => {
         const data = req.body;
         console.log('data', data);
         const _uid = req.query.code;
+        const event = await Event.findOne({ race_function: 'checkin' });
+
         const pc = await ParticipantCheckin.findOne({ uid: _uid }).lean();
-        res.render('tool/info', { layout: 'layouts/main', pc: pc });
+        res.render('tool/info', { layout: 'layouts/main', pc: pc, event });
     } catch (error) {
-        res.render('tool/info', { layout: 'layouts/main', pc: {} });
+        res.render('tool/info', { layout: 'layouts/main', pc: {}, event: {} });
     }
 });
 // router.get('tool')
