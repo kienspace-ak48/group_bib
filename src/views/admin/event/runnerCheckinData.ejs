@@ -35,7 +35,7 @@
         <%}%>
     <%}%>
         <!--  -->
-    <a href="/admin/event/<%=event_slug%>/type-checkin/send-mail">
+    <a href="/admin/event/<%=event_slug%>/type-checkin/send-mail"> 
                 <div data-step="2" class="progress-step">3. Send E-Mail</div>
             </a>
         <!-- <div data-step="3" class="progress-step">3. Send E-mail</div> -->
@@ -474,7 +474,7 @@
                 </div>
               </div>
               <div class="col-6">
-                <div class="form-group w-50">
+                <div class="form-group w-100">
                   <label class="form-label">Size áo/Vật phẩm</label>
                   <input type="text" class="form-control" id="edit-size">
                 </div>
@@ -496,18 +496,32 @@
               </div>
             </div>
 
+            <div class="row">
+              <div class="form-group">
+                  <label class="form-label">Line/Zone</label>
+                  <input type="text" class="form-control" id="edit-line">
+                </div>
+            </div>
+
           </div>
         </div>
         </p>
       </div>
 
       <div class="modal-footer">
-        <button class="btn btn-secondary" data-bs-dismiss="modal">
+        <div>
+        <button id="btn_resendmail" class="btn btn-success">
+          ResendMail
+        </button>
+        </div>
+        <div>
+          <button class="btn btn-secondary" data-bs-dismiss="modal">
           Close
         </button>
         <button id="btn-update-athlete" class="btn btn-warning">
           Update
         </button>
+        </div>
       </div>
 
     </div>
@@ -728,6 +742,7 @@ $('#athlete_tbl table').on('click', '.cta-delete', function(){
       $('#edit-size').val(d.tshirt_size);
       $('#edit-patronName').val(d.patron_name);
       $('#edit-patronPhone').val(d.patron_phone);
+      $('#edit-line').val(d.line);
 
       $('#modalEditAthlete').modal('show');
       },
@@ -757,6 +772,7 @@ $('#athlete_tbl table').on('click', '.cta-delete', function(){
     tshirt_size: $('#edit-size').val(),
     patron_name: $('#edit-patronName').val(),
     patron_phone: $('#edit-patronPhone').val(),
+    line: $('#edit-line').val(),
     team:  $('#edit-team').val()
   };
 console.log(payload);
@@ -818,4 +834,43 @@ console.log(payload);
       }
     })
   })
+  //
+//K Resendmail one 
+  document.querySelector('#btn_resendmail').addEventListener('click',async (el)=>{
+    console.log('hello', document.querySelector('#edit-id').value.trim())
+    const payload = {
+      runner_id: document.querySelector('#edit-id').value.trim()||""
+    }
+    if(!payload.runner_id){
+  alert('Thiếu ID');
+  return;
+}
+    const task1 =await resendMailOne(payload);
+    if(!task1){
+      alert('failed')
+    }else{
+      alert('success')
+    }
+  })
+  async function resendMailOne(payload){
+    try {
+    const res = await fetch('/admin/event/<%=event_slug%>/sendmail-one', {
+      method: 'POST',
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+    console.log(data);
+    if(!data.success){
+      return false
+    }
+    return true; // true / false
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+  }
 </script>

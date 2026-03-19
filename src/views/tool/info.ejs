@@ -141,7 +141,8 @@
                                             <p class="text-sm text-gray-500">Ngày sinh</p>
                                             <div class="flex items-center">
                                                 <i class="fas fa-birthday-cake text-purple-500 mr-2"></i>
-                                                <p class="font-medium text-gray-800"><%=pc.dob%></p>
+                                                <% let dformat=new Date(pc.dob).toLocaleDateString('vi-VN') %>
+                                                <p class="font-medium text-gray-800"><%=dformat%></p>
                                             </div>
                                         </div>
 
@@ -182,7 +183,7 @@
                     </div>
                 </div>
                 <!-- Bot column  -->
-                <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                <div class="bg-white rounded-xl shadow-md overflow-hidden " style="display: none;">
                     <div class="p-6">
                         <div class="grid grid-cols-2 gap-6">
                             <div>

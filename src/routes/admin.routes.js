@@ -42,6 +42,8 @@ router.put('/event/:slug/type-checking/update-person/:id', eventController.Check
 router.get('/event/:slug/type-checking/edit-person/:id', eventController.CheckinEditPerson);
 router.post('/event/:slug/type-checkin/banner-mail', imageUploadMemory.single('file'), eventController.CheckinMailUploadImage)
 router.post('/event/:slug/type-checkin/mail-config',eventController.CheckinMailConfigSave);
+//19/03
+router.post('/event/:slug/sendmail-one', eventController.SendMailToOne);
 // 
 //feature checkin
 router.post('/event/type-checkin/:slug/add-group', eventController.RunnerCheckinData)

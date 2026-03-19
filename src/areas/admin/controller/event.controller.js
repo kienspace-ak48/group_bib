@@ -173,6 +173,7 @@ function convertRowCheckin(row, event_id) {
         email: row.email,
         phone: row.phone,
         dob: excelDateToJSDateUti(dobExcel), // YYYY-MM-DD
+        line: row.line,
         gender: row.gender === 'M' ? 1 : 0,
         nationality: row.nationality,
         nation: row.nation,
@@ -508,6 +509,16 @@ const eventController = () => {
                             banner_option: data.banner_option,
                             content_1: data.content_1,
                             content_2: data.content_2,
+                            //new
+                            footer_email: data.footer_email,
+                            footer_hotline: data.footer_hotline,
+                            footer_company_vi: data.footer_company_vi,
+                            footer_company_en: data.footer_company_en,
+                            footer_bg_color: data.footer_bg_color,
+                            footer_text_color: data.footer_text_color,
+                            footer_link_color: data.footer_link_color,
+                            footer_border_color: data.footer_border_color,
+                            footer_show: data.footer_show,
                         },
                         $setOnInsert: {
                             event_id: _eventId, // chi set khi insert moi
@@ -536,7 +547,7 @@ const eventController = () => {
                 const event = await EventService.GetBySlug(req.params.slug);
                 const mc = await MailConfig.findOne({ event_id: event._id });
                 //remove anh truoc khi update
-                if (mc.banner_img === path_img &&path_img !=="") {
+                if (mc.banner_img === path_img && path_img !== '') {
                     const pathDirDelete = myPathConfig.root + 'public' + mc.banner_img;
                     if (fs.existsSync(pathDirDelete)) {
                         fs.unlinkSync(pathDirDelete);
@@ -581,7 +592,7 @@ const eventController = () => {
             console.log('even slug ', _eventSlug);
             try {
                 const templatePath = myPathConfig.root + '/src/views/mail_template/template_one.html';
-                
+
                 const event = await EventService.GetBySlug(_eventSlug);
                 if (!event) {
                     return res.status(404).json({ success: false, message: 'Event not found' });
@@ -592,17 +603,17 @@ const eventController = () => {
                 const _eventEnd = formatDate(event.end_date);
                 const mailConfig = await MailConfig.findOne({ event_id: event._id });
                 let _bannerText = mailConfig.banner_text;
-                let bannerBase64 ='';
-                if(mailConfig.banner_img){
+                let bannerBase64 = '';
+                if (mailConfig.banner_img) {
                     bannerBase64 = fs.readFileSync(
-                    myPathConfig.root + 'public'+mailConfig.banner_img, //C:\Workspaces\my_projects\group_bib\public\email_img\banner.jpg
-                    { encoding: 'base64' },
-                );
+                        myPathConfig.root + 'public' + mailConfig.banner_img, //C:\Workspaces\my_projects\group_bib\public\email_img\banner.jpg
+                        { encoding: 'base64' },
+                    );
                 }
-                
+
                 let showBanner = mailConfig.banner_option; //true -> image || false ->text
                 let bannerOrTextSection = '';
-                if(showBanner){
+                if (showBanner) {
                     bannerOrTextSection = `<tr>
                         <td align="center">
                             <img
@@ -617,14 +628,14 @@ const eventController = () => {
                             />
                         </td>
                     </tr>`;
-                }else{
-                    bannerOrTextSection=`<tr>
+                } else {
+                    bannerOrTextSection = `<tr>
                         <td align="left" style="padding: 0 20px; font-family: Arial, sans-serif; font-size: 14px; color: #333333">
                             <h1>${_bannerText}</h1>
                         </td>
-                     </tr>`
+                     </tr>`;
                 }
-                
+
                 // console.log('check mail ', mailConfig);
                 //
                 const runners = await ParticipantCheckin.find({ event_id: event._id });
@@ -646,16 +657,27 @@ const eventController = () => {
                             .replace('{{category}}', r.distance)
                             .replace('{{cccd}}', r.cccd)
                             .replace('{{code}}', r.bib)
+                            .replace('{{line}}', r.line)
                             .replace('{{tshirt_size}}', r.tshirt_size)
                             .replace('{{event_name}}', _eventName)
                             .replace('{{location}}', _eventLocation)
                             .replace('{{start_date}}', _eventStart)
                             .replace('{{end_date}}', _eventEnd)
-                            // .replace('{{banner_text}}', mailConfig.banner_text)
                             .replace('{{content_1}}', mailConfig.content_1)
                             .replace('{{content_2}}', mailConfig.content_2)
                             .replace('{{sender_name}}', mailConfig.sender_name)
-                            .replace('<!-- BANNER_OR_TEXT_PLACEHOLDER -->', bannerOrTextSection);
+                            // .replace('{{mail_footer}}', mailConfig.mail_footer)
+                            .replace('<!-- BANNER_OR_TEXT_PLACEHOLDER -->', bannerOrTextSection)
+                            //
+                            //Thêm các replace cho footer
+                            .replaceAll('{{footer_bg_color}}', mailConfig.footer_bg_color || '#ffffff')
+                            .replaceAll('{{footer_border_color}}', mailConfig.footer_border_color || '#ffffff')
+                            .replaceAll('{{footer_text_color}}', mailConfig.footer_text_color || '#ffffff')
+                            .replaceAll(/\{\{\s*footer_link_color\s*\}\}/g, mailConfig.footer_link_color || '#ffffff')
+                            .replaceAll(/\{\{\s*footer_email\s*\}\}/g, mailConfig.footer_email || 'test@gmail.com')
+                            .replaceAll(/\{\{\s*footer_hotline\s*\}\}/g, mailConfig.footer_hotline || '1900@@@@')
+                            .replaceAll('{{footer_company_vi}}', mailConfig.footer_company_vi || '')
+                            .replaceAll('{{footer_company_en}}', mailConfig.footer_company_en || '');
                         //
                         //
                         return {
@@ -713,6 +735,200 @@ const eventController = () => {
                 res.status(500).json({
                     success: false,
                     error: 'SendGrid error',
+                });
+            }
+        },
+        //ajax
+        SendMailToOne: async (req, res) => {
+            const _eventSlug = req.params.slug;
+            const runnerId = req.body.runner_id; // ID của runner cần gửi mail
+
+            console.log('Event slug: ', _eventSlug);
+            console.log('Runner ID: ', runnerId);
+
+            try {
+                const templatePath = myPathConfig.root + '/src/views/mail_template/template_one.html';
+
+                // Lấy thông tin event
+                const event = await EventService.GetBySlug(_eventSlug);
+                if (!event) {
+                    return res.status(404).json({ success: false, message: 'Event not found' });
+                }
+
+                // Format thông tin event
+                const _eventName = event.name;
+                const _eventLocation = event.location;
+                const _eventStart = formatDate(event.start_date);
+                const _eventEnd = formatDate(event.end_date);
+
+                // Lấy mail config
+                const mailConfig = await MailConfig.findOne({ event_id: event._id });
+                if (!mailConfig) {
+                    return res.status(404).json({ success: false, message: 'Mail configuration not found' });
+                }
+
+                // Xử lý banner
+                let _bannerText = mailConfig.banner_text;
+                let bannerBase64 = '';
+                if (mailConfig.banner_img) {
+                    bannerBase64 = fs.readFileSync(myPathConfig.root + 'public' + mailConfig.banner_img, {
+                        encoding: 'base64',
+                    });
+                }
+
+                let showBanner = mailConfig.banner_option; //true -> image || false ->text
+                let bannerOrTextSection = '';
+                if (showBanner) {
+                    bannerOrTextSection = `<tr>
+                <td align="center">
+                    <img
+                        src="cid:banner"
+                        alt="AccessRace Banner"
+                        width="600"
+                        style="display: block; 
+                            max-width: 600px; 
+                            width: 100%; 
+                            height: auto;
+                            -ms-interpolation-mode: bicubic;"  
+                    />
+                </td>
+            </tr>`;
+                } else {
+                    bannerOrTextSection = `<tr>
+                <td align="left" style="padding: 0 20px; font-family: Arial, sans-serif; font-size: 14px; color: #333333">
+                    <h1>${_bannerText}</h1>
+                </td>
+            </tr>`;
+                }
+
+                // Tìm runner cụ thể
+                const runner = await ParticipantCheckin.findOne({
+                    _id: runnerId,
+                    event_id: event._id,
+                });
+
+                if (!runner) {
+                    return res.status(404).json({
+                        success: false,
+                        message: 'Runner not found in this event',
+                    });
+                }
+
+                if (!runner.email) {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Runner does not have an email address',
+                    });
+                }
+
+                // Tạo QR code
+                const qrBase64 = await QRCode.toDataURL(runner.uid, {
+                    margin: 1,
+                    width: 300,
+                    color: {
+                        dark: '#000000',
+                        light: '#ffffff'
+                    }
+                });
+                const base64Data = qrBase64.replace(/^data:image\/png;base64,/, '');
+
+                // Đọc template
+                let htmlTemplate = fs.readFileSync(templatePath, 'utf8');
+
+                // Replace dynamic data
+                htmlTemplate = htmlTemplate
+                    .replace('{{fullname}}', runner.fullname || '')
+                    .replace('{{distance}}', runner.distance || '')
+                    .replace('{{category}}', runner.distance || '')
+                    .replace('{{cccd}}', runner.cccd || '')
+                    .replace('{{code}}', runner.bib || '')
+                    .replace('{{tshirt_size}}', runner.tshirt_size || '')
+                    .replace('{{line}}', runner.line || '')
+                    .replace('{{event_name}}', _eventName)
+                    .replace('{{location}}', _eventLocation)
+                    .replace('{{start_date}}', _eventStart)
+                    .replace('{{end_date}}', _eventEnd)
+                    .replace('{{content_1}}', mailConfig.content_1 || '')
+                    .replace('{{content_2}}', mailConfig.content_2 || '')
+                    .replace('{{sender_name}}', mailConfig.sender_name || '')
+                    .replace('<!-- BANNER_OR_TEXT_PLACEHOLDER -->', bannerOrTextSection)
+                    //new
+                    //Thêm các replace cho footer
+                    .replaceAll('{{footer_bg_color}}', mailConfig.footer_bg_color || '#ffffff')
+                    .replaceAll('{{footer_border_color}}', mailConfig.footer_border_color || '#ffffff')
+                    .replaceAll('{{footer_text_color}}', mailConfig.footer_text_color || '#ffffff')
+                    .replaceAll(/\{\{\s*footer_link_color\s*\}\}/g, mailConfig.footer_link_color || '#ffffff')
+                    .replaceAll(/\{\{\s*footer_email\s*\}\}/g, mailConfig.footer_email || 'test@gmail.com')
+                    .replaceAll(/\{\{\s*footer_hotline\s*\}\}/g, mailConfig.footer_hotline || '1900@@@@')
+                    .replaceAll('{{footer_company_vi}}', mailConfig.footer_company_vi || '')
+                    .replaceAll('{{footer_company_en}}', mailConfig.footer_company_en || '');
+    
+    
+
+                // Tạo message cho 1 người
+                const message = {
+                    to: runner.email.trim(),
+                    from: {
+                        email: 'no-reply@accessrace.asia',
+                        name: mailConfig.sender_name,
+                    },
+                    subject: mailConfig.title,
+                    html: htmlTemplate,
+                    attachments: showBanner
+                        ? [
+                              {
+                                  content: bannerBase64,
+                                  filename: 'banner.png',
+                                  type: 'image/png',
+                                  disposition: 'inline',
+                                  content_id: 'banner',
+                              },
+                              {
+                                  content: base64Data,
+                                  filename: 'qrcode.png',
+                                  type: 'image/png',
+                                  disposition: 'inline',
+                                  content_id: 'qrcode',
+                              },
+                          ]
+                        : [
+                              {
+                                  content: base64Data,
+                                  filename: 'qrcode.png',
+                                  type: 'image/png',
+                                  disposition: 'inline',
+                                  content_id: 'qrcode',
+                              },
+                          ],
+                };
+
+                // Gửi mail
+                await sgMail.send(message);
+
+                res.json({
+                    success: true,
+                    message: `Email sent successfully to ${runner.fullname} (${runner.email})`,
+                    data: {
+                        runnerId: runner._id,
+                        runnerName: runner.fullname,
+                        runnerEmail: runner.email,
+                    },
+                });
+            } catch (error) {
+                console.error('Error sending email to one runner:', error);
+
+                if (error.response) {
+                    console.error('SendGrid error:', JSON.stringify(error.response.body, null, 2));
+                    return res.status(500).json({
+                        success: false,
+                        error: 'SendGrid error',
+                        details: error.response.body,
+                    });
+                }
+
+                res.status(500).json({
+                    success: false,
+                    error: error.message || 'Internal server error',
                 });
             }
         },

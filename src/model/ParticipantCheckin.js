@@ -24,6 +24,7 @@ const ParticipantCheckinSchema = new mongoose.Schema(
         phone: String,
         dob: Date,
         gender: Boolean,
+        line: String,
         nationlity: String,
         nation: String,
         city: String,

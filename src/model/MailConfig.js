@@ -11,6 +11,17 @@ const MailConfigSchema = new mongoose.Schema(
         banner_text: String,
         banner_img: String,
         banner_option: { type: Boolean, default: false },
+        //new
+         // Thêm các trường cho footer
+        footer_email: { type: String },
+        footer_hotline: { type: String },
+        footer_company_vi: { type: String },
+        footer_company_en: { type: String },
+        footer_bg_color: { type: String },
+        footer_text_color: { type: String },
+        footer_link_color: { type: String },
+        footer_border_color: { type: String },
+        footer_show: { type: Boolean },
     },
     { timestamps: true },
 );

@@ -68,6 +68,70 @@
                 <label for="" class="form-label">Content 2</label>
                 <!-- <input type="text" class="form-control"> -->
                 <textarea name="" id="content_2" class="form-control"><%=mc.content_2%></textarea>
+                <!--  -->
+                <!-- Footer Config Card - THÊM MỚI -->
+<div class="card mt-3">
+
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group mb-3">
+                    <label class="form-label">Email hỗ trợ:</label>
+                    <input type="email" class="form-control" id="footer_email" value="<%=mc.footer_email || 'support@actiup.net'%>" placeholder="support@actiup.net">
+                </div>
+                <div class="form-group mb-3">
+                    <label class="form-label">Hotline:</label>
+                    <input type="text" class="form-control" id="footer_hotline" value="<%=mc.footer_hotline || '1900638337'%>" placeholder="1900638337">
+                </div>
+                <div class="form-group mb-3">
+                    <label class="form-label">Tên công ty (tiếng Việt):</label>
+                    <input type="text" class="form-control" id="footer_company_vi" value="<%=mc.footer_company_vi || 'ACTIUP - SẢN PHẨM CỦA CÔNG TY CỔ PHẦN TECHHAUS VIETNAM'%>">
+                </div>
+                <div class="form-group mb-3">
+                    <label class="form-label">Tên công ty (tiếng Anh):</label>
+                    <input type="text" class="form-control" id="footer_company_en" value="<%=mc.footer_company_en || 'ACTIUP - PRODUCT OF TECHHAUS VIETNAM JOINT STOCK COMPANY'%>">
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group mb-3">
+                    <label class="form-label">Màu nền footer:</label>
+                    <div class="d-flex align-items-center">
+                        <input type="color" class="form-control form-control-color" id="footer_bg_color" value="<%=mc.footer_bg_color || '#f8f8f8'%>" style="width: 70px; height: 38px;">
+                        <input type="text" class="form-control ms-2" id="footer_bg_color_text" value="<%=mc.footer_bg_color || '#f8f8f8'%>" placeholder="#f8f8f8">
+                    </div>
+                </div>
+                <div class="form-group mb-3">
+                    <label class="form-label">Màu chữ footer:</label>
+                    <div class="d-flex align-items-center">
+                        <input type="color" class="form-control form-control-color" id="footer_text_color" value="<%=mc.footer_text_color || '#666666'%>" style="width: 70px; height: 38px;">
+                        <input type="text" class="form-control ms-2" id="footer_text_color_text" value="<%=mc.footer_text_color || '#666666'%>" placeholder="#666666">
+                    </div>
+                </div>
+                <div class="form-group mb-3">
+                    <label class="form-label">Màu link (email/hotline):</label>
+                    <div class="d-flex align-items-center">
+                        <input type="color" class="form-control form-control-color" id="footer_link_color" value="<%=mc.footer_link_color || '#0066cc'%>" style="width: 70px; height: 38px;">
+                        <input type="text" class="form-control ms-2" id="footer_link_color_text" value="<%=mc.footer_link_color || '#0066cc'%>" placeholder="#0066cc">
+                    </div>
+                </div>
+                <div class="form-group mb-3">
+                    <label class="form-label">Màu border:</label>
+                    <div class="d-flex align-items-center">
+                        <input type="color" class="form-control form-control-color" id="footer_border_color" value="<%=mc.footer_border_color || '#e0e0e0'%>" style="width: 70px; height: 38px;">
+                        <input type="text" class="form-control ms-2" id="footer_border_color_text" value="<%=mc.footer_border_color || '#e0e0e0'%>" placeholder="#e0e0e0">
+                    </div>
+                </div>
+                <!-- <div class="form-check mb-3">
+                    <input type="checkbox" class="form-check-input" id="footer_show" <%#= mc.footer_show != false ? 'checked' : ''%> />
+                    <label class="form-check-label" for="footer_show">Hiển thị footer trong email</label>
+                </div>
+                <button id="btn_footer_config_save" class="btn btn-primary">Save Footer Config</button> -->
+            </div>
+        </div>
+    </div>
+    </div>
+
+                <!--  -->
                 <button id="btn_cta_mailconfig_save" class="mt-3 w-25 btn btn-primary">Save</button>
 
             </div>
@@ -180,6 +244,15 @@
     document.querySelector('#btn_cta_mailconfig_save').addEventListener('click', (ev)=>{
         // console.log('hi');
         const payload  ={
+            footer_email: document.querySelector('#footer_email').value,
+        footer_hotline: document.querySelector('#footer_hotline').value,
+        footer_company_vi: document.querySelector('#footer_company_vi').value,
+        footer_company_en: document.querySelector('#footer_company_en').value,
+        footer_bg_color: document.querySelector('#footer_bg_color').value,
+        footer_text_color: document.querySelector('#footer_text_color').value,
+        footer_link_color: document.querySelector('#footer_link_color').value,
+        footer_border_color: document.querySelector('#footer_border_color').value,
+            //cu
             sender_name: document.querySelector('#sender_name').value,
             title: document.querySelector('#mail_title').value,
             content_1: document.querySelector('#content_1').value,
@@ -198,6 +271,30 @@
             error: (xhr, status, err)=>console.log(xhr.responseJSON?.mess||"Server error")
         })
     })
+    //handle footer
+    // Sync color picker with text input
+function setupColorSync(colorPickerId, textInputId) {
+    const colorPicker = document.getElementById(colorPickerId);
+    const textInput = document.getElementById(textInputId);
+    
+    if (colorPicker && textInput) {
+        colorPicker.addEventListener('input', function() {
+            textInput.value = this.value;
+        });
+        
+        textInput.addEventListener('input', function() {
+            colorPicker.value = this.value;
+        });
+    }
+}
+
+// Initialize color sync on page load
+document.addEventListener('DOMContentLoaded', function() {
+    setupColorSync('footer_bg_color', 'footer_bg_color_text');
+    setupColorSync('footer_text_color', 'footer_text_color_text');
+    setupColorSync('footer_link_color', 'footer_link_color_text');
+    setupColorSync('footer_border_color', 'footer_border_color_text');
+});
     // upload img
     document.querySelector('#btn_cta_upload_img').addEventListener('click', (ev)=>{
         const payload = new FormData();
