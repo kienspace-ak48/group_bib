@@ -646,7 +646,14 @@ const eventController = () => {
                 // Build messages (PHẢI dùng Promise.all)
                 const messages = await Promise.all(
                     emails.map(async (r) => {
-                        const qrBase64 = await QRCode.toDataURL(r.uid);
+                        const qrBase64 = await QRCode.toDataURL(r.uid, {
+                            margin: 1,
+                            width: 300,
+                            color: {
+                                dark: '#000000',
+                                light: '#ffffff',
+                            },
+                        });
                         const base64Data = qrBase64.replace(/^data:image\/png;base64,/, '');
                         //
                         let htmlTemplate = fs.readFileSync(templatePath, 'utf8');
@@ -827,8 +834,8 @@ const eventController = () => {
                     width: 300,
                     color: {
                         dark: '#000000',
-                        light: '#ffffff'
-                    }
+                        light: '#ffffff',
+                    },
                 });
                 const base64Data = qrBase64.replace(/^data:image\/png;base64,/, '');
 
@@ -862,8 +869,6 @@ const eventController = () => {
                     .replaceAll(/\{\{\s*footer_hotline\s*\}\}/g, mailConfig.footer_hotline || '1900@@@@')
                     .replaceAll('{{footer_company_vi}}', mailConfig.footer_company_vi || '')
                     .replaceAll('{{footer_company_en}}', mailConfig.footer_company_en || '');
-    
-    
 
                 // Tạo message cho 1 người
                 const message = {
