@@ -14,7 +14,7 @@ function route(app){
     app.use('/auth/normal', authRoute);
     // 
     app.use(apiRoute);
-    app.use('/admin', adminRoute);
+    app.use('/admin',authRoute, adminRoute);
     app.use('/test', testRoute)
     app.use('/', clientRoute);
     app.use((req, res, next)=>{
