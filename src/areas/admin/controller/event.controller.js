@@ -232,7 +232,6 @@ const eventController = () => {
         FormEdit: async (req, res) => {
             try {
                 const slug = req.params.slug;
-                console.log(slug);
                 const event = await EventService.GetBySlug(slug);
                 res.render(VNAME + 'formEdit', { layout: VLAYOUT, event: event || {}, slug });
             } catch (error) {
@@ -296,7 +295,7 @@ const eventController = () => {
                 // console.log(eventDTO);
                 const result = await EventService.UpdateBySlug(slug, eventDTO);
                 if (!result) return res.status(500).json({ success: false, mess: 'update failed' });
-                return res.json({ success: true, redirect: '/admin/event' });
+                return res.json({ success: true, redirect: '/admin/event/type-checkin' });
             } catch (error) {
                 console.log(CNAME, error.message);
                 res.status(500).json({ success: false, mess: error.message });
@@ -575,9 +574,7 @@ const eventController = () => {
             const _eventSlug = req.params.slug;
             const event = await EventService.GetBySlug(_eventSlug);
             const _eventId = event._id;
-            console.log('a ', _eventId.toString());
             const mailConfig = await MailConfig.findOne({ event_id: _eventId });
-            console.log(mailConfig);
             try {
                 const event = await EventService.GetBySlug(_eventSlug);
                 res.render(VNAME + 'sendmail', { layout: VLAYOUT, event, event_slug: _eventSlug, mc: mailConfig });

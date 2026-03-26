@@ -20,9 +20,7 @@ const accounts = [
 ];
 
 async function hashPassword(password) {
-    console.log('before', password);
     const hash = await bcrypt.hash(password, SALT);
-    console.log('after', hash);
     return hash;
 }
 async function decodePassword(plainPassword, storeHash) {

@@ -93,7 +93,6 @@ const userController = () => {
         },
         //
         ReSendCode: async (req, res) => {
-            // console.log('aaa',req.body)
             const { email } = req.body;
             try {
                 const exist = await User.findOne({

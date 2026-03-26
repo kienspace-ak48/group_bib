@@ -21,9 +21,6 @@ class ParticipantCheckin {
     async Add(_pc, slug){
         try {
             //dung destructuring 
-            // const {_id, ...dataWithoutId} = _pc;
-            // console.log('before ', _pc);
-            // console.log('after ',dataWithoutId);
             const pc = new ParticipantCheckinEntity(_pc);
             await pc.save();
             return true;

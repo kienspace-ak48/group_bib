@@ -77,7 +77,7 @@ router.get('/tool-checkin/get-data', async (req, res) => {
         const start = Number(req.query.start || 0);
         const length = Number(req.query.length || 10);
         const searchValue = req.query['search[value]'] || '';
-        console.log('searchValue: ', searchValue)
+        // console.log('searchValue: ', searchValue)
         //sort
         // lấy index cột sort
         const orderColumnIndex = req.query['order[0][column]'];

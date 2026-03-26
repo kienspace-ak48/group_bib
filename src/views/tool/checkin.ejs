@@ -1,393 +1,772 @@
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-<!-- CDN DataTable -->
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
-<script src="https://unpkg.com/html5-qrcode"></script>
-<!--  -->
-<style>
-    * {
-        font-family: 'Inter', sans-serif;
-    }
-    .sidebar-gradient {
-        background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
-    }
-    .table-hover tr:hover {
-        background-color: #f8fafc;
-    }
-    #participant_tbl thead th{
-        font-size: 13px;
-    }
-    #participant_tbl tbody td{
-        font-size: 12px;
-    }
-    .dataTables_wrapper {
-        padding: 20px;
-    }
-    @media (max-width: 768px) {
-        .hide-on-tablet {
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Quản lý Check-in | Hội thao Sư phạm</title>
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter + Outfit cho hiện đại -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <!-- QR Scanner lib -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <!-- jQuery & DataTables JS -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #f1f5f9;
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Smooth scroll & modern touches */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e2e8f0;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 10px;
+        }
+
+        /* main container */
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px 20px 40px;
+        }
+
+        /* event header card */
+        .event-card {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            border-radius: 28px;
+            padding: 24px 28px;
+            margin-bottom: 28px;
+            box-shadow: 0 12px 28px -8px rgba(79, 70, 229, 0.3);
+            transition: transform 0.2s ease;
+        }
+        .event-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: white;
+            letter-spacing: -0.3px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .event-badge {
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(4px);
+            padding: 6px 14px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #fef9c3;
+        }
+        .event-stats {
+            display: flex;
+            gap: 24px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+        .stat-chip {
+            background: rgba(255,255,255,0.15);
+            border-radius: 60px;
+            padding: 6px 16px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: white;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* action toolbar */
+        .action-toolbar {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03), 0 1px 2px rgba(0, 0, 0, 0.05);
+            padding: 16px 24px;
+            margin-bottom: 24px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+        }
+        .scan-btn {
+            background: linear-gradient(105deg, #4f46e5 0%, #6366f1 100%);
+            border: none;
+            padding: 12px 28px;
+            border-radius: 48px;
+            font-weight: 600;
+            font-size: 1rem;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
+        }
+        .scan-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 20px -8px rgba(79, 70, 229, 0.5);
+            background: linear-gradient(105deg, #4338ca 0%, #4f46e5 100%);
+        }
+        .filter-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .chip {
+            background: #f1f5f9;
+            border-radius: 40px;
+            padding: 8px 16px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #1e293b;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .chip i {
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+        .chip.active {
+            background: #e0e7ff;
+            color: #4338ca;
+            border-left: 3px solid #4f46e5;
+        }
+        .chip:hover {
+            background: #e2e8f0;
+        }
+
+        /* DataTable wrapper refinement */
+        .data-table-wrapper {
+            background: white;
+            border-radius: 28px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            transition: all 0.2s;
+        }
+        #participant_tbl {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        #participant_tbl thead th {
+            background: #f8fafc;
+            padding: 18px 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #475569;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        #participant_tbl tbody td {
+            padding: 16px 20px;
+            font-size: 0.85rem;
+            vertical-align: middle;
+            border-bottom: 1px solid #f0f2f5;
+            color: #1e293b;
+        }
+        #participant_tbl tbody tr:hover {
+            background-color: #fefce8;
+            transition: 0.1s;
+        }
+        /* name + code style */
+        .athlete-name {
+            font-weight: 700;
+            color: #1e293b;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .athlete-bib {
+            font-size: 0.7rem;
+            background: #eef2ff;
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 30px;
+            color: #4f46e5;
+            font-weight: 500;
+            margin-left: 6px;
+        }
+        .contact-row {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 0.75rem;
+            color: #475569;
+        }
+        .contact-row i {
+            width: 18px;
+            color: #94a3b8;
+        }
+        /* status badges */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #f1f5f9;
+            padding: 5px 12px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.75rem;
+            width: fit-content;
+        }
+        .status-checkin {
+            background: #dcfce7;
+            color: #15803d;
+        }
+        .status-checkin i {
+            color: #16a34a;
+        }
+        .status-pending {
+            background: #fff3e3;
+            color: #b45309;
+        }
+        .status-pending i {
+            color: #ea580c;
+        }
+        .status-checkout {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+        /* info clickable style */
+        .clickable-name {
+            cursor: pointer;
+            font-weight: 700;
+            color: #4f46e5;
+            transition: all 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .clickable-name:hover {
+            color: #6366f1;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+
+        /* Search area */
+        .search-area {
+            flex: 2;
+            min-width: 240px;
+        }
+        .search-input-group {
+            position: relative;
+        }
+        .search-input-group i {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+        .search-input-group input {
+            width: 100%;
+            padding: 12px 16px 12px 44px;
+            border-radius: 60px;
+            border: 1px solid #e2e8f0;
+            background: #ffffff;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        .search-input-group input:focus {
+            outline: none;
+            border-color: #818cf8;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+        /* datatable override */
+        .dataTables_wrapper .dataTables_filter {
             display: none;
         }
-    }
-    /*  */
-    .hidden {
-        display: none;
-    }
+        .dataTables_wrapper .dataTables_info {
+            padding: 16px 20px;
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+        .dataTables_wrapper .dataTables_paginate {
+            padding: 12px 20px;
+        }
+        .paginate_button {
+            border-radius: 30px !important;
+            margin: 0 3px !important;
+            background: #f1f5f9 !important;
+            border: none !important;
+            color: #334155 !important;
+        }
+        .paginate_button.current {
+            background: #4f46e5 !important;
+            color: white !important;
+            box-shadow: 0 2px 6px rgba(79,70,229,0.3);
+        }
 
-    #scanModal {
-        height: 100vh;
-        /* width: 100vw; */
-        position: fixed;
-        inset: 0;
-        background: black;
-        z-index: 9999;
-        overflow: hidden;
-    }
+        /* MODAL SCANNER HIỆN ĐẠI */
+        #scanModal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.92);
+            backdrop-filter: blur(8px);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        .scanner-container {
+            width: 90%;
+            max-width: 520px;
+            background: #0f172a;
+            border-radius: 48px;
+            overflow: hidden;
+            box-shadow: 0 30px 40px -20px black;
+            position: relative;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .scanner-header {
+            padding: 18px 24px;
+            background: rgba(0,0,0,0.5);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .qr-reader-area {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            background: #000;
+        }
+        #qr-reader {
+            width: 100%;
+            height: 100%;
+        }
+        #qr-reader video {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover;
+        }
+        .scan-guide {
+            position: absolute;
+            inset: 20px;
+            border: 2px solid rgba(79, 70, 229, 0.7);
+            border-radius: 28px;
+            box-shadow: 0 0 0 4000px rgba(0,0,0,0.5);
+            pointer-events: none;
+            z-index: 5;
+        }
+        .close-scanner {
+            background: rgba(255,255,255,0.15);
+            border: none;
+            color: white;
+            font-size: 1rem;
+            padding: 10px 24px;
+            border-radius: 60px;
+            font-weight: 500;
+            margin: 20px auto;
+            display: block;
+            width: fit-content;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .close-scanner:hover {
+            background: #ef4444;
+            transform: scale(0.98);
+        }
+        .hidden {
+            display: none !important;
+        }
 
-    #qr-reader,
-    #qr-reader > div {
-        width: 100% !important;
-        height: 100% !important;
-        position: absolute !important;
-        inset: 0;
-    }
-
-    #qr-reader video {
-        width: 100% !important;
-        height: 100% !important;
-        object-fit: cover;
-    }
-
-    /* nút đóng */
-    .close-btn {
-        position: fixed;
-        left: 50%;
-        bottom: 80px;
-        transform: translateX(-50%);
-        z-index: 10000;
-        background: rgba(0, 0, 0, 0.6);
-        color: white;
-        border: 2px solid #4caf50;
-        font-size: 20px;
-        padding: 6px 12px;
-        border-radius: 12px;
-        cursor: pointer;
-        min-width: 150px;
-    }
-    /* THÊM ĐOẠN NÀY VÀO */
-    .overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100vh;
-        pointer-events: none; /* Quan trọng: không chặn click vào scanner */
-        z-index: 10;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    #participant_tbl_length{
-        display: none;
-    }
-</style>
-<!-- <body class="bg-gray-50"> -->
-<div class=" ">
-    <!-- Main Content -->
-    <div class="">
-        <!-- Main Content Area -->
-        <div class="flex-1 p-4 md:p-6 lg:p-8">
-            <!-- Event Info Cards -->
-            <!-- <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                    <div class="bg-white rounded-xl shadow-md p-5">
-                        <div class="flex items-center mb-3">
-                            <div class="bg-indigo-100 p-3 rounded-lg mr-4">
-                                <i class="fas fa-flag-checkered text-indigo-600 text-lg"></i>
-                            </div>
-                            <div>
-                                <h3 class="text-sm text-gray-500 font-medium">Sự kiện</h3>
-                                <p class="text-lg font-semibold text-gray-800">Test Send Email</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-white rounded-xl shadow-md p-5">
-                        <div class="flex items-center mb-3">
-                            <div class="bg-blue-100 p-3 rounded-lg mr-4">
-                                <i class="fas fa-calendar-day text-blue-600 text-lg"></i>
-                            </div>
-                            <div>
-                                <h3 class="text-sm text-gray-500 font-medium">Thời gian</h3>
-                                <p class="text-lg font-semibold text-gray-800">09/01/2026</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-white rounded-xl shadow-md p-5">
-                        <div class="flex items-center mb-3">
-                            <div class="bg-green-100 p-3 rounded-lg mr-4">
-                                <i class="fas fa-qrcode text-green-600 text-lg"></i>
-                            </div>
-                            <div>
-                                <h3 class="text-sm text-gray-500 font-medium">Quầy Checkin</h3>
-                                <p class="text-lg font-semibold text-gray-800">Sẵn sàng</p>
-                            </div>
-                        </div>
-                    </div>
-                </div> -->
-
-            <!-- Search and Actions -->
-            <div class="flex flex-wrap justify-between items-center gap-3 bg-white rounded-xl shadow-md p-5 mb-2">
-                <h2 class="text-[16px] md:text-xl text-indigo-500 font-bold"><%=event.name%></h2>
-                <div class="flex flex-wrap items-center justify-between gap-4 w-full">
-                    <!-- Search Bar -->
-                    <div class="flex-2">
-                        <!-- <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="fas fa-search text-gray-400"></i>
-                            </div>
-                            <input
-                                type="text"
-                                placeholder="Nhập..."
-                                class="w-full pl-10 pr-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg"
-                            />
-                            <button
-                                class="absolute right-2 top-2.5 bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition"
-                            >
-                                Search
-                            </button>
-                        </div> -->
-                    </div>
-                    <!--  -->
-                    <div class="flex-1">
-                        <!-- <div class=""> -->
-                            <button
-                                id="openScan"
-                                class="w-full bg-indigo-600 text-white font-medium px-5 py-4 rounded-lg hover:bg-indigo-700 transition flex items-center justify-center"
-                            >
-                                <i class="fas fa-qrcode mr-3"></i>
-                                Scan
-                            </button>
-                        <!-- </div> -->
-                    </div>
-                </div>
-                <!--  -->
-                <!-- Filter Tags -->
-                <div class="flex flex-wrap gap-2 mt-4">
-                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
-                        <i class="fas fa-hashtag mr-1"></i> Code
-                        <button class="ml-2 text-blue-600 hover:text-blue-800">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </span>
-                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
-                        <i class="fas fa-user mr-1"></i> Tên
-                        <button class="ml-2 text-green-600 hover:text-green-800">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </span>
-                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-purple-100 text-purple-800">
-                        <i class="fas fa-phone mr-1"></i> SĐT
-                        <button class="ml-2 text-purple-600 hover:text-purple-800">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </span>
-                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-amber-100 text-amber-800">
-                        <i class="fas fa-envelope mr-1"></i> Email
-                        <button class="ml-2 text-amber-600 hover:text-amber-800">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </span>
-                </div>
-            </div>
-
-            <!-- Results Summary -->
-            <div class="flex items-center justify-between mb-1">
-                <div>
-                    <!-- <h3 class="text-lg font-semibold text-gray-800">Danh sách</h3> -->
-                    <!-- <p class="text-gray-600">Tìm thấy <span class="font-bold text-indigo-600">1</span> kết quả</p> -->
-                </div>
-                <!-- <div class="flex items-center space-x-2">
-                        <button class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-                            <i class="fas fa-filter"></i>
-                            <span class="hidden sm:inline ml-2">Lọc</span>
-                        </button>
-                        <button class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-                            <i class="fas fa-sort-amount-down"></i>
-                            <span class="hidden sm:inline ml-2">Sắp xếp</span>
-                        </button>
-                    </div> -->
-            </div>
-
-            <!-- Athletes Table -->
-            <div class="bg-white rounded-xl shadow-md overflow-hidden">
-                <!-- Table Header -->
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200" id="participant_tbl">
-                        <thead>
-                            <tr>
-                                <th>Fullname/Code</th>
-                                <!-- <th>BIB</th> -->
-                                <th>Status</th>
-                                <!-- <th>ID/PP</th> -->
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody class="">
-                            <!-- du lieu dc do o day -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+        @media (max-width: 640px) {
+            .dashboard-container {
+                padding: 16px;
+            }
+            .event-title {
+                font-size: 1.4rem;
+            }
+            .scan-btn {
+                width: 100%;
+                justify-content: center;
+            }
+            .action-toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="dashboard-container">
+    <!-- Event Header với thông tin động (demo) -->
+    <div class="event-card">
+        <div class="event-title">
+            <!-- <i class="fas fa-medal"></i>  -->
+            <span id="eventName" class="text-xl md:text-2xl">Giải Việt dã HSSV Trường ĐH Sư phạm TP.HCM lần IV - 2026</span>
+        </div>
+        <div class="event-stats">
+            <div class="stat-chip"><i class="fas fa-users"></i> <span id="totalParticipants">0</span> VĐV</div>
+            <div class="stat-chip"><i class="fas fa-check-circle"></i> <span id="checkedInCount">0</span> Đã check-in</div>
+            <div class="stat-chip"><i class="fas fa-clock"></i> 08:00 - 17:00 · 22/03/2026</div>
         </div>
     </div>
-</div>
-<!-- </body> -->
-<!-- ======MODAL===== -->
-<div id="scanModal" class="hidden">
-    <div id="qr-reader"></div>
 
-    <div class="overlay">
-        <div class="scan-box"></div>
+    <!-- Action bar + search -->
+    <div class="action-toolbar">
+        <div class="search-area">
+            <div class="search-input-group">
+                <i class="fas fa-search"></i>
+                <input type="text" id="custom-global-search" placeholder="Tìm theo tên, mã số, email, SĐT..." autocomplete="off">
+            </div>
+        </div>
+        <button id="openScan" class="scan-btn">
+            <i class="fas fa-qrcode"></i> Scan QR
+        </button>
     </div>
 
-    <button id="closeScan" class="close-btn">Đóng</button>
+    <!-- Filter chips (nâng cao UX) -->
+    <div class="filter-chips" style="margin-bottom: 18px;">
+        <div class="chip active" data-filter="all"><i class="fas fa-list-ul"></i> Tất cả</div>
+        <div class="chip" data-filter="true"><i class="fas fa-check-circle" style="color:#16a34a"></i> Đã check-in</div>
+        <div class="chip" data-filter="false"><i class="fas fa-hourglass-half"></i> Chưa check-in</div>
+    </div>
+
+    <!-- Table wrapper -->
+    <div class="data-table-wrapper overflow-x-auto">
+        <table id="participant_tbl" class="display" style="width:100%">
+            <thead>
+                <tr>
+                    <th>Vận động viên <i class="fas fa-id-card"></i></th>
+                    <th>Liên hệ</th>
+                    <th>Trạng thái</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
 </div>
 
-<!-- ======FORM SUBMIT ẨN===== -->
+<!-- SCANNER MODAL - Giao diện mới -->
+<div id="scanModal" class="hidden">
+    <div class="scanner-container">
+        <div class="scanner-header">
+            <span><i class="fas fa-qrcode"></i> Quét mã check-in</span>
+            <i class="fas fa-close" id="closeScanIcon" style="cursor:pointer; font-size:1.3rem;"></i>
+        </div>
+        <div class="qr-reader-area">
+            <div id="qr-reader"></div>
+            <div class="scan-guide"></div>
+        </div>
+        <button id="closeScanBtn" class="close-scanner"><i class="fas fa-times-circle"></i> Đóng</button>
+    </div>
+</div>
+
+<!-- Form ẩn submit -->
 <form action="/tool-checkin/info" method="GET" style="display: none" id="checkinForm" target="checkinWindow">
     <input type="text" name="code" id="code_hidden" />
 </form>
-<!-- script here -->
-<!-- 1. Load jQuery TRƯỚC -->
-<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 
 <script>
-    //
+    // DataTable instance
     let dataTable = null;
-    //
-    const data2 = [
-        { name: 'Nguyen Van A', bib: '100', status: 'checkin' },
-        { name: 'Tran Thi B', bib: '101', status: 'checkout' },
-        { name: 'Le Van C', bib: '102', status: 'checkin' },
-        { name: 'Pham Thi D', bib: '103', status: 'pending' },
-        { name: 'Hoang Van E', bib: '104', status: 'checkin' },
-        { name: 'Nguyen Thi F', bib: '105', status: 'checkout' },
-        { name: 'Do Van G', bib: '106', status: 'checkin' },
-        { name: 'Bui Thi H', bib: '107', status: 'pending' },
-        { name: 'Vo Van I', bib: '108', status: 'checkin' },
-        { name: 'Dang Thi J', bib: '109', status: 'checkout' },
-        { name: 'Vo Van I', bib: '108', status: 'checkin' },
-        { name: 'Vo Van I', bib: '108', status: 'checkin' },
-        { name: 'Vo Van I', bib: '108', status: 'checkin' },
-        { name: 'Vo Van I', bib: '108', status: 'checkin' },
-        { name: 'Vo Van I', bib: '108', status: 'checkin' },
-    ];
+    let currentFilter = "all";   // 'all', 'true', 'false'
+    let customSearchTerm = "";
 
-    dataTable = $('#participant_tbl').DataTable({
-        // data: data2,
-        processing: true,
-        serverSide: true,
-        ajax: '/tool-checkin/get-data',
-        info: false,
-        searching: true,
-        ordering: false,
-        columns: [
-            {
-                data: 'fullname',
-                render: function (data, type, row) {
-                    return `<p class="click_info font-extrabold text-indigo-600 hover:text-indigo-800 tracking-wide hover:tracking-wider transition-all duration-200">${row.fullname}</p> <p>${row.bib}</p>`;
-                },
-            },
-            // { title: 'Code', data: 'bib' },
-            {
-                title: 'Phone/Email',
-                data: 'email',
-                render: function (data, type, row) {
-                    return `<p>${row.phone}</p><p>${row.email}</p>`;
-                },
-            },
-            // {title: 'ID/PP', data: 'cccd', render: function(data){
-            //     return data
-            // }},
-            { data: 'checkin_status' },
-        ],
-        createdRow: function (row, data, dataIndex) {
-            let uid = data.uid;
-            console.log('Data:', data);
-            if (uid) {
-                $(row).attr({
-                    'data-uid': uid,
-                });
-            }
-        },
-        stateSave: true,
-    });
-    //
-    $('#participant_tbl').on('click', 'tbody tr td .click_info', function (ev) {
-        ev.stopPropagation();
-
-        const $cell = $(this);
-        const $row = $cell.closest('tr');
-        const columnIndex = $cell.index();
-        const uid = $row.attr('data-uid');
-        console.log('uid ', uid);
-
-        // Lấy dữ liệu từ DataTable
-        const rowData = dataTable.row($row).data();
-
-        if (!rowData) {
-            console.warn('No data available for this row');
-            return;
+    // ---- Fake server-side / API adapter (giữ logic giống yêu cầu nhưng dùng demo endpoint)
+    // Thực tế bạn đã có ajax: '/tool-checkin/get-data' , giữ nguyên nhưng thêm filter & search thân thiện
+    // Để demo UI/UX chuẩn chỉnh, ta vẫn dùng serverSide true nhưng sẽ customize gửi thêm param
+    // Vì endpoint có sẵn, mình chỉ việc thêm param mỗi lần draw lại table.
+    
+    function initDataTable() {
+        if (dataTable) {
+            dataTable.destroy();
         }
-        submitForm(uid);
-        console.log('=== CLICK EVENT ===');
-    });
-    //
-    let checkinTab = null;
+        dataTable = $('#participant_tbl').DataTable({
+            processing: true,
+            serverSide: true,
+            ajax: {
+                url: '/tool-checkin/get-data',
+                type: 'GET',
+                data: function (d) {
+                    // Thêm filter status và search term tùy chỉnh
+                    d.filter_status = currentFilter;
+                    d.search_custom = customSearchTerm;
+                    // DataTables mặc định gửi d.search.value nếu dùng built-in search, nhưng ta disable nó
+                    return d;
+                },
+                beforeSend: function() {
+                    // optional loading
+                }
+            },
+            info: true,
+            dom: 'rtip',
+            searching: true,        // tắt thanh search mặc định, dùng custom input
+            ordering: false,
+            pageLength: 10,
+            lengthChange: false,
+            language: {
+                info: "Hiển thị _START_ - _END_ trong tổng số _TOTAL_ vận động viên",
+                paginate: {
+                    previous: "<i class='fas fa-chevron-left'></i>",
+                    next: "<i class='fas fa-chevron-right'></i>"
+                }
+            },
+            columns: [
+                {
+                    data: null,
+                    render: function (data, type, row) {
+                        // row chứa fullname, bib
+                        let nameHtml = `<div class="athlete-name">
+                                            <span class="clickable-name" data-uid="${row.uid || row.code || ''}">
+                                                <i class="fas fa-user-circle"></i> ${escapeHtml(row.fullname || '---')}
+                                            </span>
+                                            <span class="athlete-bib">#${escapeHtml(row.bib || row.code || '')}</span>
+                                        </div>`;
+                        return nameHtml;
+                    }
+                },
+                {
+                    data: null,
+                    render: function (data, type, row) {
+                        let phone = row.phone || '';
+                        let email = row.email || '';
+                        return `<div class="contact-row">
+                                    <span><i class="fas fa-phone-alt"></i> ${escapeHtml(phone)}</span>
+                                    <span><i class="fas fa-envelope"></i> ${escapeHtml(email)}</span>
+                                </div>`;
+                    }
+                },
+                {
+                    data: 'checkin_status',   // trả về true/false hoặc string "true"/"false"/"checkin"/"pending"
+                    render: function (data, type, row) {
+                        let isChecked = (data === true || data === 'true' || data === 'checkin');
+                        let statusText = isChecked ? "Đã check-in" : "Chưa check-in";
+                        let badgeClass = isChecked ? "status-checkin" : "status-pending";
+                        let icon = isChecked ? '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-hourglass-half"></i>';
+                        return `<div class="status-badge ${badgeClass}">${icon} ${statusText}</div>`;
+                    }
+                }
+            ],
+            createdRow: function (row, data, dataIndex) {
+                // Gắn uid vào row để dễ xử lý click
+                let uidVal = data.uid || data.code || '';
+                $(row).attr('data-uid', uidVal);
+            },
+            drawCallback: function() {
+                // cập nhật thống kê nếu api trả về tổng số (giả sử phản hồi có recordsTotal & checkedInCount)
+                // Ta có thể lấy từ ajax response (cần backend tùy chỉnh) nhưng demo UI có thể tự tính
+                // Nếu api trả về thêm total và checked, ta parse; tạm thời lấy từ dataTable page.info()
+                let info = dataTable.page.info();
+                if (info && info.recordsTotal) {
+                    $('#totalParticipants').text(info.recordsTotal);
+                }
+                // Nếu backend gửi thêm x-total-checked trong header, cập nhật. Nhưng tạm tính từ filter all
+                if (currentFilter === 'all') {
+                    // gọi nhẹ nhàng cập nhật số checked (có thể gọi api riêng, nhưng tối ưu UX)
+                    $.get('/tool-checkin/get-stats', function(stats) {
+                        if(stats) {
+                            $('#checkedInCount').text(stats.checkedCount || 0);
+                        }
+                    }).fail(()=>{});
+                }
+            }
+        });
+        
+        // Refresh table khi filter thay đổi
+        function refreshTable() {
+            dataTable.ajax.reload(null, false);
+        }
+        
+        // Custom search input handler
+        // $('#customSearchInput').on('keyup', function() {
+        //     customSearchTerm = $(this).val();
+        //     refreshTable();
+        // });
+        
+        // Filter chips
+        $('.chip').on('click', function() {
+            $('.chip').removeClass('active');
+            $(this).addClass('active');
+            let filterVal = $(this).data('filter');
+            if (filterVal === 'all') currentFilter = 'all';
+            else if (filterVal === 'true') currentFilter = 'true';
+            else if (filterVal === 'false') currentFilter = 'false';
+            refreshTable();
+        });
+    }
+    
+    // Helper escape HTML
+    function escapeHtml(str) {
+        if(!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if(m === '&') return '&amp;';
+            if(m === '<') return '&lt;';
+            if(m === '>') return '&gt;';
+            return m;
+        }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+            return c;
+        });
+    }
+    
+    // Submit form check-in (mở tab mới)
+    let checkinWindow = null;
     function submitForm(code) {
+        if(!code) return;
         document.querySelector('#code_hidden').value = code;
-        //
-        if (!checkinTab || checkinTab.closed) {
-            checkinTab = window.open('', 'checkinWindow');
+        if (!checkinWindow || checkinWindow.closed) {
+            checkinWindow = window.open('', 'checkinWindow');
         }
         document.querySelector('#checkinForm').submit();
     }
-    //
-    // global
-    // let checkinTab = null;
-    document.getElementById('openScan').onclick = startScan;
-    document.getElementById('closeScan').onclick = stopScan;
-
-    //
-    let html5QrCode;
+    
+    // ---- QR SCANNER hiện đại ----
+    let html5QrCode = null;
     let isScanning = false;
-    function startScan() {
+    const scanModal = document.getElementById('scanModal');
+    const openScanBtn = document.getElementById('openScan');
+    const closeScanBtns = [document.getElementById('closeScanBtn'), document.getElementById('closeScanIcon')];
+    
+    async function startScan() {
         if (isScanning) return;
-        document.getElementById('scanModal').classList.remove('hidden');
+        scanModal.classList.remove('hidden');
+        // Đảm bảo clear cũ nếu có
+        if (html5QrCode && typeof html5QrCode.clear === 'function') {
+            try { await html5QrCode.clear(); } catch(e) {}
+        }
+        const readerDiv = document.getElementById('qr-reader');
+        readerDiv.innerHTML = ''; // reset
         html5QrCode = new Html5Qrcode('qr-reader');
-
-        Html5Qrcode.getCameras().then((devices) => {
-            console.log('DS camera: ', devices);
-            const camera = devices[1] || devices[0];
-
-            html5QrCode.start(camera.id, { fps: 10, qrbox: 260 }, (decodedText) => {
-                stopScan();
-                // callApi(decodedText);
-                submitForm(decodedText);
+        
+        try {
+            const devices = await Html5Qrcode.getCameras();
+            if (!devices.length) throw new Error('Không tìm thấy camera');
+            // ưu tiên camera sau (thường là camera sau điện thoại)
+            const cameraId = devices.length > 1 ? devices[1].id : devices[0].id;
+            await html5QrCode.start(cameraId, {
+                fps: 12,
+                qrbox: { width: 260, height: 260 },
+                aspectRatio: 1.0
+            }, (decodedText) => {
+                // Khi quét thành công
+                if (decodedText) {
+                    stopScan();
+                    submitForm(decodedText);
+                }
             });
             isScanning = true;
-        });
+        } catch(err) {
+            console.error(err);
+            alert('Không thể khởi động camera. Vui lòng kiểm tra quyền truy cập.');
+            stopScan();
+        }
     }
-    //
-    function stopScan() {
-        if (!isScanning) return;
-
-        html5QrCode.stop().then(() => {
-            html5QrCode.clear();
-            document.getElementById('scanModal').classList.add('hidden');
-            isScanning = false;
-        });
+    
+    async function stopScan() {
+        if (html5QrCode && isScanning) {
+            try {
+                await html5QrCode.stop();
+                await html5QrCode.clear();
+            } catch(e) {}
+        }
+        scanModal.classList.add('hidden');
+        isScanning = false;
     }
+    
+    openScanBtn.addEventListener('click', startScan);
+    closeScanBtns.forEach(btn => btn && btn.addEventListener('click', stopScan));
+    // click ra ngoài backdrop (chỉ modal background) - dùng overlay click
+    scanModal.addEventListener('click', function(e) {
+        if (e.target === scanModal) stopScan();
+    });
+    
+    // Xử lý click vào tên để xem chi tiết (submit form)
+    $('#participant_tbl').on('click', '.clickable-name', function(e) {
+        e.stopPropagation();
+        let uid = $(this).data('uid');
+        if (uid) {
+            submitForm(uid);
+        } else {
+            // fallback lấy từ row
+            let row = $(this).closest('tr');
+            let uidAttr = row.attr('data-uid');
+            if(uidAttr) submitForm(uidAttr);
+        }
+    });
+    
+    // Khởi tạo DataTable
+    initDataTable();
+    
+    // Cập nhật thống kê sự kiện sau khi check-in (có thể gọi lại mỗi 5s hoặc sau khi refresh)
+    // Mỗi lần reload table ta sẽ update count check-in (nếu có api riêng)
+    function refreshStats() {
+        if (currentFilter === 'all') {
+            $.get('/tool-checkin/get-stats', function(stats) {
+                if(stats && typeof stats.checkedCount !== 'undefined') {
+                    $('#checkedInCount').text(stats.checkedCount);
+                }
+                if(stats && stats.totalParticipants) $('#totalParticipants').text(stats.totalParticipants);
+            }).fail(()=>{
+                // fallback: nếu không có endpoint, hiển thị từ tổng số bản ghi
+                if(dataTable && dataTable.page.info().recordsTotal) {
+                    $('#totalParticipants').text(dataTable.page.info().recordsTotal);
+                }
+            });
+        }
+    }
+    // Gọi refreshStats sau mỗi lần reload table
+    setInterval(() => {
+        if(dataTable) refreshStats();
+    }, 5000);
+    
+    // Khi load xong, lấy thông tin tên sự kiện từ server (nếu có) - demo cứng
+    // Giữ lại tên event như yêu cầu
+    document.getElementById('eventName').innerHTML = '<%=event.name%>' || 'Giải Việt dã HSSV Trường ĐH Sư phạm TP.HCM lần IV - 2026';
+    
+    // Xử lý phím tắt ESC để đóng scanner
+    document.addEventListener('keydown', function(e) {
+        if(e.key === 'Escape' && !scanModal.classList.contains('hidden')) {
+            stopScan();
+        }
+    });
     //
+    // Kết nối ô search custom với DataTable (có debounce để tránh gọi ajax liên tục)
+let searchTimer;
+$('#custom-global-search').on('keyup input', function() {
+    clearTimeout(searchTimer);
+    
+    const searchValue = this.value.trim();
+    console.log('log: ',searchValue)
+    searchTimer = setTimeout(() => {
+        dataTable
+            .search(searchValue)   // set giá trị tìm kiếm toàn cục
+            .draw();               // vẽ lại bảng → gửi request server nếu serverSide
+    }, 400);  // delay 400ms – rất mượt khi gõ nhanh
+});
 </script>
+</body>
+</html>

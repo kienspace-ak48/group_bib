@@ -13,6 +13,7 @@ const ecertController = require('../areas/admin/controller/ecert.controller')();
 // 
 const imageUploadMemory = require('../config/imageUploadMemory');
 const excelUpload = require('../config/excelUploadM');
+const EventCheckinController = require('../areas/admin/controller/event_checkin.controller')();
 // page setting
 router.get('/page-setting', homeController.PageSetting);
 router.post('/page-setting/home-page/config', homeController.ConfigHomePage)
@@ -69,5 +70,8 @@ router.post('/e-cert/create-contest', ecertController.AddContest);
 router.get('/e-cert/contest-detail/:id', ecertController.ContestDetail);
 router.get('/e-cert', ecertController.Index);
 // index
+
+//[=================== EVENT_CHECKIN 2103 ======================]
+router.get('/event-checkin', EventCheckinController.Index);
 router.get('/', homeController.Index);
 module.exports = router;
