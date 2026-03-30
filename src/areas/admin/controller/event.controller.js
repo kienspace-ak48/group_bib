@@ -1,1078 +1,490 @@
-const EventService = require('../services/event.service');
-const stringValue = require('../../../config/stringvalue.config');
 const CNAME = 'event.controller.js ';
-const VLAYOUT = stringValue.adminLayout;
-const VNAME = 'admin/event/';
-const xlsx = require('xlsx');
-const crypto = require('crypto');
-const sgMail = require('@sendgrid/mail');
-const QRCode = require('qrcode');
-const myPathConfig = require('../../../config/mypath.config');
+const VLAYOUT = 'layouts/adminLayout2';
+const VNAME = 'admin/event';
+
+const path = require('path');
 const fs = require('fs');
+const myPathConfig = require('../../../config/mypath.config');
+const ATHLETE_IMPORT_TEMPLATE = path.join(myPathConfig.root, 'src/utils/athlete_import_example.xlsx');
 
-sgMail.setApiKey(process.env.SENDGRID_API_KEY_DOMAIN);
+const xlsx = require('xlsx');
+const eventCheckinHService = require('../services/eventCheckinH.service');
+const participantCheckinHService = require('../services/participantCheckinH.service');
+const auditLogService = require('../services/auditLog.service');
+const { convertRowCheckinH, generateUID } = require('../../../utils/participantCheckinExcelRow.util');
 
-const excelDateToJSDateUti = require('../../../utils/excelDataToJSDate.util');
-const Participant = require('../../../model/Participant');
-const ParticipantService = require('../../../services/participant.service');
-const GroupService = require('../services/group.service');
-// const ParticipantEntity = require('../../../model/ParticipantCheckin');
-const ParticipantCheckin = require('../../../model/ParticipantCheckin');
-const eventService = require('../services/event.service');
-const participantCheckinService = require('../services/participantCheckin.service');
-const MailConfig = require('../../../model/MailConfig');
-const { setDefaultAutoSelectFamilyAttemptTimeout } = require('net');
+const BATCH_SIZE = 1000;
+const PARTICIPANT_LIST_LIMIT = 10000;
 
-//function helper
-function validateRow(row) {
-    const errors = [];
-
-    if (!row.cccd || !/^\d+$/.test(row.cccd)) errors.push('cccd invalid');
-    if (!row.fullname) errors.push('fullname missing');
-    if (!row.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email)) errors.push('email invalid');
-    if (!row.phone || !/^\+?\d{9,12}$/.test(row.phone)) errors.push('phone invalid');
-    // if (!row['dob(mm/dd/yyyy)'] || isNaN(row['dob(mm/dd/yyyy)'])) errors.push("dob invalid");
-    if (!row.bib_name) errors.push('bib_name missing');
-    // if (!row.team) errors.push("team missing");
-    // if (!['unpaid','paid'].includes(row.payment_status)) errors.push("payment_status invalid");
-    return errors;
+function stepPath(eventId, step) {
+    const n = Math.min(4, Math.max(0, Number(step) || 0));
+    return `/admin/event/${eventId}/step/${n}`;
 }
-const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('vi-VN');
-};
-async function sendMailDomainQRCode(data, subject, name) {
-    const messages = data.map((e) => ({}));
-    //
-    const base64Data = qrBase64.replace(/^data:image\/png;base64,/, '');
-    await sgMail.send({
-        from: { email: process.env.SENDGRID_FROM_DOMAIN, name: 'BTC AccessRace' },
-        to: email,
-        // personalizations: emails,
-        subject: subject,
-        html: `
-<div style="font-family: Arial, sans-serif; background: #f0f8ff;">
 
-  <div style="margin: auto; background: #fff; border-radius: 12px; box-shadow: 0 3px 8px rgba(0,0,0,0.1); overflow: hidden;">
-
-    <!-- Banner -->
-    <div style="background: linear-gradient(90deg, #2196f3, #ff9800); color: #fff; padding: 25px; text-align: center;">
-      <h2 style="margin: 0; font-size: 24px;">Giải Chạy XYZ 2026</h2>
-      <p style="margin: 5px 0 0; font-size: 15px;">Location: Quan 1, HCMC</p>
-    </div>
-
-    <!-- QR Code -->
-    <div style="padding: 25px; text-align: center;">
-      <img 
-        src="cid:qrcode"
-        alt="QR Code"
-        width="220"
-        style="max-width: 220px; border: 3px solid #2196f3; border-radius: 12px; padding: 6px; background: #fff;"
-      />
-      <p style="margin-top: 10px; font-size: 14px; color: #444;">
-        Quét QR để check thông tin
-      </p>
-    </div>
-
-    <!-- Thông tin VĐV -->
-    <div style="padding: 20px;">
-      <table style="width: 100%; border-collapse: collapse; font-size: 15px;">
-        <tr style="background: #f9f9f9;">
-          <td style="padding: 10px; border: 1px solid #ddd;"><b>Họ và tên</b></td>
-          <td style="padding: 10px; border: 1px solid #ddd;">${data.name}</td>
-        </tr>
-        <tr>
-          <td style="padding: 10px; border: 1px solid #ddd;"><b>Mã số</b></td>
-          <td style="padding: 10px; border: 1px solid #ddd; color: #e65100; font-weight: bold;">${'21000'}</td>
-        </tr>
-        <tr style="background: #f9f9f9;">
-          <td style="padding: 10px; border: 1px solid #ddd;"><b>CCCD</b></td>
-          <td style="padding: 10px; border: 1px solid #ddd;">${'12345678910'}</td>
-        </tr>
-        <tr>
-          <td style="padding: 10px; border: 1px solid #ddd;"><b>Category</b></td>
-          <td style="padding: 10px; border: 1px solid #ddd;">${data.category}</td>
-        </tr>
-        <tr style="background: #f9f9f9;">
-          <td style="padding: 10px; border: 1px solid #ddd;"><b>📅 Ngày sự kiện</b></td>
-          <td style="padding: 10px; border: 1px solid #ddd;">${'01/01/2026'}</td>
-        </tr>
-      </table>
-    </div>
-
-    <!-- Link dự phòng -->
-    <div style="text-align: center; padding: 15px;">
-      <p style="font-size: 14px;">
-        Nếu bạn không thấy QR code:<br>
-        <a href="${'/'}" style="color: #2196f3; font-weight: bold; text-decoration: none;">
-          👉 Nhấn vào đây / Click here
-        </a>
-      </p>
-    </div>
-
-    <!-- Footer -->
-    <div style="background: #fafafa; padding: 15px; text-align: center; font-size: 13px; color: #666;">
-      © 2025 Giải Chạy XYZ · 
-      <a href="mailto:support@race.com" style="color: #2196f3;">support@race.com</a>
-    </div>
-
-  </div>
-</div>
-`,
-        attachments: [
-            {
-                content: base64Data,
-                filename: 'qrcode.png',
-                type: 'image/png',
-                disposition: 'inline',
-                content_id: 'qrcode',
-            },
-        ],
-    });
+function maxConfirmedFromEvent(ev) {
+    if (ev == null || ev.max_confirmed_step == null) return -1;
+    return Math.min(4, Math.max(-1, Number(ev.max_confirmed_step)));
 }
-function convertRow(row, groupId, event_id, captain_id) {
-    const dobExcel = row['dob(mm/dd/yyyy)'];
-    const dob = new Date(Math.round((dobExcel - 25569) * 86400 * 1000)); // Excel serial → Date
+
+/** Bước xa nhất có thể mở (chưa xác nhận bước biên = max_confirmed + 1) */
+function maxAllowedFromEvent(ev) {
+    return Math.min(4, maxConfirmedFromEvent(ev) + 1);
+}
+
+const adminEventController = () => {
+    function uidPrefixFromEvent(event) {
+        const s = (event.short_id && String(event.short_id).trim()) || (event.slug && String(event.slug).trim().slice(0, 32)) || 'ev';
+        return s.replace(/[^a-zA-Z0-9_-]/g, '_') || 'ev';
+    }
+
     return {
-        group_id: groupId,
-        event_id: event_id,
-        user_id: captain_id,
-        cccd: row.cccd,
-        fullname: row.fullname,
-        distance: row.distance,
-        tshirt_size: row.tshirt_size,
-        bib_name: row.bib_name,
-        email: row.email,
-        phone: row.phone,
-        dob: excelDateToJSDateUti(dobExcel), // YYYY-MM-DD
-        gender: row.gender === 'M' ? 1 : 0,
-        nationality: row.nationality,
-        nation: row.nation,
-        city: row.city,
-        patron_name: row.patron_name || null,
-        patron_phone: row.patron_phone || null,
-        team: row.team,
-        blood: row.blood,
-        medical: row.medical || null,
-        medicine: row.medicine || null,
-        payment_status: row.payment_status,
-    };
-}
-function convertRowCheckin(row, event_id) {
-    const dobExcel = row['dob(mm/dd/yyyy)'];
-    const dob = new Date(Math.round((dobExcel - 25569) * 86400 * 1000)); // Excel serial → Date
-    return {
-        // group_id: groupId,
-        event_id: event_id,
-        // leader_id: captain_id,
-        cccd: row.cccd,
-        bib: row.bib,
-        fullname: row.fullname,
-        distance: row.distance,
-        tshirt_size: row.tshirt_size,
-        bib_name: row.bib_name,
-        email: row.email,
-        phone: row.phone,
-        dob: excelDateToJSDateUti(dobExcel), // YYYY-MM-DD
-        line: row.line,
-        gender: row.gender === 'M' ? 1 : 0,
-        nationality: row.nationality,
-        nation: row.nation,
-        city: row.city,
-        patron_name: row.patron_name || null,
-        patron_phone: row.patron_phone || null,
-        team: row.team,
-        blood: row.blood,
-        medical: row.medical || null,
-        medicine: row.medicine || null,
-        payment_status: row.payment_status,
-    };
-}
-function generateUID(prefix) {
-    const randomPart = crypto.randomBytes(5).toString('hex');
-    return `${prefix}_${randomPart}`;
-}
-//
-const eventController = () => {
-    return {
+        /** Danh sách sự kiện (event_checkin_h) */
         Index: async (req, res) => {
             try {
-                const events = await EventService.GetAll();
-                res.render(VNAME + 'index', { layout: VLAYOUT, events });
+                const events = await eventCheckinHService.list();
+                const flash = req.session.flash;
+                delete req.session.flash;
+                return res.render(VNAME + '/index', {
+                    layout: VLAYOUT,
+                    events,
+                    flash: flash || null,
+                });
             } catch (error) {
                 console.log(CNAME, error.message);
-                res.render(VNAME + 'index', { layout: VLAYOUT, events: [] });
+                return res.render(VNAME + '/index', { layout: VLAYOUT, events: [], flash: null });
             }
         },
-        EventTicket: async (req, res) => {
+
+        /** Tạo nhanh sự kiện */
+        create: async (req, res) => {
             try {
-                const eventTicket = await EventService.GetByEventTicket();
-                return res.render(VNAME + 'index', { layout: VLAYOUT, events: eventTicket });
-            } catch (error) {
-                console.log(CNAME, error.message);
-                res.render(VNAME + 'index', { layout: VLAYOUT, events: [] });
-            }
-        },
-        EventCheckin: async (req, res) => {
-            try {
-                const eventCheckins = await EventService.GetByEventCheckin();
-                res.render(VNAME + 'checkinList', { layout: VLAYOUT, events: eventCheckins });
-            } catch (error) {
-                console.log(CNAME, error.message);
-                res.render(VNAME + 'checkinList', { layout: VLAYOUT, events: [] });
-            }
-        },
-        FormAdd: async (req, res) => {
-            try {
-                res.render(VNAME + 'form', { layout: VLAYOUT });
-            } catch (error) {
-                console.log(CNAME, error.message);
-                res.render(VNAME + 'form', { layout: VLAYOUT });
-            }
-        },
-        FormEdit: async (req, res) => {
-            try {
-                const slug = req.params.slug;
-                const event = await EventService.GetBySlug(slug);
-                res.render(VNAME + 'formEdit', { layout: VLAYOUT, event: event || {}, slug });
-            } catch (error) {
-                console.log(CNAME, error.message);
-                res.render(VNAME + 'formEdit', { layout: VLAYOUT, event: {} });
-            }
-        },
-        AddEvent: async (req, res) => {
-            try {
-                const data = req.body;
-                console.log(data);
-                const eventDTO = {
-                    name: data.name,
-                    race_function: data.race_function,
-                    short_id: data.short_id,
-                    desc: data.desc,
-                    img_banner: data.img_banner,
-                    img_thumb: data.img_thumb,
-                    race_type: data.race_type,
-                    location: data.location,
-                    isShow: data.is_show,
-                    start_date: data.start_date,
-                    end_date: data.end_date,
-                    status: data.status,
-                    organizer_name: data.organizer_name,
-                    organizer_web: data.organizer_web,
-                    organizer_fanpage: data.organizer_fanpage,
-                    organizer_zalo: data.organizer_zalo,
-                };
-                const result = await EventService.Create(eventDTO);
-                if (!result) return res.json({ success: true, mess: 'add failed' });
-                return res.json({ success: true });
-            } catch (error) {
-                console.log(CNAME, error.message);
-                return res.json({ success: false, mess: error.message });
-            }
-        },
-        UpdateEvent: async (req, res) => {
-            try {
-                const slug = req.params.slug;
-                console.log(slug);
-                const data = req.body;
-                const eventDTO = {
-                    name: data.name,
-                    // slug: data.slug,
-                    short_id: data.short_id,
-                    desc: data.desc,
-                    img_banner: data.img_banner,
-                    img_thumb: data.img_thumb,
-                    race_type: data.race_type,
-                    location: data.location,
-                    isShow: data.is_show,
-                    start_date: data.start_date,
-                    end_date: data.end_date,
-                    status: data.status,
-                    organizer_name: data.organizer_name,
-                    organizer_web: data.organizer_web,
-                    organizer_fanpage: data.organizer_fanpage,
-                    organizer_zalo: data.organizer_zalo,
-                };
-                // console.log(eventDTO);
-                const result = await EventService.UpdateBySlug(slug, eventDTO);
-                if (!result) return res.status(500).json({ success: false, mess: 'update failed' });
-                return res.json({ success: true, redirect: '/admin/event/type-checkin' });
-            } catch (error) {
-                console.log(CNAME, error.message);
-                res.status(500).json({ success: false, mess: error.message });
-            }
-        },
-        DeleteEvent: async (req, res) => {
-            try {
-                const id = req.params.id;
-                const result = await EventService.Delete(id);
-                if (!result) {
-                    return res.json({ success: false });
+                const name = (req.body.name || '').trim();
+                if (!name) {
+                    req.session.flash = { type: 'danger', message: 'Vui lòng nhập tên sự kiện.' };
+                    return res.redirect('/admin/event');
                 }
-                res.json({ success: true });
+                const created = await eventCheckinHService.create({
+                    name,
+                    workflow_step: 0,
+                    max_confirmed_step: -1,
+                    is_show: false,
+                });
+                if (!created) {
+                    req.session.flash = { type: 'danger', message: 'Không tạo được sự kiện.' };
+                    return res.redirect('/admin/event');
+                }
+                await auditLogService.write({
+                    actorId: req.user?._id,
+                    action: 'create',
+                    resource: 'event_checkin_h',
+                    documentId: created._id,
+                    summary: `Tạo sự kiện: ${name}`,
+                    req,
+                });
+                req.session.flash = { type: 'success', message: 'Đã tạo sự kiện.' };
+                return res.redirect(stepPath(created._id, 0));
             } catch (error) {
                 console.log(CNAME, error.message);
-                res.status(500).json({ success: false, mess: error.message });
+                req.session.flash = { type: 'danger', message: 'Lỗi server.' };
+                return res.redirect('/admin/event');
             }
         },
-        RunnerData: async (req, res) => {
+
+        /** Xóa sự kiện + toàn bộ VĐV */
+        destroy: async (req, res) => {
             try {
-                const _eventSlug = req.params.slug;
-                const event = await EventService.GetBySlug(_eventSlug);
-                const groups = await GroupService.GetsBySlug(_eventSlug);
-                console.log(groups);
-                res.render(VNAME + 'runnerData', { layout: VLAYOUT, groups: groups, event, event_slug: _eventSlug });
+                const { id } = req.params;
+                const event = await eventCheckinHService.getById(id);
+                if (!event) {
+                    req.session.flash = { type: 'warning', message: 'Không tìm thấy sự kiện.' };
+                    return res.redirect('/admin/event');
+                }
+                await participantCheckinHService.deleteByEventId(id);
+                const ok = await eventCheckinHService.deleteById(id);
+                if (ok) {
+                    await auditLogService.write({
+                        actorId: req.user?._id,
+                        action: 'delete',
+                        resource: 'event_checkin_h',
+                        documentId: id,
+                        summary: `Xóa sự kiện: ${event.name || id}`,
+                        req,
+                    });
+                }
+                req.session.flash = {
+                    type: ok ? 'success' : 'danger',
+                    message: ok ? 'Đã xóa sự kiện và danh sách VĐV.' : 'Không xóa được sự kiện.',
+                };
+                return res.redirect('/admin/event');
             } catch (error) {
                 console.log(CNAME, error.message);
-                res.render(VNAME + 'runnerData', { layout: VLAYOUT, groups: [], event: {}, event_slug: _eventSlug });
+                req.session.flash = { type: 'danger', message: 'Lỗi khi xóa sự kiện.' };
+                return res.redirect('/admin/event');
             }
         },
-        RunnerCheckinData: async (req, res) => {
+
+        /** Redirect tới /step/:n theo workflow_step đã lưu */
+        workspace: async (req, res) => {
             try {
-                const _eventSlug = req.params.slug;
-                // const runners = ParticipantService.get
-                const event = await EventService.GetBySlug(_eventSlug);
-                const groups = await GroupService.GetsBySlug(_eventSlug);
-                console.log(groups);
-                res.render(VNAME + 'runnerCheckinData', {
+                const { id } = req.params;
+                const event = await eventCheckinHService.getById(id);
+                if (!event) {
+                    req.session.flash = { type: 'warning', message: 'Không tìm thấy sự kiện.' };
+                    return res.redirect('/admin/event');
+                }
+                const ws =
+                    event.workflow_step != null ? Math.min(4, Math.max(0, Number(event.workflow_step))) : 0;
+                return res.redirect(stepPath(id, ws));
+            } catch (error) {
+                console.log(CNAME, error.message);
+                return res.redirect('/admin/event');
+            }
+        },
+
+        /** Một bước workspace: chỉ mở được tới max_confirmed+1; lưu workflow_step khi hợp lệ */
+        workspaceStep: async (req, res) => {
+            try {
+                const { id, step: stepParam } = req.params;
+                if (!/^[0-4]$/.test(String(stepParam))) {
+                    req.session.flash = { type: 'warning', message: 'Bước không hợp lệ.' };
+                    return res.redirect(stepPath(id, 0));
+                }
+                let n = parseInt(stepParam, 10);
+                n = Math.min(4, Math.max(0, n));
+
+                const event = await eventCheckinHService.getById(id);
+                if (!event) {
+                    req.session.flash = { type: 'warning', message: 'Không tìm thấy sự kiện.' };
+                    return res.redirect('/admin/event');
+                }
+
+                const maxAllowed = maxAllowedFromEvent(event);
+                if (n > maxAllowed) {
+                    req.session.flash = {
+                        type: 'warning',
+                        message: 'Hoàn thành và xác nhận bước hiện tại trước khi sang bước sau.',
+                    };
+                    return res.redirect(stepPath(id, maxAllowed));
+                }
+
+                await eventCheckinHService.setWorkflowStep(id, n);
+
+                const refreshed = await eventCheckinHService.getById(id);
+                const mc = maxConfirmedFromEvent(refreshed);
+                const ma = maxAllowedFromEvent(refreshed);
+                const canGoNext = n < ma;
+                const showConfirmStep = mc < 4 && n === mc + 1;
+
+                const participantCount = await participantCheckinHService.countByEventId(event._id);
+                let participants = [];
+                if (n === 1) {
+                    participants = await participantCheckinHService.findByEventId(event._id, {
+                        limit: PARTICIPANT_LIST_LIMIT,
+                    });
+                }
+
+                const flash = req.session.flash;
+                delete req.session.flash;
+
+                return res.render(VNAME + '/workspace', {
                     layout: VLAYOUT,
-                    groups: groups,
-                    event,
-                    event_slug: _eventSlug,
+                    event: refreshed,
+                    currentWorkflowStep: n,
+                    maxConfirmedStep: mc,
+                    maxAllowedStep: ma,
+                    canGoNext,
+                    showConfirmStep,
+                    participants,
+                    participantCount,
+                    flash: flash || null,
                 });
             } catch (error) {
                 console.log(CNAME, error.message);
-                res.render(VNAME + 'runnerCheckinData', {
-                    layout: VLAYOUT,
-                    groups: [],
-                    event: {},
-                    event_slug: _eventSlug,
+                return res.redirect('/admin/event');
+            }
+        },
+
+        /** Xác nhận hoàn thành bước hiện tại (theo thứ tự) */
+        confirmStep: async (req, res) => {
+            try {
+                const { id } = req.params;
+                const step = parseInt(req.body.step, 10);
+                const event = await eventCheckinHService.getById(id);
+                if (!event) {
+                    req.session.flash = { type: 'warning', message: 'Không tìm thấy sự kiện.' };
+                    return res.redirect('/admin/event');
+                }
+                const updated = await eventCheckinHService.confirmStep(id, step);
+                if (!updated) {
+                    req.session.flash = {
+                        type: 'danger',
+                        message: 'Không xác nhận được (chỉ xác nhận lần lượt từng bước).',
+                    };
+                    return res.redirect(stepPath(id, Math.min(maxAllowedFromEvent(event), 4)));
+                }
+                await auditLogService.write({
+                    actorId: req.user?._id,
+                    action: 'update',
+                    resource: 'event_checkin_h',
+                    documentId: id,
+                    summary: `Xác nhận bước ${step} workspace`,
+                    req,
                 });
-            }
-        },
-        //ajax
-        RunnerDataWithGroup: async (req, res) => {
-            try {
-                const _eventId = 'event_test';
-                const _groupId = 'group_admin';
-                const participant = await ParticipantService.GetByEventIdAndGroup(_eventId, _groupId);
-                console.log(participant);
-                res.json({ success: true, data: participant });
+                req.session.flash = { type: 'success', message: 'Đã xác nhận hoàn thành bước.' };
+                const ws = updated.workflow_step != null ? Math.min(4, Math.max(0, Number(updated.workflow_step))) : 0;
+                return res.redirect(stepPath(id, ws));
             } catch (error) {
                 console.log(CNAME, error.message);
-                res.status(500).json({ success: false, mess: error.message });
+                req.session.flash = { type: 'danger', message: 'Lỗi xác nhận bước.' };
+                return res.redirect(stepPath(req.params.id, 0));
             }
         },
-        //ajax
-        RunnerDataCheckin: async (req, res) => {
-            try {
-                // const _eventId ='event_test';
-                // const _groupId ='group_admin';
-                const _eventSlug = req.params.slug;
-                const event = await EventService.GetBySlug(_eventSlug);
-                const eventId = event._id;
-                console.log('event slug: ', _eventSlug);
 
-                const participant = await ParticipantCheckin.find({ event_id: eventId });
-                console.log(participant);
-                res.json({ success: true, data: participant });
-            } catch (error) {
-                console.log(CNAME, error.message);
-                res.status(500).json({ success: false, mess: error.message });
-            }
-        },
-        CheckinAddPerson: async (req, res) => {
-            const slug = req.params.slug;
+        /** Cập nhật thông tin sự kiện (bước Khởi tạo / chung) */
+        updateEvent: async (req, res) => {
             try {
-                const event = await EventService.GetBySlug(slug);
-                const eventId = event._id;
-                const data = req.body;
-                const uid = generateUID(event.short_id);
-                const cDTO = {
-                    uid: uid,
-                    event_id: eventId,
-                    checkin_status: data.daCheckin,
-                    // left
-                    distance: data.category,
-                    // chipId,
-                    fullname: data.name,
-                    phone: data.phone,
-                    email: data.email,
-                    cccd: data.cccd,
-                    team: data.team,
-                    bib_name: data.nickname,
+                const { id } = req.params;
+                const body = req.body;
+                const payload = {
+                    name: body.name,
+                    desc: body.desc,
+                    location: body.location,
+                    short_id: body.short_id,
+                    status: body.status,
+                    race_type: body.race_type,
+                    organizer_name: body.organizer_name,
+                    organizer_web: body.organizer_web,
+                    organizer_fanpage: body.organizer_fanpage,
+                    organizer_zalo: body.organizer_zalo,
+                };
+                if (body.start_date) payload.start_date = new Date(body.start_date);
+                if (body.end_date) payload.end_date = new Date(body.end_date);
+                payload.is_show = !!(body.is_show === 'on' || body.is_show === 'true' || body.is_show === true);
 
-                    // right
-                    bib: data.bibCode,
-                    // epc,
-                    gender: data.gender === 'true', // "true" | "false"
-                    blood: data.blood,
-                    dob: data.dob,
-                    medical: data.medical,
-                    nation: data.nation,
-                    tshirt_size: data.size,
-                    patron_name: data.patronName,
-                    patron_phone: data.patronPhone,
+                const updated = await eventCheckinHService.updateById(id, payload);
+                req.session.flash = {
+                    type: updated ? 'success' : 'danger',
+                    message: updated ? 'Đã lưu thông tin sự kiện.' : 'Không lưu được.',
                 };
-                console.log(cDTO);
-                const result = await participantCheckinService.Add(cDTO, slug);
-                if (!result) return res.status(500).json({ success: true, mess: 'Save process error' });
-                res.json({ success: true });
+                return res.redirect(stepPath(id, 0));
             } catch (error) {
                 console.log(CNAME, error.message);
-                res.status(500).json({ success: false, mess: error.message });
+                req.session.flash = { type: 'danger', message: 'Lỗi cập nhật.' };
+                return res.redirect(stepPath(req.params.id, 0));
             }
         },
-        CheckinDeletePerson: async (req, res) => {
+
+        /** Import Excel: append | reset */
+        importParticipantsExcel: async (req, res) => {
+            const { id } = req.params;
             try {
-                const _id = req.params.id;
-                console.log('id truyen vao', _id);
-                const result = await participantCheckinService.Delete(_id);
-                if (!result) return res.status(500).json({ success: false, mess: 'delete process failed' });
-                res.json({ success: true });
-            } catch (error) {
-                console.log(CNAME, error.message);
-                res.status(500).json({ success: true, mess: error.message });
-            }
-        },
-        CheckinEditPerson: async (req, res) => {
-            try {
-                const _id = req.params.id;
-                console.log('Id ', _id);
-                const person = await participantCheckinService.GetById(_id);
-                res.json({ success: true, data: person });
-            } catch (error) {
-                console.log(CNAME, error.message);
-                res.stauts(500).json({ success: false, mess: error.message });
-            }
-        },
-        CheckinUpdatePerson: async (req, res) => {
-            const _id = req.params.id;
-            console.log(_id);
-            const _slug = req.params.slug;
-            try {
-                const data = req.body;
-                const pcDTO = {
-                    checkin_status: data.checkin_status,
-                    fullname: data.fullname,
-                    phone: data.phone,
-                    email: data.email,
-                    cccd: data.cccd,
-                    distance: data.distance,
-                    bib: data.bib,
-                    bib_name: data.bib_name,
-                    gender: data.gender,
-                    blood: data.blood,
-                    dob: data.dob,
-                    medical: data.medical,
-                    nation: data.nation,
-                    tshirt_size: data.tshirt_size,
-                    patron_name: data.patron_name,
-                    patron_phone: data.patron_phone,
-                    team: data.team,
-                };
-                const result = await participantCheckinService.Update(pcDTO, _id);
-                if (!result) return res.status(500).json({ success: false, mess: 'update process failed' });
-                res.json({ success: true });
-            } catch (error) {
-                console.log(CNAME, error.message);
-                res.status(500).json({ success: false, mess: error.message });
-            }
-        },
-        CheckinMailConfigSave: async (req, res) => {
-            try {
-                const data = req.body;
-                const _eventSlug = req.params.slug;
-                const event = await EventService.GetBySlug(_eventSlug);
-                const _eventId = event._id;
-                console.log(data);
-                console.log(_eventId);
-                // const mailDTO = new MailConfig({
-                //     sender_name: data.sender_name,
-                //     title: data.title,
-                //     banner_img: data.banner_img,
-                //     banner_text: data.banner_text,
-                //     banner_option: data.banner_option,
-                //     content_1: data.content_1,
-                //     content_2: data.content_2,
-                //     event_id: _eventId,
-                // });
-                // await mailDTO.save();
-                await MailConfig.findOneAndUpdate(
-                    { event_id: _eventId }, //dieu kien kiem tra ton tai
-                    {
-                        $set: {
-                            sender_name: data.sender_name,
-                            title: data.title,
-                            banner_img: data.banner_img,
-                            banner_text: data.banner_text,
-                            banner_option: data.banner_option,
-                            content_1: data.content_1,
-                            content_2: data.content_2,
-                            //new
-                            footer_email: data.footer_email,
-                            footer_hotline: data.footer_hotline,
-                            footer_company_vi: data.footer_company_vi,
-                            footer_company_en: data.footer_company_en,
-                            footer_bg_color: data.footer_bg_color,
-                            footer_text_color: data.footer_text_color,
-                            footer_link_color: data.footer_link_color,
-                            footer_border_color: data.footer_border_color,
-                            footer_show: data.footer_show,
-                        },
-                        $setOnInsert: {
-                            event_id: _eventId, // chi set khi insert moi
-                        },
-                    },
-                    {
-                        upsert: true, //neu ko co thi insert
-                        new: true, //tra ve doc sau khi update/insert
-                    },
-                );
-                res.json({ success: true });
-            } catch (error) {
-                console.log(CNAME, error.message);
-                res.status(500).json({ success: false, mess: error.message });
-            }
-        },
-        CheckinMailUploadImage: async (req, res) => {
-            try {
-                const file = req.file;
-                const path_img = req.body.path_img;
-                console.log('path_img ', path_img);
-                // console.log(file);
-                console.log('slug ', req.params.slug);
-                const prefixDirPath = '/email_img/';
-                const dirPath = myPathConfig.root + 'public' + prefixDirPath;
-                const event = await EventService.GetBySlug(req.params.slug);
-                const mc = await MailConfig.findOne({ event_id: event._id });
-                //remove anh truoc khi update
-                if (mc.banner_img === path_img && path_img !== '') {
-                    const pathDirDelete = myPathConfig.root + 'public' + mc.banner_img;
-                    if (fs.existsSync(pathDirDelete)) {
-                        fs.unlinkSync(pathDirDelete);
+                const event = await eventCheckinHService.getById(id);
+                if (!event) {
+                    req.session.flash = { type: 'warning', message: 'Không tìm thấy sự kiện.' };
+                    return res.redirect('/admin/event');
+                }
+                if (!req.file || !req.file.buffer) {
+                    req.session.flash = { type: 'danger', message: 'Vui lòng chọn file Excel (.xlsx / .xls).' };
+                    return res.redirect(stepPath(id, 1));
+                }
+
+                const mode = (req.body.import_mode || 'append').toLowerCase();
+                if (mode === 'reset') {
+                    await participantCheckinHService.deleteByEventId(event._id);
+                }
+
+                const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const excelData = xlsx.utils.sheet_to_json(worksheet, { defval: null, raw: false });
+
+                if (!excelData.length) {
+                    req.session.flash = { type: 'danger', message: 'File Excel không có dòng dữ liệu.' };
+                    return res.redirect(stepPath(id, 1));
+                }
+
+                const prefix = uidPrefixFromEvent(event);
+                const runners = [];
+                let skipped = 0;
+                for (let i = 0; i < excelData.length; i++) {
+                    const row = excelData[i];
+                    const base = convertRowCheckinH(row, event._id);
+                    if (!base.fullname || !base.cccd) {
+                        skipped++;
+                        continue;
                     }
-                }
-                if (file) {
-                    const fileName = file.originalname;
-                    let unique = Math.round(Math.random() * 1e9) + '-' + fileName;
-                    const pathDirSave = dirPath + unique;
-                    const pathDBSave = prefixDirPath + unique;
-                    fs.writeFileSync(pathDirSave, file.buffer);
-                    await MailConfig.findOneAndUpdate(
-                        { event_id: event._id },
-                        { $set: { banner_img: pathDBSave } },
-                        { upsert: false },
-                    );
-                }
-                res.json({ success: true });
-            } catch (error) {
-                console.log(CNAME, error.message);
-                res.status(500).json({ success: false, mess: error.message });
-            }
-        },
-        SendMailCheckin: async (req, res) => {
-            const _eventSlug = req.params.slug;
-            const event = await EventService.GetBySlug(_eventSlug);
-            const _eventId = event._id;
-            const mailConfig = await MailConfig.findOne({ event_id: _eventId });
-            try {
-                const event = await EventService.GetBySlug(_eventSlug);
-                res.render(VNAME + 'sendmail', { layout: VLAYOUT, event, event_slug: _eventSlug, mc: mailConfig });
-            } catch (error) {
-                console.log(CNAME, error.message);
-                res.render(VNAME + 'sendmail', { layout: VLAYOUT, event: {}, event_slug: _eventSlug, mc: {} });
-            }
-        },
-        //ajax
-        SendMail: async (req, res) => {
-            const _eventSlug = req.params.slug;
-            console.log('even slug ', _eventSlug);
-            try {
-                const templatePath = myPathConfig.root + '/src/views/mail_template/template_one.html';
-
-                const event = await EventService.GetBySlug(_eventSlug);
-                if (!event) {
-                    return res.status(404).json({ success: false, message: 'Event not found' });
-                }
-                const _eventName = event.name;
-                const _eventLocation = event.location;
-                const _eventStart = formatDate(event.start_date);
-                const _eventEnd = formatDate(event.end_date);
-                const mailConfig = await MailConfig.findOne({ event_id: event._id });
-                let _bannerText = mailConfig.banner_text;
-                let bannerBase64 = '';
-                if (mailConfig.banner_img) {
-                    bannerBase64 = fs.readFileSync(
-                        myPathConfig.root + 'public' + mailConfig.banner_img, //C:\Workspaces\my_projects\group_bib\public\email_img\banner.jpg
-                        { encoding: 'base64' },
-                    );
-                }
-
-                let showBanner = mailConfig.banner_option; //true -> image || false ->text
-                let bannerOrTextSection = '';
-                if (showBanner) {
-                    bannerOrTextSection = `<tr>
-                        <td align="center">
-                            <img
-                                src="cid:banner"
-                                alt="AccessRace Banner"
-                                width="600"
-                                style="display: block; 
-                                    max-width: 600px; 
-                                    width: 100%; 
-                                    height: auto;
-                                    -ms-interpolation-mode: bicubic;"  
-                            />
-                        </td>
-                    </tr>`;
-                } else {
-                    bannerOrTextSection = `<tr>
-                        <td align="left" style="padding: 0 20px; font-family: Arial, sans-serif; font-size: 14px; color: #333333">
-                            <h1>${_bannerText}</h1>
-                        </td>
-                     </tr>`;
-                }
-
-                // console.log('check mail ', mailConfig);
-                //
-                const runners = await ParticipantCheckin.find({ event_id: event._id });
-
-                // Chuẩn hóa data
-                const emails = runners.filter((r) => r.email);
-
-                // Build messages (PHẢI dùng Promise.all)
-                const messages = await Promise.all(
-                    emails.map(async (r) => {
-                        const qrBase64 = await QRCode.toDataURL(r.uid, {
-                            margin: 1,
-                            width: 300,
-                            color: {
-                                dark: '#000000',
-                                light: '#ffffff',
-                            },
-                        });
-                        const base64Data = qrBase64.replace(/^data:image\/png;base64,/, '');
-                        //
-                        let htmlTemplate = fs.readFileSync(templatePath, 'utf8');
-                        // Replace dynamic data
-                        htmlTemplate = htmlTemplate
-                            .replace('{{fullname}}', r.fullname)
-                            .replace('{{distance}}', r.distance)
-                            .replace('{{category}}', r.distance)
-                            .replace('{{cccd}}', r.cccd)
-                            .replace('{{code}}', r.bib)
-                            .replace('{{line}}', r.line)
-                            .replace('{{tshirt_size}}', r.tshirt_size)
-                            .replace('{{event_name}}', _eventName)
-                            .replace('{{location}}', _eventLocation)
-                            .replace('{{start_date}}', _eventStart)
-                            .replace('{{end_date}}', _eventEnd)
-                            .replace('{{content_1}}', mailConfig.content_1)
-                            .replace('{{content_2}}', mailConfig.content_2)
-                            .replace('{{sender_name}}', mailConfig.sender_name)
-                            // .replace('{{mail_footer}}', mailConfig.mail_footer)
-                            .replace('<!-- BANNER_OR_TEXT_PLACEHOLDER -->', bannerOrTextSection)
-                            //
-                            //Thêm các replace cho footer
-                            .replaceAll('{{footer_bg_color}}', mailConfig.footer_bg_color || '#ffffff')
-                            .replaceAll('{{footer_border_color}}', mailConfig.footer_border_color || '#ffffff')
-                            .replaceAll('{{footer_text_color}}', mailConfig.footer_text_color || '#ffffff')
-                            .replaceAll(/\{\{\s*footer_link_color\s*\}\}/g, mailConfig.footer_link_color || '#ffffff')
-                            .replaceAll(/\{\{\s*footer_email\s*\}\}/g, mailConfig.footer_email || 'test@gmail.com')
-                            .replaceAll(/\{\{\s*footer_hotline\s*\}\}/g, mailConfig.footer_hotline || '1900@@@@')
-                            .replaceAll('{{footer_company_vi}}', mailConfig.footer_company_vi || '')
-                            .replaceAll('{{footer_company_en}}', mailConfig.footer_company_en || '');
-                        //
-                        //
-                        return {
-                            to: r.email.trim(),
-                            from: {
-                                email: 'no-reply@accessrace.asia',
-                                name: mailConfig.sender_name,
-                            },
-                            subject: mailConfig.title,
-                            html: htmlTemplate,
-                            attachments: showBanner
-                                ? [
-                                      {
-                                          content: bannerBase64,
-                                          filename: 'banner.png',
-                                          type: 'image/png',
-                                          disposition: 'inline',
-                                          content_id: 'banner',
-                                      },
-                                      {
-                                          content: base64Data,
-                                          filename: 'qrcode.png',
-                                          type: 'image/png',
-                                          disposition: 'inline',
-                                          content_id: 'qrcode',
-                                      },
-                                  ]
-                                : [
-                                      {
-                                          content: base64Data,
-                                          filename: 'qrcode.png',
-                                          type: 'image/png',
-                                          disposition: 'inline',
-                                          content_id: 'qrcode',
-                                      },
-                                  ],
-                        };
-                    }),
-                );
-
-                // Gửi mail hàng loạt
-                await sgMail.send(messages);
-
-                res.json({
-                    success: true,
-                    sent: messages.length,
-                });
-            } catch (error) {
-                if (error.response) {
-                    console.error('SendGrid error:', JSON.stringify(error.response.body, null, 2));
-                } else {
-                    console.error(error);
-                }
-
-                res.status(500).json({
-                    success: false,
-                    error: 'SendGrid error',
-                });
-            }
-        },
-        //ajax
-        SendMailToOne: async (req, res) => {
-            const _eventSlug = req.params.slug;
-            const runnerId = req.body.runner_id; // ID của runner cần gửi mail
-
-            console.log('Event slug: ', _eventSlug);
-            console.log('Runner ID: ', runnerId);
-
-            try {
-                const templatePath = myPathConfig.root + '/src/views/mail_template/template_one.html';
-
-                // Lấy thông tin event
-                const event = await EventService.GetBySlug(_eventSlug);
-                if (!event) {
-                    return res.status(404).json({ success: false, message: 'Event not found' });
-                }
-
-                // Format thông tin event
-                const _eventName = event.name;
-                const _eventLocation = event.location;
-                const _eventStart = formatDate(event.start_date);
-                const _eventEnd = formatDate(event.end_date);
-
-                // Lấy mail config
-                const mailConfig = await MailConfig.findOne({ event_id: event._id });
-                if (!mailConfig) {
-                    return res.status(404).json({ success: false, message: 'Mail configuration not found' });
-                }
-
-                // Xử lý banner
-                let _bannerText = mailConfig.banner_text;
-                let bannerBase64 = '';
-                if (mailConfig.banner_img) {
-                    bannerBase64 = fs.readFileSync(myPathConfig.root + 'public' + mailConfig.banner_img, {
-                        encoding: 'base64',
+                    runners.push({
+                        ...base,
+                        uid: generateUID(prefix),
                     });
                 }
 
-                let showBanner = mailConfig.banner_option; //true -> image || false ->text
-                let bannerOrTextSection = '';
-                if (showBanner) {
-                    bannerOrTextSection = `<tr>
-                <td align="center">
-                    <img
-                        src="cid:banner"
-                        alt="AccessRace Banner"
-                        width="600"
-                        style="display: block; 
-                            max-width: 600px; 
-                            width: 100%; 
-                            height: auto;
-                            -ms-interpolation-mode: bicubic;"  
-                    />
-                </td>
-            </tr>`;
-                } else {
-                    bannerOrTextSection = `<tr>
-                <td align="left" style="padding: 0 20px; font-family: Arial, sans-serif; font-size: 14px; color: #333333">
-                    <h1>${_bannerText}</h1>
-                </td>
-            </tr>`;
+                if (!runners.length) {
+                    req.session.flash = {
+                        type: 'danger',
+                        message: 'Không có dòng hợp lệ (cần ít nhất họ tên + CCCD).',
+                    };
+                    return res.redirect(stepPath(id, 1));
                 }
 
-                // Tìm runner cụ thể
-                const runner = await ParticipantCheckin.findOne({
-                    _id: runnerId,
+                let totalInserted = 0;
+                for (let i = 0; i < runners.length; i += BATCH_SIZE) {
+                    const batch = runners.slice(i, i + BATCH_SIZE);
+                    const { inserted } = await participantCheckinHService.insertMany(batch);
+                    totalInserted += inserted;
+                }
+
+                const parts = [
+                    mode === 'reset' ? 'Đã xóa danh cũ và import' : 'Đã import thêm',
+                    `${totalInserted}/${runners.length} bản ghi.`,
+                ];
+                if (skipped) parts.push(`Bỏ qua ${skipped} dòng thiếu họ tên/CCCD.`);
+                await auditLogService.write({
+                    actorId: req.user?._id,
+                    action: mode === 'reset' ? 'update' : 'create',
+                    resource: 'participant_checkin_h',
+                    documentId: id,
+                    summary: `Import VĐV sự kiện ${id}: ${parts.join(' ')}`,
+                    req,
+                });
+                req.session.flash = { type: 'success', message: parts.join(' ') };
+                return res.redirect(stepPath(id, 1));
+            } catch (error) {
+                console.log(CNAME, error.message);
+                req.session.flash = { type: 'danger', message: 'Lỗi import Excel: ' + error.message };
+                return res.redirect(stepPath(id, 1));
+            }
+        },
+
+        /** Thêm VĐV thủ công */
+        addParticipantManual: async (req, res) => {
+            const { id } = req.params;
+            try {
+                const event = await eventCheckinHService.getById(id);
+                if (!event) {
+                    req.session.flash = { type: 'warning', message: 'Không tìm thấy sự kiện.' };
+                    return res.redirect('/admin/event');
+                }
+
+                const body = req.body;
+                const fullname = (body.fullname || '').trim();
+                const cccd = (body.cccd || '').trim();
+                if (!fullname || !cccd) {
+                    req.session.flash = { type: 'danger', message: 'Họ tên và CCCD là bắt buộc.' };
+                    return res.redirect(stepPath(id, 1));
+                }
+
+                const dup = await participantCheckinHService.findOneByEventCccd(event._id, cccd);
+                if (dup) {
+                    req.session.flash = { type: 'warning', message: 'CCCD này đã tồn tại trong sự kiện.' };
+                    return res.redirect(stepPath(id, 1));
+                }
+
+                const g = body.gender;
+                let gender;
+                if (g === 'M' || g === '1') gender = true;
+                else if (g === 'F' || g === '0') gender = false;
+
+                let dob;
+                if (body.dob) {
+                    const d = new Date(body.dob);
+                    if (!Number.isNaN(d.getTime())) dob = d;
+                }
+
+                const nat = (body.nationality || '').trim();
+                const str = (k) => ((body[k] || '') + '').trim() || undefined;
+                const payload = {
+                    uid: generateUID(uidPrefixFromEvent(event)),
                     event_id: event._id,
-                });
-
-                if (!runner) {
-                    return res.status(404).json({
-                        success: false,
-                        message: 'Runner not found in this event',
-                    });
-                }
-
-                if (!runner.email) {
-                    return res.status(400).json({
-                        success: false,
-                        message: 'Runner does not have an email address',
-                    });
-                }
-
-                // Tạo QR code
-                const qrBase64 = await QRCode.toDataURL(runner.uid, {
-                    margin: 1,
-                    width: 300,
-                    color: {
-                        dark: '#000000',
-                        light: '#ffffff',
-                    },
-                });
-                const base64Data = qrBase64.replace(/^data:image\/png;base64,/, '');
-
-                // Đọc template
-                let htmlTemplate = fs.readFileSync(templatePath, 'utf8');
-
-                // Replace dynamic data
-                htmlTemplate = htmlTemplate
-                    .replace('{{fullname}}', runner.fullname || '')
-                    .replace('{{distance}}', runner.distance || '')
-                    .replace('{{category}}', runner.distance || '')
-                    .replace('{{cccd}}', runner.cccd || '')
-                    .replace('{{code}}', runner.bib || '')
-                    .replace('{{tshirt_size}}', runner.tshirt_size || '')
-                    .replace('{{line}}', runner.line || '')
-                    .replace('{{event_name}}', _eventName)
-                    .replace('{{location}}', _eventLocation)
-                    .replace('{{start_date}}', _eventStart)
-                    .replace('{{end_date}}', _eventEnd)
-                    .replace('{{content_1}}', mailConfig.content_1 || '')
-                    .replace('{{content_2}}', mailConfig.content_2 || '')
-                    .replace('{{sender_name}}', mailConfig.sender_name || '')
-                    .replace('<!-- BANNER_OR_TEXT_PLACEHOLDER -->', bannerOrTextSection)
-                    //new
-                    //Thêm các replace cho footer
-                    .replaceAll('{{footer_bg_color}}', mailConfig.footer_bg_color || '#ffffff')
-                    .replaceAll('{{footer_border_color}}', mailConfig.footer_border_color || '#ffffff')
-                    .replaceAll('{{footer_text_color}}', mailConfig.footer_text_color || '#ffffff')
-                    .replaceAll(/\{\{\s*footer_link_color\s*\}\}/g, mailConfig.footer_link_color || '#ffffff')
-                    .replaceAll(/\{\{\s*footer_email\s*\}\}/g, mailConfig.footer_email || 'test@gmail.com')
-                    .replaceAll(/\{\{\s*footer_hotline\s*\}\}/g, mailConfig.footer_hotline || '1900@@@@')
-                    .replaceAll('{{footer_company_vi}}', mailConfig.footer_company_vi || '')
-                    .replaceAll('{{footer_company_en}}', mailConfig.footer_company_en || '');
-
-                // Tạo message cho 1 người
-                const message = {
-                    to: runner.email.trim(),
-                    from: {
-                        email: 'no-reply@accessrace.asia',
-                        name: mailConfig.sender_name,
-                    },
-                    subject: mailConfig.title,
-                    html: htmlTemplate,
-                    attachments: showBanner
-                        ? [
-                              {
-                                  content: bannerBase64,
-                                  filename: 'banner.png',
-                                  type: 'image/png',
-                                  disposition: 'inline',
-                                  content_id: 'banner',
-                              },
-                              {
-                                  content: base64Data,
-                                  filename: 'qrcode.png',
-                                  type: 'image/png',
-                                  disposition: 'inline',
-                                  content_id: 'qrcode',
-                              },
-                          ]
-                        : [
-                              {
-                                  content: base64Data,
-                                  filename: 'qrcode.png',
-                                  type: 'image/png',
-                                  disposition: 'inline',
-                                  content_id: 'qrcode',
-                              },
-                          ],
+                    fullname,
+                    cccd,
+                    bib: str('bib'),
+                    distance: str('distance'),
+                    distance_name: str('distance_name'),
+                    tshirt_size: str('tshirt_size'),
+                    bib_name: str('bib_name'),
+                    email: str('email'),
+                    phone: str('phone'),
+                    dob,
+                    line: str('line'),
+                    gender,
+                    nationality: nat || undefined,
+                    nationlity: nat || undefined,
+                    nation: str('nation'),
+                    city: str('city'),
+                    patron_name: str('patron_name'),
+                    patron_phone: str('patron_phone'),
+                    team: str('team'),
+                    blood: str('blood'),
+                    medical: str('medical'),
+                    medicine: str('medicine'),
+                    chip_id: str('chip_id'),
+                    mail_status: str('mail_status'),
+                    group_checkin_status: str('group_checkin_status'),
+                    authorization_status: str('authorization_status'),
+                    waiver_status: str('waiver_status'),
+                    order_item_id: str('order_item_id'),
+                    order_id: str('order_id'),
                 };
 
-                // Gửi mail
-                await sgMail.send(message);
-
-                res.json({
-                    success: true,
-                    message: `Email sent successfully to ${runner.fullname} (${runner.email})`,
-                    data: {
-                        runnerId: runner._id,
-                        runnerName: runner.fullname,
-                        runnerEmail: runner.email,
-                    },
-                });
-            } catch (error) {
-                console.error('Error sending email to one runner:', error);
-
-                if (error.response) {
-                    console.error('SendGrid error:', JSON.stringify(error.response.body, null, 2));
-                    return res.status(500).json({
-                        success: false,
-                        error: 'SendGrid error',
-                        details: error.response.body,
-                    });
-                }
-
-                res.status(500).json({
-                    success: false,
-                    error: error.message || 'Internal server error',
-                });
-            }
-        },
-        //ajax
-        RunnerImport: async (req, res) => {
-            const BATCH_SIZE = 1000;
-            try {
-                const _groupId = 'group_admin';
-                const _eventId = 'event_test';
-                const _captainId = 'admin';
-
-                if (!req.file) return res.status(400).json({ success: false, mess: 'Ko co file dc gui len!' });
-                const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
-                const sheetName = workbook.SheetNames[0];
-                // lay sheet theo ten
-                const worksheet = workbook.Sheets[sheetName];
-                // 2. Convert sheet -> JSON
-                const excelData = xlsx.utils.sheet_to_json(worksheet, { defval: null, raw: false });
-
-                if (excelData.length === 0) {
-                    return res.status(400).json({ success: false, mess: 'File rong!' });
-                }
-                //3. map du lieu xlcel ->schame
-                const runners = excelData.map((row, index) => {
-                    return {
-                        ...convertRow(row, _groupId, _eventId, _captainId),
-                        uid: generateUID(_eventId),
-                    };
-                });
-                //4. insert theo batch (rat quan trong)
-                let insertedCount = 0;
-                for (let i = 0; i < runners.length; i += BATCH_SIZE) {
-                    const batch = runners.slice(i, i + BATCH_SIZE);
-                    await Participant.insertMany(batch, {
-                        ordered: false, //bo qua record loi, ko crash
-                    });
-                    insertedCount += batch.length;
-                }
-                console.log(runners);
-                //                 //
-                res.json({ success: true, total: runners.length, inserted: insertedCount, data: runners });
-            } catch (error) {
-                console.log(CNAME, error.message);
-                res.status(500).json({ success: false, mess: error.message });
-            }
-        },
-        //ajax
-        RunnerCheckinImport: async (req, res) => {
-            const BATCH_SIZE = 1000;
-            try {
-                const slug = req.params.slug;
-                console.log('slug event,', slug);
-                const event = await eventService.GetBySlug(slug);
-                const eventId = event._id;
-                const uId = event.short_id;
-
-                if (!req.file) return res.status(400).json({ success: false, mess: 'Ko co file dc gui len!' });
-                const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
-                const sheetName = workbook.SheetNames[0];
-                // lay sheet theo ten
-                const worksheet = workbook.Sheets[sheetName];
-                // 2. Convert sheet -> JSON
-                const excelData = xlsx.utils.sheet_to_json(worksheet, { defval: null, raw: false });
-
-                if (excelData.length === 0) {
-                    return res.status(400).json({ success: false, mess: 'File rong!' });
-                }
-                //3. map du lieu xlcel ->schame
-                const runners = excelData.map((row, index) => {
-                    return {
-                        ...convertRowCheckin(row, eventId),
-                        uid: generateUID(uId),
-                    };
-                });
-                //4. insert theo batch (rat quan trong)
-                let insertedCount = 0;
-                for (let i = 0; i < runners.length; i += BATCH_SIZE) {
-                    const batch = runners.slice(i, i + BATCH_SIZE);
-                    await ParticipantCheckin.insertMany(batch, {
-                        ordered: false, //bo qua record loi, ko crash
-                    });
-                    insertedCount += batch.length;
-                }
-                console.log(runners);
-                //                 //
-                res.json({ success: true, total: runners.length, inserted: insertedCount, data: runners });
-            } catch (error) {
-                console.log(CNAME, error.message);
-                res.status(500).json({ success: false, mess: error.message });
-            }
-        },
-        AddGroup: async (req, res) => {
-            const user = req.user;
-            console.log('chekc thon gtin user: ', user._id, user.email);
-            const captainId = req.user._id;
-            let unique = '';
-            if (!captainId) return res.json({ success: false, mess: 'Login :))' });
-            try {
-                const data = req.body;
-                const slug = data.slug_hidden;
-                console.log('image', req.file);
-                console.log(slug);
-                const dirPath = path.join(myPathConfig.root + '/public/uploads/qr/');
-                if (req.file) {
-                    const fileName = req.file.originalname;
-                    unique = Math.round(Math.random() * 1e9) + '-' + fileName;
-                    const savePath = dirPath + unique;
-                    fs.writeFileSync(savePath, req.file.buffer);
-                }
-                // chua co id cua user login
-
-                var groupDTO = {
-                    facebook_link: data.facebook_link,
-                    zalo_link: data.zalo_link,
-                    discount_percent: Number.parseInt(data.discount_percent),
-                    bank_owner: data.bank_account_name,
-                    bank_name: data.bank_name,
-                    bank_number: data.bank_account_number,
-                    bank_transfer_code: data.bank_transfer_fix,
-                    event_id: slug, //69143093e41d85097255e609
-                    captain_id: captainId,
-                    qr_image: '/uploads/qr/' + unique,
-                    leader_name: data.leader_name,
-                    hotline: data.leader_phone,
-                    cccd: data.leader_identity,
-                    dob: data.leader_dob,
-                    email: data.leader_email,
-                    expiry_date: data.expiry_date,
-                    expiry_time: data.expiry_time,
-                    group_name: data.group_name,
+                const created = await participantCheckinHService.createOne(payload);
+                req.session.flash = {
+                    type: created ? 'success' : 'danger',
+                    message: created ? 'Đã thêm VĐV.' : 'Không thêm được (kiểm tra dữ liệu).',
                 };
-                console.log(data);
-                const result = await GroupService.Add(groupDTO);
-                // result = true
-                if (!result) return res.json({ success: false, mess: 'Add new failed' });
-                res.json({ success: true });
+                return res.redirect(stepPath(id, 1));
             } catch (error) {
                 console.log(CNAME, error.message);
-                res.status(500).json({ success: false, mess: error.message });
+                req.session.flash = { type: 'danger', message: 'Lỗi: ' + error.message };
+                return res.redirect(stepPath(id, 1));
+            }
+        },
+
+        /** Tải file Excel mẫu import VĐV */
+        downloadAthleteImportTemplate: (req, res) => {
+            try {
+                if (!fs.existsSync(ATHLETE_IMPORT_TEMPLATE)) {
+                    return res.status(404).send('File mẫu không tồn tại.');
+                }
+                return res.download(ATHLETE_IMPORT_TEMPLATE, 'athlete_import_example.xlsx');
+            } catch (error) {
+                console.log(CNAME, error.message);
+                return res.status(500).send('Không tải được file.');
+            }
+        },
+
+        /** Xóa một VĐV khỏi sự kiện */
+        deleteParticipant: async (req, res) => {
+            const { id, participantId } = req.params;
+            try {
+                const event = await eventCheckinHService.getById(id);
+                if (!event) {
+                    req.session.flash = { type: 'warning', message: 'Không tìm thấy sự kiện.' };
+                    return res.redirect('/admin/event');
+                }
+                const ok = await participantCheckinHService.deleteByIdAndEvent(participantId, id);
+                if (ok) {
+                    await auditLogService.write({
+                        actorId: req.user?._id,
+                        action: 'delete',
+                        resource: 'participant_checkin_h',
+                        documentId: participantId,
+                        summary: `Xóa VĐV khỏi sự kiện ${id}`,
+                        req,
+                    });
+                }
+                req.session.flash = {
+                    type: ok ? 'success' : 'danger',
+                    message: ok ? 'Đã xóa VĐV.' : 'Không xóa được.',
+                };
+                return res.redirect(stepPath(id, 1));
+            } catch (error) {
+                console.log(CNAME, error.message);
+                req.session.flash = { type: 'danger', message: 'Lỗi xóa VĐV.' };
+                return res.redirect(stepPath(id, 1));
             }
         },
     };
 };
 
-module.exports = eventController;
+module.exports = adminEventController;

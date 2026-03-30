@@ -17,6 +17,7 @@ const store = new MongoDBStore({
 });
 //
 const myPathConfig = require('./config/mypath.config');
+const authConfig = require('./config/auth.config');
 const dbConnection = require('./config/dbConnection');
 const routes = require('./routes/index');
 const swaggerFile = require('./swagger/swagger-output.json');
@@ -25,7 +26,7 @@ const swaggerFile = require('./swagger/swagger-output.json');
 app.use(passport.initialize());
 app.use(express.json()); //Chỉ dùng để parse body JSON của request POST/PUT/PATCH.
 app.use(cookieParser());
-app.use(express.urlencoded({ extendedys: true })); //Chỉ parse body của form POST gửi lên dạng Content-Type: application/x-www-form-urlencoded
+app.use(express.urlencoded({ extended: true })); //Chỉ parse body của form POST gửi lên dạng Content-Type: application/x-www-form-urlencoded
 //static files
 app.use(express.static(myPathConfig.public));
 //template engine
@@ -33,6 +34,8 @@ app.set('view engine', 'ejs');
 app.set('views', myPathConfig.root + '/src/views');
 app.use(expressEjsLayouts);
 app.set('layout', 'layouts/main');
+app.locals.ADMIN_LOGIN_URL = authConfig.ADMIN_LOGIN_URL;
+app.locals.ADMIN_LOGOUT_URL = authConfig.ADMIN_LOGOUT_URL;
 //session
 app.use(
     session({
@@ -149,7 +152,9 @@ app.get('/payment', async (req, res) => {
         return res.status(500).json({ success: false, mess: 'Err' });
     }
 });
-
+app.get('/layout', (req, res)=>{
+    res.render('layouts/adminLayout2', { layout: false });
+})
 // end
 routes(app);
 

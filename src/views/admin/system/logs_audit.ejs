@@ -1,0 +1,61 @@
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+  <div>
+    <h4 class="mb-1">Nhật ký thao tác (audit)</h4>
+    <p class="text-body-secondary small mb-0">Các thao tác ghi DB được ghi nhận có chủ đích.</p>
+  </div>
+  <a href="/admin/system/logs/login" class="btn btn-outline-secondary btn-sm">Lịch sử đăng nhập</a>
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0 small">
+        <thead class="table-light">
+          <tr>
+            <th>Thời điểm</th>
+            <th>Actor</th>
+            <th>Hành động</th>
+            <th>Tài nguyên</th>
+            <th>Document</th>
+            <th>Tóm tắt</th>
+            <th>IP</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (!items || !items.length) { %>
+          <tr>
+            <td colspan="7" class="text-center text-body-secondary py-5">Chưa có bản ghi.</td>
+          </tr>
+          <% } else { %>
+          <% items.forEach(function (row) { %>
+          <tr>
+            <td><%= row.created_at ? new Date(row.created_at).toLocaleString('vi-VN') : '—' %></td>
+            <td><code class="small"><%= row.actor_id ? String(row.actor_id) : '—' %></code></td>
+            <td><span class="badge text-bg-secondary"><%= row.action || '—' %></span></td>
+            <td><%= row.resource || '—' %></td>
+            <td class="text-break" style="max-width:100px;"><code class="small"><%= row.document_id || '—' %></code></td>
+            <td class="text-break" style="max-width:240px;"><%= row.summary || '—' %></td>
+            <td class="text-break" style="max-width:100px;"><%= row.ip || '—' %></td>
+          </tr>
+          <% }); %>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <% if (pages > 1) { %>
+  <div class="card-footer d-flex justify-content-between align-items-center">
+    <span class="small text-body-secondary">Trang <%= page %> / <%= pages %> (<%= total %> bản ghi)</span>
+    <nav>
+      <ul class="pagination pagination-sm mb-0">
+        <% if (page > 1) { %>
+        <li class="page-item"><a class="page-link" href="?page=<%= page - 1 %>">Trước</a></li>
+        <% } %>
+        <% if (page < pages) { %>
+        <li class="page-item"><a class="page-link" href="?page=<%= page + 1 %>">Sau</a></li>
+        <% } %>
+      </ul>
+    </nav>
+  </div>
+  <% } %>
+</div>

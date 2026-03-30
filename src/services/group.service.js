@@ -1,7 +1,7 @@
 // group.service.js
 const CNAME = 'group.service.js ';
 const GroupEntity = require('../model/GroupM');
-const EventService = require('../areas/admin/services/event.service')
+const EventService = require('../areas/admin/services/event.service_old')
 
 class GroupService {
     constructor() {

@@ -1,0 +1,69 @@
+<% 
+  function isoDate(d) {
+    if (!d) return '';
+    var x = new Date(d);
+    if (Number.isNaN(x.getTime())) return '';
+    return x.toISOString().slice(0, 10);
+  }
+  var ev = event || {};
+  var ws = typeof currentWorkflowStep !== 'undefined' ? currentWorkflowStep : 0;
+%>
+
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="/admin/event">Sự kiện</a></li>
+    <li class="breadcrumb-item active" aria-current="page"><%= ev.name || 'Workspace' %></li>
+  </ol>
+</nav>
+
+<% if (flash && flash.message) { %>
+<div class="alert alert-<%= flash.type === 'success' ? 'success' : flash.type === 'warning' ? 'warning' : 'danger' %> alert-dismissible fade show" role="alert">
+  <%= flash.message %>
+  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+<% } %>
+
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+  <div>
+    <h4 class="mb-1"><%= ev.name || 'Sự kiện' %></h4>
+    <p class="text-body-secondary small mb-0"><code><%= ev.slug || '' %></code> · VĐV: <strong><%= typeof participantCount !== 'undefined' ? participantCount : 0 %></strong></p>
+  </div>
+  <a href="/admin/event" class="btn btn-sm btn-outline-secondary">← Danh sách</a>
+</div>
+
+<%- include('./_workflow', {
+  currentWorkflowStep: ws,
+  event: ev,
+  maxConfirmedStep: typeof maxConfirmedStep !== 'undefined' ? maxConfirmedStep : -1,
+  maxAllowedStep: typeof maxAllowedStep !== 'undefined' ? maxAllowedStep : 0,
+}) %>
+
+<%- include('./_step_navigation', {
+  event: ev,
+  currentWorkflowStep: ws,
+  maxConfirmedStep: typeof maxConfirmedStep !== 'undefined' ? maxConfirmedStep : -1,
+  maxAllowedStep: typeof maxAllowedStep !== 'undefined' ? maxAllowedStep : 0,
+  canGoNext: typeof canGoNext !== 'undefined' ? canGoNext : true,
+  showConfirmStep: typeof showConfirmStep !== 'undefined' ? showConfirmStep : false,
+}) %>
+
+<% if (ws === 0) { %>
+<%- include('./_step_init', { event: ev, ws: ws, isoDate: isoDate }) %>
+<% } else if (ws === 1) { %>
+<%- include('./_step_athletes', { event: ev, ws: ws, participants: participants, participantCount: participantCount }) %>
+<% } else if (ws === 2) { %>
+<%- include('./_step_mail', { ws: ws }) %>
+<% } else if (ws === 3) { %>
+<%- include('./_step_checkin', { ws: ws }) %>
+<% } else { %>
+<%- include('./_step_done', { ws: ws }) %>
+<% } %>
+
+<div class="card border-danger border-opacity-25 mb-4">
+  <div class="card-body py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <div class="small text-danger">Xóa vĩnh viễn sự kiện này và toàn bộ VĐV đã nhập.</div>
+    <form method="POST" action="/admin/event/<%= ev._id %>/delete" class="d-inline" onsubmit="return confirm('Xóa vĩnh viễn sự kiện và danh sách VĐV?');">
+      <button type="submit" class="btn btn-sm btn-outline-danger">Xóa sự kiện</button>
+    </form>
+  </div>
+</div>

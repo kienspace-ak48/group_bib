@@ -1,0 +1,57 @@
+<% var isEdit = !!(account && account._id); %>
+<div class="mb-4">
+  <h4 class="mb-1"><%= isEdit ? 'Sửa tài khoản' : 'Tạo tài khoản' %></h4>
+  <p class="text-body-secondary small mb-0">
+    <a href="/admin/system/accounts">← Danh sách</a>
+  </p>
+</div>
+
+<% if (flash && flash.message) { %>
+<div class="alert alert-<%= flash.type === 'success' ? 'success' : flash.type === 'warning' ? 'warning' : 'danger' %> alert-dismissible fade show" role="alert">
+  <%= flash.message %>
+  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+<% } %>
+
+<div class="card border-0 shadow-sm" style="max-width: 640px;">
+  <div class="card-body">
+    <form method="POST" action="<%= isEdit ? '/admin/system/accounts/' + account._id : '/admin/system/accounts' %>">
+      <div class="mb-3">
+        <label class="form-label">Email <span class="text-danger">*</span></label>
+        <input type="email" name="email" class="form-control" required value="<%= account && account.email ? account.email : '' %>" />
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Tên hiển thị <span class="text-danger">*</span></label>
+        <input type="text" name="name" class="form-control" required maxlength="200" value="<%= account && account.name ? account.name : '' %>" />
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Username</label>
+        <input type="text" name="username" class="form-control" maxlength="120" value="<%= account && account.username ? account.username : '' %>" placeholder="Mặc định: phần trước @ của email" />
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Mật khẩu <%= isEdit ? '(để trống nếu giữ nguyên)' : '' %> <%= !isEdit ? '*' : '' %></label>
+        <input type="password" name="password" class="form-control" autocomplete="new-password" <%= isEdit ? '' : 'required' %> />
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Vai trò</label>
+        <select name="role" class="form-select">
+          <% roles.forEach(function (r) { %>
+          <option value="<%= r %>" <%= (account && account.role === r) || (!account && r === 'admin') ? 'selected' : '' %>><%= r %></option>
+          <% }); %>
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Quyền (mỗi dòng hoặc cách nhau bằng dấu phẩy)</label>
+        <textarea name="permissions" class="form-control font-monospace small" rows="4" placeholder="admin.event&#10;admin.dashboard"><% if (account && account.permissions && account.permissions.length) { %><%= account.permissions.join('\n') %><% } else if (!account) { %>admin.event
+admin.dashboard<% } %></textarea>
+        <div class="form-text">Ví dụ: <code>admin.event</code>, <code>admin.dashboard</code>. <code>super_admin</code> không cần danh sách.</div>
+      </div>
+      <div class="mb-3 form-check">
+        <input type="checkbox" name="status" class="form-check-input" id="accStatus" value="on" <%= !account || account.status ? 'checked' : '' %> />
+        <label class="form-check-label" for="accStatus">Kích hoạt</label>
+      </div>
+      <button type="submit" class="btn btn-primary"><%= isEdit ? 'Lưu' : 'Tạo' %></button>
+      <a href="/admin/system/accounts" class="btn btn-link">Hủy</a>
+    </form>
+  </div>
+</div>

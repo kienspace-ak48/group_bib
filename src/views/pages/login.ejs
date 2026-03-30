@@ -206,7 +206,7 @@
 
             <!--  -->
             <!-- Login Form -->
-            <form action="/user/login" class="login_form" method="POST">
+            <form action="<%= typeof ADMIN_LOGIN_URL !== 'undefined' ? ADMIN_LOGIN_URL : '/auth/normal/admin/login' %>" class="login_form" method="POST">
                 <div class="form-wrapper">
                     <h2>Login</h2>
                     <p class="subtitle">Đăng nhập để tiếp tục</p>

@@ -1,0 +1,34 @@
+<% 
+  var ev = typeof event !== 'undefined' ? event : {};
+  var n = typeof currentWorkflowStep !== 'undefined' ? Number(currentWorkflowStep) : 0;
+  var ma = typeof maxAllowedStep !== 'undefined' ? Number(maxAllowedStep) : 4;
+  var canNext = typeof canGoNext !== 'undefined' ? canGoNext : (n < ma);
+  var showConf = typeof showConfirmStep !== 'undefined' ? showConfirmStep : false;
+  var base = '/admin/event/' + ev._id + '/step/';
+%>
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body py-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
+    <div class="d-flex flex-wrap align-items-center gap-2">
+      <% if (n > 0) { %>
+      <a href="<%= base + (n - 1) %>" class="btn btn-sm btn-outline-secondary">← Trước</a>
+      <% } else { %>
+      <span class="btn btn-sm btn-outline-secondary disabled" aria-disabled="true">← Trước</span>
+      <% } %>
+      <% if (canNext) { %>
+      <a href="<%= base + (n + 1) %>" class="btn btn-sm btn-outline-primary">Tiếp →</a>
+      <% } else { %>
+      <span class="btn btn-sm btn-outline-secondary disabled" title="Xác nhận xong bước này để mở bước sau" aria-disabled="true">Tiếp →</span>
+      <% } %>
+    </div>
+    <% if (showConf) { %>
+    <form method="POST" action="/admin/event/<%= ev._id %>/step/confirm" class="d-flex align-items-center gap-2 mb-0" onsubmit="return confirm('Xác nhận đã hoàn thành bước này? Bạn sẽ có thể chuyển sang bước tiếp theo.');">
+      <input type="hidden" name="step" value="<%= n %>" />
+      <button type="submit" class="btn btn-sm btn-success">Xác nhận hoàn thành bước này</button>
+    </form>
+    <% } else if (typeof maxConfirmedStep !== 'undefined' && maxConfirmedStep >= 4) { %>
+    <span class="badge text-bg-success">Đã xác nhận hết các bước</span>
+    <% } else if (n <= (typeof maxConfirmedStep !== 'undefined' ? maxConfirmedStep : -1)) { %>
+    <span class="text-body-secondary small">Bước này đã xác nhận — có thể dùng Tiếp nếu đã mở bước sau.</span>
+    <% } %>
+  </div>
+</div>

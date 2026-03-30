@@ -1,0 +1,218 @@
+<% 
+  var currentWorkflowStep = (typeof currentWorkflowStep !== 'undefined' && currentWorkflowStep !== null && currentWorkflowStep !== '')
+    ? Number(currentWorkflowStep) : 0;
+  if (currentWorkflowStep < 0) currentWorkflowStep = 0;
+  if (currentWorkflowStep > 4) currentWorkflowStep = 4;
+  var maxConfirmedStep = (typeof maxConfirmedStep !== 'undefined' && maxConfirmedStep !== null && maxConfirmedStep !== '')
+    ? Number(maxConfirmedStep) : -1;
+  if (maxConfirmedStep < -1) maxConfirmedStep = -1;
+  if (maxConfirmedStep > 4) maxConfirmedStep = 4;
+  var maxAllowedStep = typeof maxAllowedStep !== 'undefined' ? Number(maxAllowedStep) : Math.min(4, maxConfirmedStep + 1);
+  if (Number.isNaN(maxAllowedStep)) maxAllowedStep = Math.min(4, maxConfirmedStep + 1);
+
+  var steps = [
+    { key: 'init', label: 'Khởi tạo', short: '1' },
+    { key: 'athletes', label: 'Quản lý VĐV', short: '2' },
+    { key: 'mail', label: 'Mail QR code', short: '3' },
+    { key: 'checkin', label: 'Check-in', short: '4' },
+    { key: 'done', label: 'Kết thúc', short: '5' }
+  ];
+  var total = steps.length;
+  var pct = Math.round(((maxConfirmedStep + 1) / 5) * 100);
+  if (pct < 0) pct = 0;
+  if (pct > 100) pct = 100;
+  var eventBase = (typeof event !== 'undefined' && event && event._id) ? ('/admin/event/' + event._id + '/step/') : '';
+%>
+
+<style>
+  .admin-workflow {
+    --aw-done: #198754;
+    --aw-current: #0d6efd;
+    --aw-pending: #dee2e6;
+    --aw-locked: #adb5bd;
+    --aw-text-done: #198754;
+    --aw-text-muted: #6c757d;
+  }
+  .admin-workflow-track {
+    height: 6px;
+    border-radius: 999px;
+    background: var(--aw-pending);
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+  }
+  .admin-workflow-track-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--aw-done), var(--aw-current));
+    transition: width 0.35s ease;
+  }
+  .admin-workflow-steps {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.25rem;
+    position: relative;
+    margin-top: 0.25rem;
+  }
+  .admin-workflow-step {
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+    position: relative;
+  }
+  a.admin-workflow-step {
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+  }
+  a.admin-workflow-step:hover .admin-workflow-label {
+    text-decoration: underline;
+  }
+  span.admin-workflow-step.is-locked {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+  .admin-workflow-step::before {
+    content: "";
+    position: absolute;
+    top: 18px;
+    left: calc(-50% + 18px);
+    right: calc(50% + 18px);
+    height: 3px;
+    background: var(--aw-pending);
+    z-index: 0;
+  }
+  .admin-workflow-step:first-child::before {
+    display: none;
+  }
+  .admin-workflow-step.is-done::before {
+    background: var(--aw-done);
+  }
+  .admin-workflow-step.is-current::before {
+    background: var(--aw-done);
+  }
+  .admin-workflow-step.is-locked::before {
+    background: var(--aw-locked);
+  }
+  .admin-workflow-dot {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    margin: 0 auto 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    position: relative;
+    z-index: 1;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 1px var(--aw-pending);
+    background: #fff;
+    color: var(--aw-text-muted);
+  }
+  .admin-workflow-step.is-done .admin-workflow-dot {
+    background: var(--aw-done);
+    color: #fff;
+    box-shadow: 0 0 0 2px var(--aw-done);
+  }
+  .admin-workflow-step.is-current .admin-workflow-dot {
+    background: #fff;
+    color: var(--aw-current);
+    box-shadow: 0 0 0 3px var(--aw-current);
+    transform: scale(1.08);
+  }
+  .admin-workflow-step.is-pending .admin-workflow-dot {
+    background: #f8f9fa;
+  }
+  .admin-workflow-step.is-locked .admin-workflow-dot {
+    background: #e9ecef;
+    color: var(--aw-locked);
+    box-shadow: 0 0 0 1px var(--aw-locked);
+  }
+  .admin-workflow-label {
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.25;
+    color: var(--cui-body-color, #212529);
+    word-break: break-word;
+  }
+  .admin-workflow-step.is-done .admin-workflow-label { color: var(--aw-text-done); }
+  .admin-workflow-step.is-current .admin-workflow-label { color: var(--aw-current); font-weight: 700; }
+  .admin-workflow-step.is-pending .admin-workflow-label { color: var(--aw-text-muted); font-weight: 500; }
+  .admin-workflow-step.is-locked .admin-workflow-label { color: var(--aw-locked); font-weight: 500; }
+  .admin-workflow-badge {
+    font-size: 11px;
+  }
+  @media (max-width: 767.98px) {
+    .admin-workflow-steps {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .admin-workflow-step::before {
+      display: none;
+    }
+    .admin-workflow-step {
+      display: flex;
+      align-items: center;
+      text-align: left;
+      gap: 12px;
+    }
+    .admin-workflow-dot {
+      margin: 0;
+      flex-shrink: 0;
+    }
+    .admin-workflow-label { flex: 1; }
+  }
+</style>
+
+<div class="card admin-workflow border-0 shadow-sm mb-4">
+  <div class="card-body p-4">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+      <div>
+        <h5 class="card-title mb-1">Tiến trình sự kiện</h5>
+        <p class="text-body-secondary small mb-0">
+          <% if (maxConfirmedStep < 0) { %>Chưa xác nhận bước nào.<% } else { %>Đã xác nhận tới bước <strong><%= maxConfirmedStep + 1 %></strong> / <%= total %>.<% } %>
+          Mở được tới bước <strong><%= maxAllowedStep + 1 %></strong>. Dùng nút xác nhận bên dưới để lưu và mở bước tiếp.
+        </p>
+      </div>
+      <span class="badge text-bg-light border admin-workflow-badge">
+        Đang xem: <%= currentWorkflowStep + 1 %> / <%= total %>
+      </span>
+    </div>
+
+    <div class="admin-workflow-track" role="progressbar" aria-valuenow="<%= pct %>" aria-valuemin="0" aria-valuemax="100" aria-label="Tiến độ workflow">
+      <div class="admin-workflow-track-fill" style="width: <%= pct %>%"></div>
+    </div>
+
+    <div class="admin-workflow-steps pt-1">
+      <% steps.forEach(function (step, i) { 
+           var locked = i > maxAllowedStep;
+           var isCurrent = i === currentWorkflowStep;
+           var state = 'pending';
+           if (locked) state = 'locked';
+           else if (isCurrent) state = 'current';
+           else if (i <= maxConfirmedStep) state = 'done';
+           var href = eventBase + i;
+      %>
+      <% if (locked) { %>
+      <span class="admin-workflow-step is-locked" data-workflow-step="<%= step.key %>" title="Hoàn thành bước trước để mở khóa">
+        <div class="admin-workflow-dot" aria-hidden="true">🔒</div>
+        <div class="admin-workflow-label"><%= step.label %></div>
+      </span>
+      <% } else { %>
+      <a href="<%= href %>" class="admin-workflow-step is-<%= state %>" data-workflow-step="<%= step.key %>">
+        <div class="admin-workflow-dot" aria-hidden="true">
+          <% if (state === 'done') { %>
+            <span aria-hidden="true">&#10003;</span>
+          <% } else { %>
+            <%= step.short %>
+          <% } %>
+        </div>
+        <div class="admin-workflow-label"><%= step.label %></div>
+      </a>
+      <% } %>
+      <% }); %>
+    </div>
+  </div>
+</div>

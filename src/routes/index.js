@@ -1,20 +1,17 @@
 
 const clientRoute = require('./client.routes');
 const adminRoute = require('./admin.routes');
-const apiEvent = require('./event.routes');
 const testRoute = require('./test.routes');
-const ggAuthRoute = require('./ggauth.route');
 const authRoute = require('./auth.route');
-const apiRoute = require('./api.routes.js')
+const apiRoute = require('./api.routes.js');
+const authMiddleware = require('../middleware/auth.middleware');
 
 function route(app){
-    app.use('/gg', ggAuthRoute);
-    app.use('/api/event', apiEvent);
     // login
     app.use('/auth/normal', authRoute);
     // 
     app.use(apiRoute);
-    app.use('/admin',authRoute, adminRoute);
+    app.use('/admin', authMiddleware, adminRoute);
     app.use('/test', testRoute)
     app.use('/', clientRoute);
     app.use((req, res, next)=>{

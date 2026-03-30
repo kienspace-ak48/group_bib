@@ -1,0 +1,68 @@
+<% var ev = typeof event !== 'undefined' ? event : {}; %>
+<div class="card border-0 shadow-sm mb-4 <%= ws === 0 ? 'border-primary border-2' : '' %>">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <strong>1. Khởi tạo — Thông tin sự kiện</strong>
+    <% if (ws === 0) { %><span class="badge bg-primary">Đang làm</span><% } %>
+  </div>
+  <div class="card-body">
+    <form method="POST" action="/admin/event/<%= ev._id %>/update" class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label">Tên</label>
+        <input type="text" name="name" class="form-control" value="<%= ev.name || '' %>" />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Mã ngắn / Short ID</label>
+        <input type="text" name="short_id" class="form-control" value="<%= ev.short_id || '' %>" />
+      </div>
+      <div class="col-12">
+        <label class="form-label">Mô tả</label>
+        <textarea name="desc" class="form-control" rows="3"><%= ev.desc || '' %></textarea>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Địa điểm</label>
+        <input type="text" name="location" class="form-control" value="<%= ev.location || '' %>" />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Ngày bắt đầu</label>
+        <input type="date" name="start_date" class="form-control" value="<%= isoDate(ev.start_date) %>" />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Ngày kết thúc</label>
+        <input type="date" name="end_date" class="form-control" value="<%= isoDate(ev.end_date) %>" />
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Loại giải</label>
+        <input type="text" name="race_type" class="form-control" value="<%= ev.race_type || '' %>" placeholder="marathon / trail..." />
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Trạng thái</label>
+        <input type="text" name="status" class="form-control" value="<%= ev.status || '' %>" />
+      </div>
+      <div class="col-md-4 d-flex align-items-end">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="is_show" id="is_show" value="true" <%= ev.is_show ? 'checked' : '' %> />
+          <label class="form-check-label" for="is_show">Hiển thị công khai</label>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Ban tổ chức</label>
+        <input type="text" name="organizer_name" class="form-control" value="<%= ev.organizer_name || '' %>" />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Website</label>
+        <input type="url" name="organizer_web" class="form-control" value="<%= ev.organizer_web || '' %>" />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Fanpage</label>
+        <input type="url" name="organizer_fanpage" class="form-control" value="<%= ev.organizer_fanpage || '' %>" />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Zalo</label>
+        <input type="text" name="organizer_zalo" class="form-control" value="<%= ev.organizer_zalo || '' %>" />
+      </div>
+      <div class="col-12">
+        <button type="submit" class="btn btn-primary">Lưu thông tin</button>
+      </div>
+    </form>
+  </div>
+</div>

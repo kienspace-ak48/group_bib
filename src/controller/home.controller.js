@@ -5,6 +5,7 @@ const GroupService = require('../services/group.service');
 const participantPreService = require('../services/participantPre.service');
 const TicketService = require('../services/ticket.service');
 const PageSettingEntity = require('../model/PageSetting');
+const EventEntity = require('../model/Event');
 const CertificatePositionEntity = require('../model/CertificatePosition');
 const CertificateDataEntity = require('../model/CertificateData');
 const myPathConfig = require('../config/mypath.config');
@@ -21,9 +22,25 @@ const homeController = () => {
         Index: async (req, res) => {
             try {
                 const ps = await PageSettingEntity.findOne({ type: 'home_page' });
-                res.render('home', { layout: VLAYOUT, hp: ps });
+                const events = await EventEntity.find({})
+                    .sort({ start_date: 1 })
+                    .limit(50)
+                    .lean();
+                const monthMap = new Map();
+                for (const e of events) {
+                    if (!e.start_date) continue;
+                    const d = new Date(e.start_date);
+                    if (Number.isNaN(d.getTime())) continue;
+                    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                    const label = `${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+                    if (!monthMap.has(key)) monthMap.set(key, label);
+                }
+                const eventMonths = Array.from(monthMap.entries())
+                    .sort(([a], [b]) => a.localeCompare(b))
+                    .map(([key, label]) => ({ key, label }));
+                res.render('home', { layout: VLAYOUT, hp: ps, events: events || [], eventMonths });
             } catch (error) {
-                res.render('home', { layout: false });
+                res.render('home', { layout: VLAYOUT, hp: {}, events: [], eventMonths: [] });
             }
         },
         Index0: async (req, res) => {

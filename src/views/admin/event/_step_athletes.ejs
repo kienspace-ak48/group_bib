@@ -1,0 +1,274 @@
+<% 
+  function formatDdMmYyyy(d) {
+    if (!d) return '—';
+    var x = new Date(d);
+    if (Number.isNaN(x.getTime())) return '—';
+    var dd = String(x.getDate()).padStart(2, '0');
+    var mm = String(x.getMonth() + 1).padStart(2, '0');
+    var yyyy = x.getFullYear();
+    return dd + '/' + mm + '/' + yyyy;
+  }
+  function genderLabel(g) {
+    if (g === true || g === 1) return 'Nam';
+    if (g === false || g === 0) return 'Nữ';
+    return '—';
+  }
+  function dash(v) { return (v != null && String(v).trim() !== '') ? v : '—'; }
+  var ev = typeof event !== 'undefined' ? event : {};
+%>
+<div class="card border-0 shadow-sm mb-4 <%= ws === 1 ? 'border-primary border-2' : '' %>">
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+      <strong>2. Quản lý VĐV</strong>
+      <span class="small text-body-secondary ms-2">Model: <code>participant_checkin_h</code></span>
+    </div>
+    <% if (ws === 1) { %><span class="badge bg-primary">Đang làm</span><% } %>
+  </div>
+  <div class="card-body border-bottom">
+    <p class="small text-body-secondary mb-3">
+      Import Excel dùng sheet đầu; cột tương thích file mẫu và luồng cũ (<code>dob(mm/dd/yyyy)</code>, <code>fullname</code>, <code>cccd</code>, <code>chip_id</code> / <code>ChipId</code>, …).
+      Chế độ <strong>Thêm mới</strong> giữ VĐV hiện có; <strong>Xóa danh sách cũ rồi import</strong> xóa toàn bộ VĐV của sự kiện trước khi nạp file.
+    </p>
+    <div class="row g-3 align-items-end">
+      <div class="col-lg-9">
+        <form method="POST" action="/admin/event/<%= ev._id %>/participants/import" enctype="multipart/form-data" class="row g-3 align-items-end">
+          <div class="col-md-4">
+            <label class="form-label">File Excel</label>
+            <input type="file" name="excelFile" class="form-control" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" required />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Chế độ</label>
+            <select name="import_mode" class="form-select">
+              <option value="append">Thêm mới (append)</option>
+              <option value="reset">Xóa danh sách cũ rồi import (reset)</option>
+            </select>
+          </div>
+          <div class="col-md-4 d-flex align-items-end">
+            <button type="submit" class="btn btn-outline-primary">Import Excel</button>
+          </div>
+        </form>
+      </div>
+      <div class="col-lg-3">
+        <label class="form-label d-block">File mẫu</label>
+        <a href="/admin/event/athlete-import-template" class="btn btn-outline-secondary w-100">Tải file mẫu (.xlsx)</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-header bg-body-tertiary bg-opacity-50 py-0 border-bottom-0 px-0">
+    <button
+      id="manualAthleteToggleBtn"
+      class="btn btn-link text-decoration-none text-body fw-semibold w-100 text-start py-3 px-3 rounded-0 d-flex align-items-center gap-2"
+      type="button"
+      aria-expanded="false"
+      aria-controls="manualAthleteCollapse"
+    >
+      <span class="manual-athlete-chevron" aria-hidden="true">▸</span>
+      <span>Thêm VĐV thủ công</span>
+      <span class="small text-body-secondary fw-normal">(mở rộng form)</span>
+    </button>
+  </div>
+  <div class="collapse border-0" id="manualAthleteCollapse">
+    <div class="card-body border-bottom bg-body-tertiary bg-opacity-25">
+      <form method="POST" action="/admin/event/<%= ev._id %>/participants/manual" class="row g-2">
+        <div class="col-md-4">
+          <label class="form-label small">Họ tên <span class="text-danger">*</span></label>
+          <input type="text" name="fullname" class="form-control form-control-sm" required maxlength="200" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small">CCCD <span class="text-danger">*</span></label>
+          <input type="text" name="cccd" class="form-control form-control-sm" required maxlength="20" />
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small">BIB</label>
+          <input type="text" name="bib" class="form-control form-control-sm" maxlength="50" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small">Cự ly</label>
+          <input type="text" name="distance" class="form-control form-control-sm" maxlength="80" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small">Tên cự ly (distance_name)</label>
+          <input type="text" name="distance_name" class="form-control form-control-sm" maxlength="120" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small">Chip ID</label>
+          <input type="text" name="chip_id" class="form-control form-control-sm" maxlength="80" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small">BIB name</label>
+          <input type="text" name="bib_name" class="form-control form-control-sm" maxlength="120" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small">Line</label>
+          <input type="text" name="line" class="form-control form-control-sm" maxlength="80" />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label small">Email</label>
+          <input type="email" name="email" class="form-control form-control-sm" maxlength="120" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small">Điện thoại</label>
+          <input type="text" name="phone" class="form-control form-control-sm" maxlength="30" />
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small">Ngày sinh</label>
+          <input type="date" name="dob" class="form-control form-control-sm" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small">Giới tính</label>
+          <select name="gender" class="form-select form-select-sm">
+            <option value="">—</option>
+            <option value="M">Nam</option>
+            <option value="F">Nữ</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small">Size áo</label>
+          <input type="text" name="tshirt_size" class="form-control form-control-sm" maxlength="40" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small">Mail status</label>
+          <input type="text" name="mail_status" class="form-control form-control-sm" maxlength="80" placeholder="VD: PENDING / SENT" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small">Check-in theo nhóm</label>
+          <input type="text" name="group_checkin_status" class="form-control form-control-sm" maxlength="80" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small">Ủy quyền</label>
+          <input type="text" name="authorization_status" class="form-control form-control-sm" maxlength="80" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small">Waiver</label>
+          <input type="text" name="waiver_status" class="form-control form-control-sm" maxlength="80" />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label small">Quốc tịch</label>
+          <input type="text" name="nationality" class="form-control form-control-sm" maxlength="80" />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label small">Đội / CLB</label>
+          <input type="text" name="team" class="form-control form-control-sm" maxlength="120" />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label small">Thành phố</label>
+          <input type="text" name="city" class="form-control form-control-sm" maxlength="80" />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label small">Nation</label>
+          <input type="text" name="nation" class="form-control form-control-sm" maxlength="80" />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label small">Người bảo hộ — tên</label>
+          <input type="text" name="patron_name" class="form-control form-control-sm" maxlength="120" />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label small">Người bảo hộ — SĐT</label>
+          <input type="text" name="patron_phone" class="form-control form-control-sm" maxlength="30" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small">Nhóm máu</label>
+          <input type="text" name="blood" class="form-control form-control-sm" maxlength="10" />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label small">Y tế</label>
+          <input type="text" name="medical" class="form-control form-control-sm" maxlength="200" />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label small">Thuốc</label>
+          <input type="text" name="medicine" class="form-control form-control-sm" maxlength="200" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small">Order ID</label>
+          <input type="text" name="order_id" class="form-control form-control-sm" maxlength="80" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small">Order item ID</label>
+          <input type="text" name="order_item_id" class="form-control form-control-sm" maxlength="80" />
+        </div>
+        <div class="col-12">
+          <button type="submit" class="btn btn-sm btn-primary">Thêm VĐV</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-sm table-striped table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr class="text-center small">
+            <th class="text-start">BIB / Cự ly</th>
+            <th>ChipId</th>
+            <th class="text-start">Họ tên</th>
+            <th>Đã Checkin</th>
+            <th>Checkin nhóm</th>
+            <th>Mail</th>
+            <th>Ủy quyền</th>
+            <th>Waiver</th>
+            <th>Giới tính</th>
+            <th>Ngày sinh</th>
+            <th>Size áo</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (!participants || !participants.length) { %>
+          <tr>
+            <td colspan="12" class="text-center text-body-secondary py-4">Chưa có VĐV. Dùng import Excel hoặc form thêm thủ công.</td>
+          </tr>
+          <% } else { %>
+          <% participants.forEach(function (p) { %>
+          <tr>
+            <td class="text-start">
+              <div class="fw-bold text-danger"><%= dash(p.bib) %></div>
+              <div class="small text-body-secondary"><%= dash(p.distance || p.distance_name) %></div>
+            </td>
+            <td class="text-center small"><%= dash(p.chip_id) %></td>
+            <td class="text-start">
+              <div><a href="#" class="text-primary text-decoration-none" onclick="return false;"><%= dash(p.fullname) %></a></div>
+              <div class="small text-body-secondary"><%= dash(p.phone) %></div>
+            </td>
+            <td class="text-center small"><%= p.checkin_status ? '✓' : '—' %></td>
+            <td class="text-center small"><%= dash(p.group_checkin_status) %></td>
+            <td class="text-center small"><%= dash(p.mail_status) %></td>
+            <td class="text-center small"><%= dash(p.authorization_status) %></td>
+            <td class="text-center small"><%= dash(p.waiver_status) %></td>
+            <td class="text-center small"><%= genderLabel(p.gender) %></td>
+            <td class="text-center small text-nowrap"><%= formatDdMmYyyy(p.dob) %></td>
+            <td class="text-center small"><%= dash(p.tshirt_size) %></td>
+            <td class="text-end">
+              <form method="POST" action="/admin/event/<%= ev._id %>/participants/<%= p._id %>/delete" class="d-inline" onsubmit="return confirm('Xóa VĐV này khỏi sự kiện?');">
+                <button type="submit" class="btn btn-link btn-sm text-danger p-0" title="Xóa" aria-label="Xóa">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/><path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/></svg>
+                </button>
+              </form>
+            </td>
+          </tr>
+          <% }); %>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<style>
+  /* CoreUI layout không luôn khởi tạo Bootstrap Collapse cho data-bs-toggle — toggle .show bằng script bên dưới */
+  #manualAthleteToggleBtn.manual-athlete-open .manual-athlete-chevron { transform: rotate(90deg); }
+  .manual-athlete-chevron { display: inline-block; transition: transform 0.2s ease; }
+</style>
+<script>
+(function () {
+  var btn = document.getElementById('manualAthleteToggleBtn');
+  var panel = document.getElementById('manualAthleteCollapse');
+  if (!btn || !panel) return;
+  btn.addEventListener('click', function (e) {
+    e.preventDefault();
+    var open = !panel.classList.contains('show');
+    panel.classList.toggle('show', open);
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    btn.classList.toggle('manual-athlete-open', open);
+  });
+})();
+</script>

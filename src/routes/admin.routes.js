@@ -1,77 +1,59 @@
 const express = require('express');
 const router = express.Router();
 
-const uploadImageMiddleware = require('../middleware/uploadImage.middleware');
-const uploadImageECert = require('../config/uploadImageECert');
-const uploadExcelECert = require('../config/ecert-xlsx.config');
-const homeController = require('../areas/admin/controller/home.controller')();
-const eventController = require('../areas/admin/controller/event.controller')();
-const imageController = require('../areas/admin/controller/image.controller')();
-const ticketController = require('../areas/admin/controller/ticket.controller')();
-const groupController = require('../areas/admin/controller/group.controller')();
-const ecertController = require('../areas/admin/controller/ecert.controller')();
-// 
-const imageUploadMemory = require('../config/imageUploadMemory');
-const excelUpload = require('../config/excelUploadM');
-const EventCheckinController = require('../areas/admin/controller/event_checkin.controller')();
-// page setting
-router.get('/page-setting', homeController.PageSetting);
-router.post('/page-setting/home-page/config', homeController.ConfigHomePage)
-// group 
-router.get('/group/list', groupController.GetAllEvent);
-router.get('/group', groupController.Index);
-// router.get('/', homeController.Index);
-// event
-router.get('/event/:slug/athlete-group', eventController.RunnerDataWithGroup);
-router.post('/event/:slug/type-checkin/send-mail', eventController.SendMail)
-router.get('/event/:slug/athlete-data', eventController.RunnerData);
-router.post('/event/:slug/athlete-import', excelUpload.single('ath_xlsx'), eventController.RunnerImport); //
-router.get('/event/form', eventController.FormAdd);
-router.post('/event/form', eventController.AddEvent);
-router.get('/event/form-edit/:slug', eventController.FormEdit);
-router.put('/event/form-edit/:slug', eventController.UpdateEvent);
-router.delete('/event/:id', eventController.DeleteEvent);
+const rbac = require('../middleware/rbac.middleware');
+const { requireAdminWeb, requirePermission, requireRole } = rbac;
 
-//event action[check in]
-router.get('/event/:slug/type-checkin/send-mail', eventController.SendMailCheckin);
-router.post('/event/:slug/athlete-checkin-import', excelUpload.single('ath_xlsx'), eventController.RunnerCheckinImport)
-router.get('/event/type-checkin/:slug/athlete-data', eventController.RunnerCheckinData);
-router.get('/event/:slug/athlete-checkin', eventController.RunnerDataCheckin);
-router.post('/event/:slug/type-chekin/add-person', eventController.CheckinAddPerson);
-router.delete('/event/:slug/type-checkin/delete-person/:id', eventController.CheckinDeletePerson);
-router.put('/event/:slug/type-checking/update-person/:id', eventController.CheckinUpdatePerson)
-router.get('/event/:slug/type-checking/edit-person/:id', eventController.CheckinEditPerson);
-router.post('/event/:slug/type-checkin/banner-mail', imageUploadMemory.single('file'), eventController.CheckinMailUploadImage)
-router.post('/event/:slug/type-checkin/mail-config',eventController.CheckinMailConfigSave);
-//19/03
-router.post('/event/:slug/sendmail-one', eventController.SendMailToOne);
-// 
-//feature checkin
-router.post('/event/type-checkin/:slug/add-group', eventController.RunnerCheckinData)
-router.get('/event/type-checkin', eventController.EventCheckin);
-router.get('/event', eventController.EventTicket);
-// image
-router.get('/image/delete/:name', imageController.Delete);
-router.post('/image', uploadImageMiddleware.single('file'), imageController.Upload);
-router.get('/image', imageController.Index);
-// ticket
-router.get('/ticket/form-add', ticketController.FormAdd);
-router.post('/ticket/create', ticketController.Create);
-// ecert
-// router.post('/e-cert/upload-image', uploadImageECert.single('ecert_img'), ecertController.UploadImage);
-// router.post('/e-cert/save-position/:id', ECertController.SavePosition.bind(ECertController));
-router.post('/e-cert/data-table/:cid', ecertController.DataTable);
-router.get('/e-cert/render-cert', ecertController.RenderCertificate);
-router.post('/e-cert/upload-data/:id',uploadExcelECert.single('ecert_xlsx'), ecertController.UploadExcel); // sua day
-router.post('/e-cert/save-position/:id', ecertController.SavePosition);
-router.post('/e-cert/upload-image', imageUploadMemory.single('ecert_img'), ecertController.UploadImage2);
-router.post('/e-cert/upload-data/:id',uploadExcelECert.single('ecert_xlsx'), ecertController.UploadExcel);
-router.post('/e-cert/create-contest', ecertController.AddContest);  
-router.get('/e-cert/contest-detail/:id', ecertController.ContestDetail);
-router.get('/e-cert', ecertController.Index);
-// index
+const adminHomeController = require('../areas/admin/controller/home.controller')();
+const adminEventController = require('../areas/admin/controller/event.controller')();
+const systemAccountController = require('../areas/admin/controller/systemAccount.controller')();
+const excelUploadM = require('../config/excelUploadM');
+const uploadExcelLarge = excelUploadM.large;
 
-//[=================== EVENT_CHECKIN 2103 ======================]
-router.get('/event-checkin', EventCheckinController.Index);
-router.get('/', homeController.Index);
+function handleMulterUpload(upload) {
+    return (req, res, next) => {
+        upload(req, res, (err) => {
+            if (err) {
+                req.session.flash = { type: 'danger', message: err.message || 'Lỗi upload file.' };
+                return res.redirect('/admin/event/' + req.params.id + '/step/1');
+            }
+            next();
+        });
+    };
+}
+
+router.use(requireAdminWeb);
+
+const dashPerm = requirePermission('admin.dashboard');
+const evPerm = requirePermission('admin.event');
+
+router.get('/', dashPerm, adminHomeController.Index);
+
+router.get('/event', evPerm, adminEventController.Index);
+router.post('/event', evPerm, adminEventController.create);
+router.get('/event/athlete-import-template', evPerm, adminEventController.downloadAthleteImportTemplate);
+router.post('/event/:id/delete', evPerm, adminEventController.destroy);
+router.post('/event/:id/participants/:participantId/delete', evPerm, adminEventController.deleteParticipant);
+router.post(
+    '/event/:id/participants/import',
+    evPerm,
+    handleMulterUpload(uploadExcelLarge.single('excelFile')),
+    adminEventController.importParticipantsExcel,
+);
+router.post('/event/:id/participants/manual', evPerm, adminEventController.addParticipantManual);
+router.post('/event/:id/update', evPerm, adminEventController.updateEvent);
+router.post('/event/:id/step/confirm', evPerm, adminEventController.confirmStep);
+router.get('/event/:id/step/:step', evPerm, adminEventController.workspaceStep);
+router.get('/event/:id', evPerm, adminEventController.workspace);
+
+const superOnly = requireRole('super_admin');
+router.get('/system/accounts', superOnly, systemAccountController.listAccounts);
+router.get('/system/accounts/new', superOnly, systemAccountController.newAccountForm);
+router.post('/system/accounts', superOnly, systemAccountController.createAccount);
+router.get('/system/accounts/:id/edit', superOnly, systemAccountController.editAccountForm);
+router.post('/system/accounts/:id', superOnly, systemAccountController.updateAccount);
+router.post('/system/accounts/:id/delete', superOnly, systemAccountController.deleteAccount);
+router.get('/system/logs/login', superOnly, systemAccountController.loginLogs);
+router.get('/system/logs/audit', superOnly, systemAccountController.auditLogs);
+
 module.exports = router;
