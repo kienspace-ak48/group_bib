@@ -1,6 +1,18 @@
 const mongoose = require('mongoose');
-const slugify = require('slugify');
 
+/** Cách thực hiện check-in (ghi nhận sau này; import mặc định `import`) */
+const CHECKIN_METHODS = ['scan', 'manual', 'kiosk', 'import', 'app'];
+
+/** Trạng thái người tham dự / check-in */
+const PARTICIPANT_STATUS = ['pending', 'registered', 'checked_in', 'cancelled'];
+
+/**
+ * Người tham dự check-in theo sự kiện (`event_checkin_h`).
+ * `event_id` tương đương FK `event_checkin_id` trong thiết kế bảng.
+ *
+ * `uid`: mã duy nhất dùng cho QR / tra cứu (sinh khi import, giống logic `generateUID` ở controller cũ).
+ * `qr_code`: thường trùng `uid` sau khi tạo; có thể ghi đè từ Excel nếu có cột.
+ */
 const ParticipantCheckinSchema = new mongoose.Schema(
     {
         uid: {
@@ -9,59 +21,48 @@ const ParticipantCheckinSchema = new mongoose.Schema(
             unique: true,
             index: true,
         },
-        checkin_status: { type: Boolean, default: false },
-        /** FK tới sự kiện check-in (event_checkin_h) */
+        /** FK → event_checkin_h (thiết kế: event_checkin_id) */
         event_id: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'event_checkin_h',
             required: true,
             index: true,
         },
-        distance_name: String,
-        order_item_id: String,
-        order_id: String,
         fullname: { type: String, required: true },
-        cccd: { type: String, required: true },
-        bib: String,
-        distance: String,
-        tshirt_size: String,
-        bib_name: String,
         email: String,
         phone: String,
         dob: Date,
         gender: Boolean,
-        line: String,
-        nationality: String,
-        nationlity: String,
-        nation: String,
-        city: String,
-        patron_name: String,
-        patron_phone: String,
-        team: String,
-        blood: String,
-        medical: String,
-        medicine: String,
-        /** Chip timing (hiển thị cột ChipId) */
-        chip_id: { type: String, index: true },
-        mail_status: String,
-        group_checkin_status: String,
-        authorization_status: String,
-        waiver_status: String,
+        cccd: { type: String, required: true },
+        zone: String,
+        /** Nội dung in QR; mặc định gán bằng uid khi import nếu trống */
+        qr_code: { type: String, index: true },
+        checkin_method: {
+            type: String,
+            enum: CHECKIN_METHODS,
+            default: 'import',
+        },
+        status: {
+            type: String,
+            enum: PARTICIPANT_STATUS,
+            default: 'registered',
+        },
+        checkin_by: String,
+        checkin_time: Date,
+        bib: String,
+        bib_name: String,
+        distance: String,
+        item: String,
+        pickup_start: Date,
+        pickup_end: Date,
+        /** Lần gửi mail QR gần nhất (thủ công hoặc hàng loạt) */
+        qr_mail_sent_at: Date,
     },
     { timestamps: true },
 );
 
+ParticipantCheckinSchema.index({ event_id: 1, cccd: 1 });
+
 module.exports = mongoose.model('participant_checkin_h', ParticipantCheckinSchema);
-//
-// payment_status: {
-//   type: String,
-//   enum: [
-//     'PENDING',
-//     'PROCESSING',
-//     'PAID',
-//     'FAILED',
-//     'EXPIRED',
-//     'REFUNDED'
-//   ],
-//   default: 'PENDING'
-// }
+module.exports.CHECKIN_METHODS = CHECKIN_METHODS;
+module.exports.PARTICIPANT_STATUS = PARTICIPANT_STATUS;

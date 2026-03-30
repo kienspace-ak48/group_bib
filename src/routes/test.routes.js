@@ -1,14 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const bibIdentification = require('../controller/bibIdentification.controller')();
 const bcrypt = require('bcrypt');
 const SALT = 12;
 const excelUpload = require('../config/excelUploadM');
 const xlsx = require('xlsx');
 const crypto = require('crypto');
-const EventEntity = require('../model/Event');
-const RunnerEntity = require('../model/Runner');
-const ParticipantEntity = require('../model/Participant');
 const { sendOtpMail } = require('../services/mail.service');
 const {sendMailDomainQRCode}= require('../services/mailDomainQRCode.service');
 const QRCode = require('qrcode');
@@ -124,16 +120,13 @@ router.get('/api/runner', (req, res) => {
 });
 //send mail
 router.get('/sendmail/', async (req, res) => {
-    const _eventId = 'event_test';
-    const _groupId = 'group_admin';
-    const event = await EventEntity.findOne({ _id: '69290d190cfdc66e0f753c76' });
-    console.log(event);
-    const pp = await ParticipantEntity.find({ event_id: _eventId, group_id: _groupId }).lean();
-    console.log(pp)
-    const qrBase64 =await QRCode.toDataURL('event_test_21c6a70a2f');
-    const sendMail =await sendMailDomainQRCode('kienvu.dev@gmail.com', 'Nguyen Van A',qrBase64 )
-    // const randomPart = crypto.randomBytes(5).toString('hex');
-    res.json({ success: true, sendMail, qrBase64});
+    try {
+        const qrBase64 = await QRCode.toDataURL('event_test_demo');
+        const sendMail = await sendMailDomainQRCode('kienvu.dev@gmail.com', 'Nguyen Van A', qrBase64);
+        return res.json({ success: true, sendMail, qrBase64 });
+    } catch (e) {
+        return res.status(500).json({ success: false, mess: e.message });
+    }
 });
 router.get('/tool-scan', async(req, res)=>{
     res.render('pages/scanQRCode', {layout: false});

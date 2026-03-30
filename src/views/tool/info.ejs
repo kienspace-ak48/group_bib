@@ -39,7 +39,8 @@
                             <div>
                                 <h2 class="text-xl md:text-2xl font-bold text-white mb-3"><%= event.name %></h2>
 
-                                <% if (pc.checkin_status) { %>
+                                <% var _checkedIn = (pc.status === 'checked_in' || pc.checkin_status === true); %>
+                                <% if (_checkedIn) { %>
                                 <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                                     <!-- <span class="inline-flex items-center px-4 py-1.5 rounded-full bg-green-500/20 backdrop-blur-sm text-green-100 font-medium text-sm">
                                         <i class="fas fa-check-circle mr-2 text-green-300"></i>
@@ -47,7 +48,7 @@
                                     <div class="bg-white/15 backdrop-blur-md px-5 py-3 rounded-xl text-white text-sm">
                                         <div class="flex justify-between">
                                             <div>
-                                                <p class="">Category: <span class="font-semibold"><%= pc.distance %></span></p>
+                                                <p class="">Zone: <span class="font-semibold"><%= pc.zone || '—' %></span></p>
                                                 <p class="text-lg font-bold mt-1">
                                                     CODE: <span class="text-amber-200"><%= pc.bib %></span>
                                                 </p>
@@ -66,7 +67,7 @@
                                     <div class="bg-white/15 backdrop-blur-md px-5 py-3 rounded-xl text-white text-sm">
                                         <div class="flex justify-between">
                                             <div>
-                                                <p class="">Category: <span class="font-semibold"><%= pc.distance %></span></p>
+                                                <p class="">Zone: <span class="font-semibold"><%= pc.zone || '—' %></span></p>
                                                 <p class="text-lg font-bold mt-1">
                                                     CODE: <span class="text-amber-200"><%= pc.bib %></span>
                                                 </p>
@@ -109,19 +110,19 @@
 
                 <div class="space-y-1 mb-4">
                     <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                        Vật phẩm / Item
+                        Chip ID
                     </p>
                     <p class="text-sm font-semibold text-gray-900 leading-5">
-                        <%= pc.tshirt_size || 'N/A' %>
+                        <%= pc.chip_id || 'N/A' %>
                     </p>
                 </div>
 
                 <div class="space-y-1 mb-4">
                     <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                        Nickname
+                        Quốc tịch / Nationality
                     </p>
                     <p class="text-sm font-semibold text-gray-900 leading-5">
-                        <%= pc.bib_name || 'N/A' %>
+                        <%= pc.nationality || 'N/A' %>
                     </p>
                 </div>
             </div>
@@ -133,7 +134,7 @@
                         Giới tính / Gender
                     </p>
                     <p class="text-sm font-semibold text-gray-900 leading-5">
-                        <%= pc.gender ? 'Male' : 'Female' %>
+                        <%= pc.gender === true || pc.gender === 1 ? 'Male' : (pc.gender === false || pc.gender === 0 ? 'Female' : 'N/A') %>
                     </p>
                 </div>
 
@@ -224,7 +225,7 @@
                         </button>
                     </a>
 
-                    <% if (!pc.checkin_status) { %>
+                    <% if (!_checkedIn) { %>
                     <button
                         id="btn_cta_checkin"
                         class="flex-1 max-w-xs bg-green-600 hover:bg-green-700 text-white font-medium py-3.5 px-6 rounded-xl transition flex items-center justify-center shadow-md active:scale-95"

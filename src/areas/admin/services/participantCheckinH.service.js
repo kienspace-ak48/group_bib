@@ -3,7 +3,74 @@ const ParticipantCheckinH = require('../../../model/ParticipantCheckin_h');
 
 const CNAME = 'participantCheckinH.service.js ';
 
+function escapeRegex(s) {
+    return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 class ParticipantCheckinHService {
+    _buildParticipantFilterQuery(eventId, filters = {}) {
+        const andParts = [this._eventIdQuery(eventId)];
+        const addRegex = (field, val) => {
+            const t = String(val || '').trim();
+            if (!t) return;
+            andParts.push({ [field]: new RegExp(escapeRegex(t), 'i') });
+        };
+        addRegex('fullname', filters.fullname);
+        addRegex('bib', filters.bib);
+        addRegex('phone', filters.phone);
+        addRegex('cccd', filters.cccd);
+        return { $and: andParts };
+    }
+
+    async findByEventIdWithFilters(eventId, filters = {}, options = {}) {
+        try {
+            const q = this._buildParticipantFilterQuery(eventId, filters);
+            return await ParticipantCheckinH.find(q)
+                .sort({ createdAt: -1 })
+                .skip(options.skip || 0)
+                .limit(Math.min(100, Math.max(1, options.limit || 20)))
+                .lean();
+        } catch (e) {
+            console.log(CNAME, e.message);
+            return [];
+        }
+    }
+
+    async countByEventIdWithFilters(eventId, filters = {}) {
+        try {
+            const q = this._buildParticipantFilterQuery(eventId, filters);
+            return await ParticipantCheckinH.countDocuments(q);
+        } catch (e) {
+            console.log(CNAME, e.message);
+            return 0;
+        }
+    }
+
+    /** Email có dạng hợp lệ cơ bản (gửi mail hàng loạt) */
+    _emailQuery() {
+        return { email: { $regex: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, $options: 'i' } };
+    }
+
+    async countWithValidEmailByEventId(eventId) {
+        try {
+            const q = { $and: [this._eventIdQuery(eventId), this._emailQuery()] };
+            return await ParticipantCheckinH.countDocuments(q);
+        } catch (e) {
+            console.log(CNAME, e.message);
+            return 0;
+        }
+    }
+
+    async findByEventIdWithValidEmail(eventId) {
+        try {
+            const q = { $and: [this._eventIdQuery(eventId), this._emailQuery()] };
+            return await ParticipantCheckinH.find(q).lean();
+        } catch (e) {
+            console.log(CNAME, e.message);
+            return [];
+        }
+    }
+
     async findByEventId(eventId, options = {}) {
         try {
             const sid = String(eventId);
@@ -84,11 +151,14 @@ class ParticipantCheckinHService {
         }
     }
 
-    async findOneByEventCccd(eventId, cccd) {
+    async findOneByEventCccd(eventId, cccd, excludeParticipantId) {
         try {
             const c = String(cccd || '').trim();
             if (!c) return null;
             const q = { ...this._eventIdQuery(eventId), cccd: c };
+            if (excludeParticipantId && mongoose.Types.ObjectId.isValid(String(excludeParticipantId))) {
+                q._id = { $ne: new mongoose.Types.ObjectId(String(excludeParticipantId)) };
+            }
             return await ParticipantCheckinH.findOne(q).lean();
         } catch (e) {
             console.log(CNAME, e.message);
@@ -96,7 +166,37 @@ class ParticipantCheckinHService {
         }
     }
 
-    /** Xóa một VĐV thuộc đúng sự kiện */
+    async setQrMailSentAt(participantId, eventId, at) {
+        try {
+            if (!mongoose.Types.ObjectId.isValid(participantId) || !mongoose.Types.ObjectId.isValid(String(eventId)))
+                return null;
+            const doc = await ParticipantCheckinH.findById(participantId);
+            if (!doc || String(doc.event_id) !== String(eventId)) return null;
+            doc.qr_mail_sent_at = at instanceof Date ? at : new Date();
+            await doc.save();
+            return doc.toObject();
+        } catch (e) {
+            console.log(CNAME, e.message);
+            return null;
+        }
+    }
+
+    async updateByIdAndEvent(participantId, eventId, payload) {
+        try {
+            if (!mongoose.Types.ObjectId.isValid(participantId) || !mongoose.Types.ObjectId.isValid(String(eventId)))
+                return null;
+            const doc = await ParticipantCheckinH.findById(participantId);
+            if (!doc || String(doc.event_id) !== String(eventId)) return null;
+            Object.assign(doc, payload);
+            await doc.save();
+            return doc.toObject();
+        } catch (e) {
+            console.log(CNAME, e.message);
+            return null;
+        }
+    }
+
+    /** Xóa một người tham dự thuộc đúng sự kiện */
     async deleteByIdAndEvent(participantId, eventId) {
         try {
             if (!mongoose.Types.ObjectId.isValid(participantId) || !mongoose.Types.ObjectId.isValid(String(eventId)))

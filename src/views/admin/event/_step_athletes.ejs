@@ -1,33 +1,118 @@
 <% 
-  function formatDdMmYyyy(d) {
-    if (!d) return '—';
-    var x = new Date(d);
-    if (Number.isNaN(x.getTime())) return '—';
-    var dd = String(x.getDate()).padStart(2, '0');
-    var mm = String(x.getMonth() + 1).padStart(2, '0');
-    var yyyy = x.getFullYear();
-    return dd + '/' + mm + '/' + yyyy;
-  }
-  function genderLabel(g) {
-    if (g === true || g === 1) return 'Nam';
-    if (g === false || g === 0) return 'Nữ';
-    return '—';
-  }
   function dash(v) { return (v != null && String(v).trim() !== '') ? v : '—'; }
+  function statusIconHtml(st, legacy) {
+    var title = '';
+    var inner = '';
+    if (st === 'checked_in' || legacy === true) {
+      title = 'Đã check-in';
+      inner = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="text-success" viewBox="0 0 16 16" aria-hidden="true"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05z"/></svg>';
+    } else if (st === 'cancelled') {
+      title = 'Đã hủy';
+      inner = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="text-danger" viewBox="0 0 16 16" aria-hidden="true"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293 5.354 4.646z"/></svg>';
+    } else if (st === 'pending') {
+      title = 'Chờ';
+      inner = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="text-warning" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"/><path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z"/></svg>';
+    } else if (st === 'registered') {
+      title = 'Đã ghi danh';
+      inner = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="text-primary" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg>';
+    } else {
+      title = String(dash(st));
+      inner = '<span class="text-body-secondary small">?</span>';
+    }
+    var safeTitle = String(title).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    return '<span class="d-inline-flex align-items-center justify-content-center" title="' + safeTitle + '" role="img" aria-label="' + safeTitle + '">' + inner + '</span>';
+  }
+  /** Badge M/F — Nam xanh dương, Nữ hồng (rõ ràng, không tô cả tên để tránh rối) */
+  function genderBadgeHtml(g) {
+    if (g === true || g === 1) {
+      return '<span class="badge rounded-pill gender-badge-m" title="Nam">M</span>';
+    }
+    if (g === false || g === 0) {
+      return '<span class="badge rounded-pill gender-badge-f" title="Nữ">F</span>';
+    }
+    return '<span class="badge rounded-pill bg-light text-secondary border" title="Chưa rõ">—</span>';
+  }
+  function formatMailSentAt(d) {
+    if (!d) return '';
+    var x = new Date(d);
+    if (Number.isNaN(x.getTime())) return '';
+    return x.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  }
+  /** Cột trạng thái gửi mail QR */
+  function mailQrStatusHtml(p) {
+    var hasEmail = p.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(p.email).trim());
+    if (!hasEmail) {
+      return '<span class="text-body-tertiary small" title="Không có email">—</span>';
+    }
+    if (!p.qr_mail_sent_at) {
+      return '<span class="badge text-bg-light border text-warning-emphasis" title="Chưa gửi mail QR">Chưa gửi</span>';
+    }
+    var t = formatMailSentAt(p.qr_mail_sent_at);
+    var safe = String(t).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+    return '<span class="text-success small" title="Đã gửi mail QR lúc ' + safe + '"><span class="me-1">&#10003;</span>' + t + '</span>';
+  }
   var ev = typeof event !== 'undefined' ? event : {};
+  var sgOk = typeof sendgridConfigured !== 'undefined' ? sendgridConfigured : false;
+  var pf = typeof participantFilters !== 'undefined' && participantFilters ? participantFilters : { q_name: '', q_bib: '', q_phone: '', q_cccd: '' };
+  var pp = typeof participantPagination !== 'undefined' && participantPagination ? participantPagination : null;
+  var defaultPerPage = 20;
+  function step1Query(pageNum) {
+    var parts = [];
+    if (pf.q_name) parts.push('q_name=' + encodeURIComponent(pf.q_name));
+    if (pf.q_bib) parts.push('q_bib=' + encodeURIComponent(pf.q_bib));
+    if (pf.q_phone) parts.push('q_phone=' + encodeURIComponent(pf.q_phone));
+    if (pf.q_cccd) parts.push('q_cccd=' + encodeURIComponent(pf.q_cccd));
+    parts.push('page=' + encodeURIComponent(String(pageNum)));
+    if (pp && pp.perPage && pp.perPage !== defaultPerPage) parts.push('perPage=' + encodeURIComponent(String(pp.perPage)));
+    return '?' + parts.join('&');
+  }
+  function participantRowJson(p) {
+    var o = {
+      _id: String(p._id),
+      fullname: p.fullname || '',
+      cccd: p.cccd || '',
+      email: p.email || '',
+      phone: p.phone || '',
+      bib: p.bib || '',
+      bib_name: p.bib_name || '',
+      distance: p.distance || '',
+      item: p.item || '',
+      zone: p.zone || '',
+      qr_code: (p.qr_code != null && String(p.qr_code) !== '') ? String(p.qr_code) : '',
+      checkin_method: p.checkin_method || 'import',
+      status: p.status || 'registered',
+      checkin_by: p.checkin_by || '',
+      gender: p.gender
+    };
+    if (p.dob) o.dob_iso = new Date(p.dob).toISOString();
+    if (p.checkin_time) o.checkin_time_iso = new Date(p.checkin_time).toISOString();
+    if (p.pickup_start) o.pickup_start_iso = new Date(p.pickup_start).toISOString();
+    if (p.pickup_end) o.pickup_end_iso = new Date(p.pickup_end).toISOString();
+    return encodeURIComponent(JSON.stringify(o));
+  }
 %>
-<div class="card border-0 shadow-sm mb-4 <%= ws === 1 ? 'border-primary border-2' : '' %>">
+<div class="card border-0 shadow-sm mb-4 min-w-0 <%= ws === 1 ? 'border-primary border-2' : '' %>">
   <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
     <div>
-      <strong>2. Quản lý VĐV</strong>
+      <strong>2. Quản lý người tham dự</strong>
       <span class="small text-body-secondary ms-2">Model: <code>participant_checkin_h</code></span>
     </div>
     <% if (ws === 1) { %><span class="badge bg-primary">Đang làm</span><% } %>
   </div>
   <div class="card-body border-bottom">
     <p class="small text-body-secondary mb-3">
-      Import Excel dùng sheet đầu; cột tương thích file mẫu và luồng cũ (<code>dob(mm/dd/yyyy)</code>, <code>fullname</code>, <code>cccd</code>, <code>chip_id</code> / <code>ChipId</code>, …).
-      Chế độ <strong>Thêm mới</strong> giữ VĐV hiện có; <strong>Xóa danh sách cũ rồi import</strong> xóa toàn bộ VĐV của sự kiện trước khi nạp file.
+      Import Excel (sheet đầu): cột gợi ý <code>fullname</code>, <code>cccd</code>, <code>email</code>, <code>phone</code>,
+      <code>dob</code> / <code>dob(mm/dd/yyyy)</code>, <code>gender</code>, <code>zone</code>, <code>bib</code>, <code>bib_name</code>, <code>distance</code>, <code>item</code>,
+      <code>qr_code</code> (tùy; nếu trống sẽ dùng mã <code>uid</code> sinh tự động), <code>status</code>, <code>checkin_method</code>,
+      <code>pickup_start</code>, <code>pickup_end</code> — chỉ <strong>giờ 24h</strong> chuẩn Excel: định dạng ô <strong>Time</strong> (vd <code>HH:mm</code>) hoặc gõ <code>08:00</code>; để trống nếu không dùng. …
+      Mỗi dòng sau import sẽ có <code>uid</code> duy nhất (prefix theo sự kiện, giống logic cũ <code>generateUID</code>).
+      Có thể import nhiều dòng trùng họ tên / SĐT / CCCD — mỗi dòng là một bản ghi riêng (mã <code>uid</code> khác nhau).
+      Chế độ <strong>Thêm mới</strong> giữ danh sách hiện có; <strong>Xóa danh sách cũ rồi import</strong> xóa toàn bộ người tham dự của sự kiện trước khi nạp file.
+      <% if (sgOk) { %>
+      Cột thao tác: <strong>Gửi mail QR</strong> gửi lại email QR cho một người (cần đã cấu hình mail ở bước 3).
+      <% } else { %>
+      <span class="text-warning">SendGrid chưa cấu hình env — không gửi mail thủ công từ đây.</span>
+      <% } %>
     </p>
     <div class="row g-3 align-items-end">
       <div class="col-lg-9">
@@ -55,191 +140,142 @@
     </div>
   </div>
 
-  <div class="card-header bg-body-tertiary bg-opacity-50 py-0 border-bottom-0 px-0">
-    <button
-      id="manualAthleteToggleBtn"
-      class="btn btn-link text-decoration-none text-body fw-semibold w-100 text-start py-3 px-3 rounded-0 d-flex align-items-center gap-2"
-      type="button"
-      aria-expanded="false"
-      aria-controls="manualAthleteCollapse"
-    >
-      <span class="manual-athlete-chevron" aria-hidden="true">▸</span>
-      <span>Thêm VĐV thủ công</span>
-      <span class="small text-body-secondary fw-normal">(mở rộng form)</span>
+  <div class="card-header bg-body-tertiary bg-opacity-50 py-3 border-bottom">
+    <button type="button" class="btn btn-primary btn-sm" data-coreui-toggle="modal" data-coreui-target="#manualAthleteModal">
+      Thêm thủ công
     </button>
-  </div>
-  <div class="collapse border-0" id="manualAthleteCollapse">
-    <div class="card-body border-bottom bg-body-tertiary bg-opacity-25">
-      <form method="POST" action="/admin/event/<%= ev._id %>/participants/manual" class="row g-2">
-        <div class="col-md-4">
-          <label class="form-label small">Họ tên <span class="text-danger">*</span></label>
-          <input type="text" name="fullname" class="form-control form-control-sm" required maxlength="200" />
-        </div>
-        <div class="col-md-3">
-          <label class="form-label small">CCCD <span class="text-danger">*</span></label>
-          <input type="text" name="cccd" class="form-control form-control-sm" required maxlength="20" />
-        </div>
-        <div class="col-md-2">
-          <label class="form-label small">BIB</label>
-          <input type="text" name="bib" class="form-control form-control-sm" maxlength="50" />
-        </div>
-        <div class="col-md-3">
-          <label class="form-label small">Cự ly</label>
-          <input type="text" name="distance" class="form-control form-control-sm" maxlength="80" />
-        </div>
-        <div class="col-md-3">
-          <label class="form-label small">Tên cự ly (distance_name)</label>
-          <input type="text" name="distance_name" class="form-control form-control-sm" maxlength="120" />
-        </div>
-        <div class="col-md-3">
-          <label class="form-label small">Chip ID</label>
-          <input type="text" name="chip_id" class="form-control form-control-sm" maxlength="80" />
-        </div>
-        <div class="col-md-3">
-          <label class="form-label small">BIB name</label>
-          <input type="text" name="bib_name" class="form-control form-control-sm" maxlength="120" />
-        </div>
-        <div class="col-md-3">
-          <label class="form-label small">Line</label>
-          <input type="text" name="line" class="form-control form-control-sm" maxlength="80" />
-        </div>
-        <div class="col-md-4">
-          <label class="form-label small">Email</label>
-          <input type="email" name="email" class="form-control form-control-sm" maxlength="120" />
-        </div>
-        <div class="col-md-3">
-          <label class="form-label small">Điện thoại</label>
-          <input type="text" name="phone" class="form-control form-control-sm" maxlength="30" />
-        </div>
-        <div class="col-md-2">
-          <label class="form-label small">Ngày sinh</label>
-          <input type="date" name="dob" class="form-control form-control-sm" />
-        </div>
-        <div class="col-md-3">
-          <label class="form-label small">Giới tính</label>
-          <select name="gender" class="form-select form-select-sm">
-            <option value="">—</option>
-            <option value="M">Nam</option>
-            <option value="F">Nữ</option>
-          </select>
-        </div>
-        <div class="col-md-3">
-          <label class="form-label small">Size áo</label>
-          <input type="text" name="tshirt_size" class="form-control form-control-sm" maxlength="40" />
-        </div>
-        <div class="col-md-3">
-          <label class="form-label small">Mail status</label>
-          <input type="text" name="mail_status" class="form-control form-control-sm" maxlength="80" placeholder="VD: PENDING / SENT" />
-        </div>
-        <div class="col-md-3">
-          <label class="form-label small">Check-in theo nhóm</label>
-          <input type="text" name="group_checkin_status" class="form-control form-control-sm" maxlength="80" />
-        </div>
-        <div class="col-md-3">
-          <label class="form-label small">Ủy quyền</label>
-          <input type="text" name="authorization_status" class="form-control form-control-sm" maxlength="80" />
-        </div>
-        <div class="col-md-3">
-          <label class="form-label small">Waiver</label>
-          <input type="text" name="waiver_status" class="form-control form-control-sm" maxlength="80" />
-        </div>
-        <div class="col-md-4">
-          <label class="form-label small">Quốc tịch</label>
-          <input type="text" name="nationality" class="form-control form-control-sm" maxlength="80" />
-        </div>
-        <div class="col-md-4">
-          <label class="form-label small">Đội / CLB</label>
-          <input type="text" name="team" class="form-control form-control-sm" maxlength="120" />
-        </div>
-        <div class="col-md-4">
-          <label class="form-label small">Thành phố</label>
-          <input type="text" name="city" class="form-control form-control-sm" maxlength="80" />
-        </div>
-        <div class="col-md-4">
-          <label class="form-label small">Nation</label>
-          <input type="text" name="nation" class="form-control form-control-sm" maxlength="80" />
-        </div>
-        <div class="col-md-4">
-          <label class="form-label small">Người bảo hộ — tên</label>
-          <input type="text" name="patron_name" class="form-control form-control-sm" maxlength="120" />
-        </div>
-        <div class="col-md-4">
-          <label class="form-label small">Người bảo hộ — SĐT</label>
-          <input type="text" name="patron_phone" class="form-control form-control-sm" maxlength="30" />
-        </div>
-        <div class="col-md-3">
-          <label class="form-label small">Nhóm máu</label>
-          <input type="text" name="blood" class="form-control form-control-sm" maxlength="10" />
-        </div>
-        <div class="col-md-4">
-          <label class="form-label small">Y tế</label>
-          <input type="text" name="medical" class="form-control form-control-sm" maxlength="200" />
-        </div>
-        <div class="col-md-4">
-          <label class="form-label small">Thuốc</label>
-          <input type="text" name="medicine" class="form-control form-control-sm" maxlength="200" />
-        </div>
-        <div class="col-md-3">
-          <label class="form-label small">Order ID</label>
-          <input type="text" name="order_id" class="form-control form-control-sm" maxlength="80" />
-        </div>
-        <div class="col-md-3">
-          <label class="form-label small">Order item ID</label>
-          <input type="text" name="order_item_id" class="form-control form-control-sm" maxlength="80" />
-        </div>
-        <div class="col-12">
-          <button type="submit" class="btn btn-sm btn-primary">Thêm VĐV</button>
-        </div>
-      </form>
-    </div>
+    <span class="small text-body-secondary ms-2">Mở popup nhập thông tin</span>
   </div>
 
-  <div class="card-body p-0">
-    <div class="table-responsive">
-      <table class="table table-sm table-striped table-hover align-middle mb-0">
+  <div class="card-body border-bottom">
+    <form method="get" action="/admin/event/<%= ev._id %>/step/1" class="row g-2 align-items-end">
+      <input type="hidden" name="page" value="1" />
+      <div class="col-md-3 col-lg-2">
+        <label class="form-label small mb-0">Họ tên</label>
+        <input type="search" name="q_name" class="form-control form-control-sm" value="<%= pf.q_name %>" placeholder="Tên" autocomplete="off" />
+      </div>
+      <div class="col-md-2 col-lg-2">
+        <label class="form-label small mb-0">BIB</label>
+        <input type="search" name="q_bib" class="form-control form-control-sm" value="<%= pf.q_bib %>" placeholder="BIB" autocomplete="off" />
+      </div>
+      <div class="col-md-2 col-lg-2">
+        <label class="form-label small mb-0">SĐT</label>
+        <input type="search" name="q_phone" class="form-control form-control-sm" value="<%= pf.q_phone %>" placeholder="Điện thoại" autocomplete="off" />
+      </div>
+      <div class="col-md-2 col-lg-2">
+        <label class="form-label small mb-0">CCCD</label>
+        <input type="search" name="q_cccd" class="form-control form-control-sm" value="<%= pf.q_cccd %>" placeholder="CCCD" autocomplete="off" />
+      </div>
+      <div class="col-md-2 col-lg-2">
+        <label class="form-label small mb-0">Số dòng / trang</label>
+        <select name="perPage" class="form-select form-select-sm">
+          <% var curPer = pp ? pp.perPage : defaultPerPage; %>
+          <option value="10" <%= curPer === 10 ? 'selected' : '' %>>10</option>
+          <option value="20" <%= curPer === 20 ? 'selected' : '' %>>20</option>
+          <option value="50" <%= curPer === 50 ? 'selected' : '' %>>50</option>
+          <option value="100" <%= curPer === 100 ? 'selected' : '' %>>100</option>
+        </select>
+      </div>
+      <div class="col-md-12 col-lg-2 d-flex gap-2">
+        <button type="submit" class="btn btn-sm btn-outline-primary">Tìm kiếm</button>
+        <a href="/admin/event/<%= ev._id %>/step/1" class="btn btn-sm btn-outline-secondary">Xóa lọc</a>
+      </div>
+    </form>
+    <% if (pp) { %>
+    <p class="small text-body-secondary mb-0 mt-2">
+      <% if (pp.total > 0) { %>
+      Hiển thị <%= (pp.page - 1) * pp.perPage + 1 %>–<%= Math.min(pp.page * pp.perPage, pp.total) %> / <%= pp.total %> người
+      <% } else { %>
+      Không có kết quả (0 người khớp bộ lọc)
+      <% } %>
+    </p>
+    <% } %>
+  </div>
+
+  <div class="card-body p-0 overflow-hidden" style="min-width: 0">
+    <div class="table-responsive step-athletes-scroll-x w-100">
+      <table class="table table-sm table-striped table-hover align-middle mb-0 athlete-table-fixed" style="min-width: 880px">
+        <colgroup>
+          <col class="athlete-col-bib" />
+          <col class="athlete-col-zone" />
+          <col class="athlete-col-name" />
+          <col class="athlete-col-cccd" />
+          <col class="athlete-col-status" />
+          <col class="athlete-col-mailqr" />
+          <col class="athlete-col-qr" />
+          <col class="athlete-col-actions" />
+        </colgroup>
         <thead class="table-light">
           <tr class="text-center small">
             <th class="text-start">BIB / Cự ly</th>
-            <th>ChipId</th>
+            <th>Zone</th>
             <th class="text-start">Họ tên</th>
-            <th>Đã Checkin</th>
-            <th>Checkin nhóm</th>
-            <th>Mail</th>
-            <th>Ủy quyền</th>
-            <th>Waiver</th>
-            <th>Giới tính</th>
-            <th>Ngày sinh</th>
-            <th>Size áo</th>
-            <th class="text-end">Actions</th>
+            <th class="text-start">CCCD</th>
+            <th class="athlete-th-status" title="Trạng thái ghi danh / check-in: chờ, đã ghi danh, đã check-in, đã hủy">Trạng thái</th>
+            <th>Mail QR</th>
+            <th>QR</th>
+            <th class="text-end">Thao tác</th>
           </tr>
         </thead>
         <tbody>
           <% if (!participants || !participants.length) { %>
           <tr>
-            <td colspan="12" class="text-center text-body-secondary py-4">Chưa có VĐV. Dùng import Excel hoặc form thêm thủ công.</td>
+            <td colspan="8" class="text-center text-body-secondary py-4">Chưa có người tham dự hoặc không khớp bộ lọc. Dùng import Excel hoặc Thêm thủ công.</td>
           </tr>
           <% } else { %>
           <% participants.forEach(function (p) { %>
-          <tr>
-            <td class="text-start">
-              <div class="fw-bold text-danger"><%= dash(p.bib) %></div>
-              <div class="small text-body-secondary"><%= dash(p.distance || p.distance_name) %></div>
+          <% var emailOk = p.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(p.email).trim()); %>
+          <% var qrPayload = (p.qr_code != null && String(p.qr_code) !== '') ? String(p.qr_code) : String(p.uid || ''); %>
+          <tr class="participant-row" data-participant="<%= participantRowJson(p) %>">
+            <td class="text-start text-nowrap">
+              <div><span class="fw-bold text-danger"><%= dash(p.bib) %></span></div>
+              <div class="small text-body-secondary"><%= dash(p.distance) %></div>
             </td>
-            <td class="text-center small"><%= dash(p.chip_id) %></td>
-            <td class="text-start">
-              <div><a href="#" class="text-primary text-decoration-none" onclick="return false;"><%= dash(p.fullname) %></a></div>
-              <div class="small text-body-secondary"><%= dash(p.phone) %></div>
+            <td class="text-center small"><%= dash(p.zone) %></td>
+            <td class="text-start js-open-edit participant-name-col" role="button" tabindex="0" title="Click để sửa">
+              <div class="d-flex align-items-start flex-wrap gap-1 mb-1">
+                <%- genderBadgeHtml(p.gender) %>
+                <span class="fw-medium"><%= dash(p.fullname) %></span>
+              </div>
+              <div class="small text-body-secondary text-break"><%= dash(p.phone) %></div>
+              <% if (emailOk) { %>
+              <div class="small text-break" style="word-break: break-all"><%= dash(p.email) %></div>
+              <% } else { %>
+              <div class="small text-body-tertiary">—</div>
+              <% } %>
             </td>
-            <td class="text-center small"><%= p.checkin_status ? '✓' : '—' %></td>
-            <td class="text-center small"><%= dash(p.group_checkin_status) %></td>
-            <td class="text-center small"><%= dash(p.mail_status) %></td>
-            <td class="text-center small"><%= dash(p.authorization_status) %></td>
-            <td class="text-center small"><%= dash(p.waiver_status) %></td>
-            <td class="text-center small"><%= genderLabel(p.gender) %></td>
-            <td class="text-center small text-nowrap"><%= formatDdMmYyyy(p.dob) %></td>
-            <td class="text-center small"><%= dash(p.tshirt_size) %></td>
-            <td class="text-end">
-              <form method="POST" action="/admin/event/<%= ev._id %>/participants/<%= p._id %>/delete" class="d-inline" onsubmit="return confirm('Xóa VĐV này khỏi sự kiện?');">
+            <td class="text-start small"><%= dash(p.cccd) %></td>
+            <td class="text-center small"><%- statusIconHtml(p.status, p.checkin_status) %></td>
+            <td class="text-center small text-nowrap"><%- mailQrStatusHtml(p) %></td>
+            <td class="text-center">
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary py-0 px-2 js-qr-share"
+                title="Xem mã QR"
+                data-qr="<%= encodeURIComponent(qrPayload) %>"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="align-text-bottom me-1" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 1a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM11 2.5a2.5 2.5 0 1 1 .603 1.628l-6.718 3.12a2.5 2.5 0 0 1 0 1.504l6.718 3.12a2.5 2.5 0 1 1-.488.876l-6.718-3.12a2.5 2.5 0 1 1 0-3.256l6.718-3.12A2.5 2.5 0 0 1 11 2.5zm-6.5 6a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm11 5.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/></svg>
+                QR
+              </button>
+            </td>
+            <td class="text-end text-nowrap">
+              <button
+                type="button"
+                class="btn btn-link btn-sm text-primary p-0 me-2 js-send-participant-mail"
+                title="<%= emailOk && sgOk ? 'Gửi / gửi lại mail QR' : (!sgOk ? 'Chưa cấu hình SendGrid' : 'Thiếu email hợp lệ') %>"
+                aria-label="Gửi mail QR"
+                data-participant-id="<%= p._id %>"
+                <%= (!sgOk || !emailOk) ? 'disabled' : '' %>
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.05 3.555A2 2 0 0 1 2 2h12a2 2 0 0 1 1.95 1.555L8 8.414.05 3.555zM0 4.697v7.104l5.803-3.558L0 4.697zM6.761 8.83l-6.57 4.027A2 2 0 0 0 2 14h12a2 2 0 0 0 1.808-1.144l-6.57-4.027L8 9.586l-1.239-.757zm3.436-.586L16 11.801V4.697l-5.803 3.546z"/></svg>
+              </button>
+              <form method="POST" action="/admin/event/<%= ev._id %>/participants/<%= p._id %>/delete" class="d-inline js-participant-delete" onsubmit="return confirm('Xóa người này khỏi sự kiện?');">
+                <input type="hidden" name="ret_q_name" value="<%= pf.q_name %>" />
+                <input type="hidden" name="ret_q_bib" value="<%= pf.q_bib %>" />
+                <input type="hidden" name="ret_q_phone" value="<%= pf.q_phone %>" />
+                <input type="hidden" name="ret_q_cccd" value="<%= pf.q_cccd %>" />
+                <input type="hidden" name="ret_page" value="<%= pp ? pp.page : 1 %>" />
+                <input type="hidden" name="ret_perPage" value="<%= pp ? pp.perPage : defaultPerPage %>" />
                 <button type="submit" class="btn btn-link btn-sm text-danger p-0" title="Xóa" aria-label="Xóa">
                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/><path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/></svg>
                 </button>
@@ -251,24 +287,328 @@
         </tbody>
       </table>
     </div>
+    <% if (pp && pp.totalPages > 1) { %>
+    <nav class="d-flex justify-content-center py-3 border-top" aria-label="Phân trang">
+      <ul class="pagination pagination-sm mb-0">
+        <li class="page-item <%= pp.hasPrev ? '' : 'disabled' %>">
+          <% if (pp.hasPrev) { %><a class="page-link" href="/admin/event/<%= ev._id %>/step/1<%= step1Query(pp.page - 1) %>">Trước</a><% } else { %><span class="page-link">Trước</span><% } %>
+        </li>
+        <% var start = Math.max(1, pp.page - 2); var end = Math.min(pp.totalPages, pp.page + 2); %>
+        <% for (var pi = start; pi <= end; pi++) { %>
+        <li class="page-item <%= pi === pp.page ? 'active' : '' %>">
+          <a class="page-link" href="/admin/event/<%= ev._id %>/step/1<%= step1Query(pi) %>"><%= pi %></a>
+        </li>
+        <% } %>
+        <li class="page-item <%= pp.hasNext ? '' : 'disabled' %>">
+          <% if (pp.hasNext) { %><a class="page-link" href="/admin/event/<%= ev._id %>/step/1<%= step1Query(pp.page + 1) %>">Sau</a><% } else { %><span class="page-link">Sau</span><% } %>
+        </li>
+      </ul>
+    </nav>
+    <% } %>
   </div>
 </div>
+
+<div class="modal fade" id="manualAthleteModal" tabindex="-1" aria-labelledby="manualAthleteModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="manualAthleteModalLabel">Thêm người tham dự thủ công</h5>
+        <button type="button" class="btn-close" data-coreui-dismiss="modal" aria-label="Đóng"></button>
+      </div>
+      <form method="POST" action="/admin/event/<%= ev._id %>/participants/manual">
+        <input type="hidden" name="ret_q_name" value="<%= pf.q_name %>" />
+        <input type="hidden" name="ret_q_bib" value="<%= pf.q_bib %>" />
+        <input type="hidden" name="ret_q_phone" value="<%= pf.q_phone %>" />
+        <input type="hidden" name="ret_q_cccd" value="<%= pf.q_cccd %>" />
+        <input type="hidden" name="ret_page" value="<%= pp ? pp.page : 1 %>" />
+        <input type="hidden" name="ret_perPage" value="<%= pp ? pp.perPage : defaultPerPage %>" />
+        <div class="modal-body">
+          <div class="row g-2">
+            <%- include('./_athlete_form_fields', { prefix: 'manual' }) %>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-coreui-dismiss="modal">Đóng</button>
+          <button type="submit" class="btn btn-primary">Thêm người tham dự</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="editParticipantModal" tabindex="-1" aria-labelledby="editParticipantModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editParticipantModalLabel">Sửa người tham dự</h5>
+        <button type="button" class="btn-close" data-coreui-dismiss="modal" aria-label="Đóng"></button>
+      </div>
+      <form method="POST" action="" class="js-edit-participant-form">
+        <input type="hidden" name="ret_q_name" value="<%= pf.q_name %>" />
+        <input type="hidden" name="ret_q_bib" value="<%= pf.q_bib %>" />
+        <input type="hidden" name="ret_q_phone" value="<%= pf.q_phone %>" />
+        <input type="hidden" name="ret_q_cccd" value="<%= pf.q_cccd %>" />
+        <input type="hidden" name="ret_page" value="<%= pp ? pp.page : 1 %>" />
+        <input type="hidden" name="ret_perPage" value="<%= pp ? pp.perPage : defaultPerPage %>" />
+        <div class="modal-body">
+          <div class="row g-2">
+            <%- include('./_athlete_form_fields', { prefix: 'edit' }) %>
+          </div>
+        </div>
+        <div class="modal-footer flex-wrap gap-2">
+          <button type="button" class="btn btn-secondary" data-coreui-dismiss="modal" data-bs-dismiss="modal">Đóng</button>
+          <button type="button" class="btn btn-outline-primary" id="btnEditSendMail" disabled>Gửi mail QR</button>
+          <button type="submit" class="btn btn-primary ms-auto">Lưu thay đổi</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="participantQrModal" tabindex="-1" aria-labelledby="participantQrModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h5 class="modal-title" id="participantQrModalLabel">Mã QR</h5>
+        <button type="button" class="btn-close" data-coreui-dismiss="modal" data-bs-dismiss="modal" aria-label="Đóng"></button>
+      </div>
+      <div class="modal-body text-center">
+        <img id="participantQrImg" src="" alt="Mã QR" class="img-fluid d-block mx-auto mb-2" width="220" height="220" />
+        <p class="small text-break text-body-secondary mb-0 font-monospace" id="participantQrText"></p>
+      </div>
+    </div>
+  </div>
+</div>
+
 <style>
-  /* CoreUI layout không luôn khởi tạo Bootstrap Collapse cho data-bs-toggle — toggle .show bằng script bên dưới */
-  #manualAthleteToggleBtn.manual-athlete-open .manual-athlete-chevron { transform: rotate(90deg); }
-  .manual-athlete-chevron { display: inline-block; transition: transform 0.2s ease; }
+  /* Cho phép bảng cuộn ngang trong layout flex (card co min-width: 0) */
+  .step-athletes-scroll-x {
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+  }
+  .athlete-table-fixed {
+    table-layout: fixed;
+    width: 100%;
+  }
+  .athlete-table-fixed th,
+  .athlete-table-fixed td {
+    padding-left: 0.4rem;
+    padding-right: 0.4rem;
+  }
+  .athlete-col-bib { width: 6.25rem; }
+  .athlete-col-zone { width: 2.5rem; }
+  .athlete-col-name { width: 26%; min-width: 9.5rem; }
+  .athlete-col-cccd { width: 9.5rem; }
+  .athlete-col-status { width: 2.75rem; }
+  .athlete-col-mailqr { width: 6.25rem; }
+  .athlete-col-qr { width: 4.25rem; }
+  .athlete-col-actions { width: 5rem; }
+  .athlete-th-status { cursor: help; }
+  .participant-name-col {
+    cursor: pointer;
+    min-width: 9rem;
+    max-width: 100%;
+  }
+  .athlete-name-line {
+    line-height: 1.35;
+  }
+  .athlete-name-text {
+    min-width: 0;
+  }
+  .participant-name-col:hover {
+    background-color: rgba(var(--cui-primary-rgb, 13, 110, 253), 0.08) !important;
+  }
+  .participant-row:hover {
+    background-color: rgba(0, 0, 0, 0.015);
+  }
+  .gender-badge-m {
+    background: #e3f2fd;
+    color: #0d47a1;
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 0.15em 0.5em;
+    border: 1px solid rgba(13, 71, 161, 0.25);
+  }
+  .gender-badge-f {
+    background: #fce4ec;
+    color: #ad1457;
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 0.15em 0.5em;
+    border: 1px solid rgba(173, 20, 87, 0.25);
+  }
 </style>
 <script>
 (function () {
-  var btn = document.getElementById('manualAthleteToggleBtn');
-  var panel = document.getElementById('manualAthleteCollapse');
-  if (!btn || !panel) return;
-  btn.addEventListener('click', function (e) {
-    e.preventDefault();
-    var open = !panel.classList.contains('show');
-    panel.classList.toggle('show', open);
-    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-    btn.classList.toggle('manual-athlete-open', open);
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function toDatetimeLocal(iso) {
+    if (!iso) return '';
+    var d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
+  function toDateInput(iso) {
+    if (!iso) return '';
+    var d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toISOString().slice(0, 10);
+  }
+
+  function getModalCtor() {
+    if (typeof coreui !== 'undefined' && coreui.Modal) return coreui.Modal;
+    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) return bootstrap.Modal;
+    return null;
+  }
+
+  var manualModal = document.getElementById('manualAthleteModal');
+  if (manualModal) {
+    function resetManualForm() {
+      var f = manualModal.querySelector('form');
+      if (f) f.reset();
+      var m = manualModal.querySelector('.manual-checkin_method');
+      if (m) m.value = 'import';
+      var st = manualModal.querySelector('.manual-status');
+      if (st) st.value = 'registered';
+    }
+    manualModal.addEventListener('show.bs.modal', resetManualForm);
+    manualModal.addEventListener('show.coreui.modal', resetManualForm);
+  }
+
+  var editModalEl = document.getElementById('editParticipantModal');
+  var editForm = document.querySelector('.js-edit-participant-form');
+  var eventId = '<%= ev._id %>';
+  var sgOk = <%= sgOk ? 'true' : 'false' %>;
+
+  function fillEditForm(data) {
+    if (!editForm) return;
+    editForm.action = '/admin/event/' + eventId + '/participants/' + data._id + '/update';
+    var set = function (sel, val) {
+      var el = editForm.querySelector(sel);
+      if (el) el.value = val != null ? val : '';
+    };
+    set('.edit-fullname', data.fullname);
+    set('.edit-cccd', data.cccd);
+    set('.edit-bib', data.bib);
+    set('.edit-bib_name', data.bib_name);
+    set('.edit-distance', data.distance);
+    set('.edit-item', data.item);
+    set('.edit-zone', data.zone);
+    set('.edit-qr_code', data.qr_code);
+    set('.edit-email', data.email);
+    set('.edit-phone', data.phone);
+    set('.edit-dob', toDateInput(data.dob_iso));
+    if (data.gender === true || data.gender === 1) set('.edit-gender', 'M');
+    else if (data.gender === false || data.gender === 0) set('.edit-gender', 'F');
+    else set('.edit-gender', '');
+    set('.edit-checkin_method', data.checkin_method || 'import');
+    set('.edit-status', data.status || 'registered');
+    set('.edit-checkin_by', data.checkin_by);
+    set('.edit-checkin_time', toDatetimeLocal(data.checkin_time_iso));
+    set('.edit-pickup_start', toDatetimeLocal(data.pickup_start_iso));
+    set('.edit-pickup_end', toDatetimeLocal(data.pickup_end_iso));
+    var btnEdit = document.getElementById('btnEditSendMail');
+    if (btnEdit) {
+      btnEdit.dataset.participantId = data._id || '';
+      var emOk = data.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(data.email).trim());
+      btnEdit.disabled = !sgOk || !emOk;
+    }
+  }
+
+  function openEditFromRow(tr) {
+    var raw = tr.getAttribute('data-participant');
+    if (!raw) return;
+    try {
+      var data = JSON.parse(decodeURIComponent(raw));
+      fillEditForm(data);
+      var ModalCtor = getModalCtor();
+      if (ModalCtor && editModalEl) {
+        ModalCtor.getOrCreateInstance(editModalEl).show();
+      }
+    } catch (e) { console.error(e); }
+  }
+
+  document.querySelectorAll('.js-open-edit').forEach(function (cell) {
+    cell.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var tr = cell.closest('tr');
+      if (tr) openEditFromRow(tr);
+    });
+    cell.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        var tr = cell.closest('tr');
+        if (tr) openEditFromRow(tr);
+      }
+    });
+  });
+
+  document.querySelectorAll('.js-participant-delete').forEach(function (form) {
+    form.addEventListener('click', function (e) { e.stopPropagation(); });
+  });
+
+  function postSendParticipantMail(participantId, triggerBtn) {
+    if (!participantId || !confirm('Gửi mail QR tới người này? (dùng cấu hình mail bước 3)')) return;
+    var canReenable = !!(triggerBtn && !triggerBtn.disabled);
+    if (triggerBtn) triggerBtn.disabled = true;
+    fetch('/admin/event/' + eventId + '/participants/' + participantId + '/send-mail', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    })
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+      .then(function (ref) {
+        if (ref.ok && ref.j.success) {
+          alert(ref.j.message || 'Đã gửi email.');
+          window.location.reload();
+        } else {
+          alert((ref.j && ref.j.message) ? ref.j.message : 'Lỗi gửi mail.');
+        }
+      })
+      .catch(function () { alert('Lỗi mạng.'); })
+      .finally(function () {
+        if (canReenable && triggerBtn) triggerBtn.disabled = false;
+      });
+  }
+
+  document.querySelectorAll('.js-send-participant-mail').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      e.preventDefault();
+      if (btn.disabled) return;
+      postSendParticipantMail(btn.getAttribute('data-participant-id'), btn);
+    });
+  });
+
+  var btnEditSendMail = document.getElementById('btnEditSendMail');
+  if (btnEditSendMail) {
+    btnEditSendMail.addEventListener('click', function (e) {
+      e.preventDefault();
+      if (btnEditSendMail.disabled) return;
+      var pid = btnEditSendMail.getAttribute('data-participant-id');
+      postSendParticipantMail(pid, btnEditSendMail);
+    });
+  }
+
+  var qrModalEl = document.getElementById('participantQrModal');
+  var qrImg = document.getElementById('participantQrImg');
+  var qrText = document.getElementById('participantQrText');
+  document.querySelectorAll('.js-qr-share').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      e.preventDefault();
+      var enc = btn.getAttribute('data-qr');
+      if (!enc || !qrImg || !qrText) return;
+      var text = decodeURIComponent(enc);
+      qrText.textContent = text;
+      qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(text);
+      qrImg.alt = 'QR: ' + text;
+      var ModalCtor = getModalCtor();
+      if (ModalCtor && qrModalEl) {
+        ModalCtor.getOrCreateInstance(qrModalEl).show();
+      }
+    });
   });
 })();
 </script>

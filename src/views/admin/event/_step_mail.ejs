@@ -1,4 +1,344 @@
+<% 
+  var ev = typeof event !== 'undefined' ? event : {};
+  var mc = typeof mailConfig !== 'undefined' && mailConfig ? mailConfig : {};
+  var mailN = typeof mailEligibleCount !== 'undefined' ? mailEligibleCount : 0;
+  var sgOk = typeof sendgridConfigured !== 'undefined' ? sendgridConfigured : false;
+  var eventId = ev._id ? String(ev._id) : '';
+%>
 <div class="card border-0 shadow-sm mb-4 <%= ws === 2 ? 'border-primary border-2' : '' %>">
-  <div class="card-header"><strong>3. Mail QR code</strong> <% if (ws === 2) { %><span class="badge bg-primary ms-2">Đang làm</span><% } %></div>
-  <div class="card-body text-body-secondary small">Tích hợp gửi mail / QR theo luồng hiện có (sau).</div>
+  <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <div>
+      <strong>3. Mail QR code</strong>
+      <% if (ws === 2) { %><span class="badge bg-primary ms-2">Đang làm</span><% } %>
+    </div>
+  </div>
+  <div class="card-body border-bottom">
+    <p class="small text-body-secondary mb-2">
+      Cấu hình nội dung email và gửi hàng loạt qua <strong>SendGrid</strong>. Mỗi người nhận một email có QR (nội dung mã = <code>qr_code</code> hoặc <code>uid</code>).
+      Chỉ gửi tới bản ghi có <strong>email hợp lệ</strong> trong danh sách người tham dự.
+    </p>
+    <ul class="small mb-0">
+      <li>Người đủ điều kiện nhận (ước lượng): <strong><%= mailN %></strong></li>
+      <li>SendGrid: <% if (sgOk) { %><span class="text-success">Đã cấu hình (API key + From)</span><% } else { %><span class="text-danger">Thiếu env: API key <code>SENDGRID_API_KEY</code> hoặc <code>SENDGRID_API_KEY_DOMAIN</code>, và From <code>SENDGRID_FROM_EMAIL</code> / <code>SENDGRID_FROM_DOMAIN</code> / <code>SENDGRID_FROM</code></span><% } %></li>
+    </ul>
+  </div>
+
+  <div class="card-body border-bottom bg-body-tertiary bg-opacity-25">
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+      <button type="button" class="btn btn-success btn-sm" id="btn_send_bulk_mail" <%= !sgOk || !mailN ? 'disabled' : '' %>>
+        Gửi mail hàng loạt
+      </button>
+      <span class="small text-body-secondary d-block" id="send_bulk_status"></span>
+      <pre class="small text-danger mt-2 mb-0 d-none text-wrap" id="send_bulk_errors" style="white-space: pre-wrap; max-height: 12rem; overflow: auto;"></pre>
+    </div>
+    <% if (!mailN) { %>
+    <p class="small text-warning mb-0 mt-2">Không có email hợp lệ — kiểm tra bước 2 (cột email).</p>
+    <% } %>
+  </div>
+
+  <div class="card-header"><strong>Cấu hình nội dung email</strong></div>
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-lg-6">
+        <label class="form-label small">Tên người gửi (hiển thị)</label>
+        <input type="text" id="sender_name" class="form-control form-control-sm" value="<%= mc.sender_name || '' %>" maxlength="120" />
+        <label class="form-label small mt-2">Tiêu đề email</label>
+        <input type="text" id="mail_title" class="form-control form-control-sm" value="<%= mc.title || '' %>" maxlength="200" />
+        <label class="form-label small mt-2">Nội dung 1</label>
+        <textarea id="event-mail-content-1" class="form-control form-control-sm" rows="6"><%- mc.content_1 || '' %></textarea>
+        <label class="form-label small mt-2">Nội dung 2</label>
+        <textarea id="event-mail-content-2" class="form-control form-control-sm" rows="5"><%- mc.content_2 || '' %></textarea>
+        <button type="button" class="btn btn-primary btn-sm mt-3" id="btn_mail_config_save">Lưu cấu hình</button>
+        <span class="small ms-2 text-body-secondary" id="mail_config_save_status"></span>
+      </div>
+      <div class="col-lg-6">
+        <p class="small text-body-secondary">Footer email</p>
+        <div class="row g-2">
+          <div class="col-md-6">
+            <label class="form-label small mb-0">Email hỗ trợ</label>
+            <input type="email" class="form-control form-control-sm" id="footer_email" value="<%= mc.footer_email || 'support@actiup.net' %>" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small mb-0">Hotline</label>
+            <input type="text" class="form-control form-control-sm" id="footer_hotline" value="<%= mc.footer_hotline || '1900638337' %>" />
+          </div>
+          <div class="col-12">
+            <label class="form-label small mb-0">Tên công ty (VI)</label>
+            <input type="text" class="form-control form-control-sm" id="footer_company_vi" value="<%= mc.footer_company_vi || '' %>" />
+          </div>
+          <div class="col-12">
+            <label class="form-label small mb-0">Tên công ty (EN)</label>
+            <input type="text" class="form-control form-control-sm" id="footer_company_en" value="<%= mc.footer_company_en || '' %>" />
+          </div>
+          <div class="col-6">
+            <label class="form-label small mb-0">Màu nền footer</label>
+            <div class="d-flex gap-1">
+              <input type="color" class="form-control form-control-color" id="footer_bg_color" value="<%= mc.footer_bg_color || '#f8f8f8' %>" />
+              <input type="text" class="form-control form-control-sm" id="footer_bg_color_text" value="<%= mc.footer_bg_color || '#f8f8f8' %>" />
+            </div>
+          </div>
+          <div class="col-6">
+            <label class="form-label small mb-0">Màu chữ footer</label>
+            <div class="d-flex gap-1">
+              <input type="color" class="form-control form-control-color" id="footer_text_color" value="<%= mc.footer_text_color || '#666666' %>" />
+              <input type="text" class="form-control form-control-sm" id="footer_text_color_text" value="<%= mc.footer_text_color || '#666666' %>" />
+            </div>
+          </div>
+          <div class="col-6">
+            <label class="form-label small mb-0">Màu link</label>
+            <div class="d-flex gap-1">
+              <input type="color" class="form-control form-control-color" id="footer_link_color" value="<%= mc.footer_link_color || '#0066cc' %>" />
+              <input type="text" class="form-control form-control-sm" id="footer_link_color_text" value="<%= mc.footer_link_color || '#0066cc' %>" />
+            </div>
+          </div>
+          <div class="col-6">
+            <label class="form-label small mb-0">Màu viền</label>
+            <div class="d-flex gap-1">
+              <input type="color" class="form-control form-control-color" id="footer_border_color" value="<%= mc.footer_border_color || '#e0e0e0' %>" />
+              <input type="text" class="form-control form-control-sm" id="footer_border_color_text" value="<%= mc.footer_border_color || '#e0e0e0' %>" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-header"><strong>Ảnh cuối email</strong></div>
+  <div class="card-body border-bottom">
+    <p class="small text-body-secondary mb-2">
+      Hiển thị ngay phía trên khối footer (sau nội dung 2). Dùng ảnh ngang, kích thước vừa (gợi ý ≤ 600px).
+    </p>
+    <div class="row g-3">
+      <div class="col-lg-6">
+        <label class="form-label small">Đường dẫn ảnh</label>
+        <input type="text" class="form-control form-control-sm mb-2" id="end_mail_img_hidden" value="<%= mc.end_mail_img || '' %>" readonly />
+        <input type="file" accept="image/*" class="form-control form-control-sm" id="end_mail_file" />
+        <button type="button" class="btn btn-outline-secondary btn-sm mt-2" id="btn_end_mail_upload">Upload ảnh cuối</button>
+        <span class="small ms-2" id="end_mail_upload_status"></span>
+      </div>
+      <div class="col-lg-6">
+        <% if (mc.end_mail_img) { %>
+        <div class="border rounded p-2 bg-body-tertiary">
+          <img id="previewEndMailImg" src="<%= mc.end_mail_img %>" alt="Ảnh cuối email" class="img-fluid" style="max-height: 200px; object-fit: contain;" />
+        </div>
+        <% } else { %>
+        <p class="small text-body-secondary mb-0">Chưa có ảnh cuối email.</p>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-header"><strong>Banner đầu email</strong></div>
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-lg-6">
+        <div class="form-check mb-2">
+          <input type="checkbox" class="form-check-input" id="banner_option" <%= mc.banner_option ? 'checked' : '' %> />
+          <label class="form-check-label" for="banner_option">Bật = dùng ảnh banner (tắt = dùng dòng chữ bên dưới)</label>
+        </div>
+        <label class="form-label small">Dòng chữ khi không dùng ảnh</label>
+        <input type="text" class="form-control form-control-sm" id="banner_text" value="<%= mc.banner_text || '' %>" />
+        <div class="mt-3">
+          <label class="form-label small">Ảnh hiện tại</label>
+          <input type="text" class="form-control form-control-sm mb-2" id="banner_img_hidden" value="<%= mc.banner_img || '' %>" readonly />
+          <input type="file" accept="image/*" class="form-control form-control-sm" id="banner_file" />
+          <button type="button" class="btn btn-outline-info btn-sm mt-2" id="btn_banner_upload">Upload banner</button>
+          <span class="small ms-2" id="banner_upload_status"></span>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <% if (mc.banner_img) { %>
+        <div class="border rounded p-2 bg-body-tertiary">
+          <img id="previewImg" src="<%= mc.banner_img %>" alt="Banner" class="img-fluid" style="max-height: 200px; object-fit: contain;" />
+        </div>
+        <% } else { %>
+        <p class="small text-body-secondary mb-0">Chưa có ảnh banner.</p>
+        <% } %>
+      </div>
+    </div>
+  </div>
 </div>
+
+<script src="/admin/assets/js/plugins/tinymce/tinymce.min.js"></script>
+<script>
+(function () {
+  var eventId = '<%= eventId %>';
+  if (!eventId) return;
+
+  function initMailTinyMCE() {
+    if (typeof tinymce === 'undefined') return;
+    tinymce.init({
+      height: 280,
+      selector: '#event-mail-content-1, #event-mail-content-2',
+      setup: function (editor) {
+        editor.on('init', function () {
+          var promo = document.querySelector('.tox-promotion');
+          if (promo) promo.remove();
+        });
+      },
+      content_style: 'body { font-family: "Inter", sans-serif; font-size: 14px; }',
+      menubar: 'file edit view insert format tools table help',
+      toolbar: [
+        'styleselect fontselect fontsizeselect',
+        'undo redo cut copy paste bold italic | bullist numlist | alignleft aligncenter alignright alignjustify',
+        'link image',
+      ],
+      plugins: 'list advlist autolink link image lists charmap print preview code',
+    });
+    setTimeout(function () {
+      document.querySelectorAll('.tox-promotion').forEach(function (el) { el.remove(); });
+    }, 0);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initMailTinyMCE);
+  } else {
+    initMailTinyMCE();
+  }
+
+  function editorContent(id) {
+    var ed = typeof tinymce !== 'undefined' ? tinymce.get(id) : null;
+    if (ed) return ed.getContent();
+    var el = document.getElementById(id);
+    return el ? el.value : '';
+  }
+
+  function setupColorSync(colorId, textId) {
+    var c = document.getElementById(colorId);
+    var t = document.getElementById(textId);
+    if (!c || !t) return;
+    c.addEventListener('input', function () { t.value = c.value; });
+    t.addEventListener('input', function () {
+      if (/^#[0-9A-Fa-f]{6}$/.test(t.value)) c.value = t.value;
+    });
+  }
+  setupColorSync('footer_bg_color', 'footer_bg_color_text');
+  setupColorSync('footer_text_color', 'footer_text_color_text');
+  setupColorSync('footer_link_color', 'footer_link_color_text');
+  setupColorSync('footer_border_color', 'footer_border_color_text');
+
+  function gatherPayload() {
+    return {
+      sender_name: document.getElementById('sender_name').value,
+      title: document.getElementById('mail_title').value,
+      content_1: editorContent('event-mail-content-1'),
+      content_2: editorContent('event-mail-content-2'),
+      banner_option: document.getElementById('banner_option').checked,
+      banner_text: document.getElementById('banner_text').value,
+      banner_img: document.getElementById('banner_img_hidden').value,
+      end_mail_img: document.getElementById('end_mail_img_hidden').value,
+      footer_email: document.getElementById('footer_email').value,
+      footer_hotline: document.getElementById('footer_hotline').value,
+      footer_company_vi: document.getElementById('footer_company_vi').value,
+      footer_company_en: document.getElementById('footer_company_en').value,
+      footer_bg_color: document.getElementById('footer_bg_color').value,
+      footer_text_color: document.getElementById('footer_text_color').value,
+      footer_link_color: document.getElementById('footer_link_color').value,
+      footer_border_color: document.getElementById('footer_border_color').value,
+    };
+  }
+
+  document.getElementById('btn_mail_config_save').addEventListener('click', function () {
+    var st = document.getElementById('mail_config_save_status');
+    st.textContent = 'Đang lưu…';
+    fetch('/admin/event/' + eventId + '/mail-config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(gatherPayload()),
+    })
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+      .then(function (_ref) {
+        if (_ref.ok && _ref.j.success) {
+          st.textContent = 'Đã lưu.';
+          setTimeout(function () { st.textContent = ''; }, 3000);
+        } else {
+          st.textContent = _ref.j.message || 'Lỗi lưu.';
+        }
+      })
+      .catch(function () { st.textContent = 'Lỗi mạng.'; });
+  });
+
+  document.getElementById('btn_end_mail_upload').addEventListener('click', function () {
+    var input = document.getElementById('end_mail_file');
+    var st = document.getElementById('end_mail_upload_status');
+    if (!input.files || !input.files[0]) {
+      st.textContent = 'Chọn file ảnh.';
+      return;
+    }
+    var fd = new FormData();
+    fd.append('file', input.files[0]);
+    st.textContent = 'Đang upload…';
+    fetch('/admin/event/' + eventId + '/mail/end-image', { method: 'POST', body: fd })
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+      .then(function (_ref) {
+        if (_ref.ok && _ref.j.success) {
+          st.textContent = 'Xong. Tải lại trang…';
+          window.location.reload();
+        } else {
+          st.textContent = _ref.j.message || 'Lỗi upload.';
+        }
+      })
+      .catch(function () { st.textContent = 'Lỗi mạng.'; });
+  });
+
+  document.getElementById('btn_banner_upload').addEventListener('click', function () {
+    var input = document.getElementById('banner_file');
+    var st = document.getElementById('banner_upload_status');
+    if (!input.files || !input.files[0]) {
+      st.textContent = 'Chọn file ảnh.';
+      return;
+    }
+    var fd = new FormData();
+    fd.append('file', input.files[0]);
+    st.textContent = 'Đang upload…';
+    fetch('/admin/event/' + eventId + '/mail/banner', { method: 'POST', body: fd })
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+      .then(function (_ref2) {
+        if (_ref2.ok && _ref2.j.success) {
+          st.textContent = 'Xong. Tải lại trang…';
+          window.location.reload();
+        } else {
+          st.textContent = _ref2.j.message || 'Lỗi upload.';
+        }
+      })
+      .catch(function () { st.textContent = 'Lỗi mạng.'; });
+  });
+
+  var btnBulk = document.getElementById('btn_send_bulk_mail');
+  if (btnBulk) {
+    btnBulk.addEventListener('click', function () {
+      if (!confirm('Gửi email QR tới tất cả người có email hợp lệ?')) return;
+      var st = document.getElementById('send_bulk_status');
+      st.textContent = 'Đang gửi…';
+      btnBulk.disabled = true;
+      fetch('/admin/event/' + eventId + '/mail/send-bulk', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+        .then(function (_ref3) {
+          var errEl = document.getElementById('send_bulk_errors');
+          if (errEl) {
+            errEl.classList.add('d-none');
+            errEl.textContent = '';
+          }
+          var j = _ref3.j;
+          if (_ref3.ok && j.success) {
+            st.textContent = 'Đã gửi: ' + j.sent + ' / ' + (j.totalRecipients || '') + '.';
+            if (j.errors && j.errors.length) {
+              st.textContent += ' Cảnh báo: ' + j.errors.length + ' dòng lỗi (xem bên dưới).';
+              if (errEl) {
+                errEl.textContent = j.errors.slice(0, 15).join('\n');
+                errEl.classList.remove('d-none');
+              }
+            }
+          } else {
+            st.textContent = (j && j.message) ? j.message : 'Lỗi gửi.';
+            if (errEl && j && j.errors && j.errors.length) {
+              errEl.textContent = j.errors.slice(0, 20).join('\n');
+              errEl.classList.remove('d-none');
+            }
+          }
+        })
+        .catch(function () { st.textContent = 'Lỗi mạng.'; })
+        .finally(function () { btnBulk.disabled = false; });
+    });
+  }
+})();
+</script>

@@ -1,6 +1,5 @@
 const jwt = require('jsonwebtoken');
 const CNAME = 'ggAuthController.js ';
-const { handleLogin } = require('../services/ggAuth.service');
 const ggAuthController = () => {
     return {
         Index: (req, res) => {},

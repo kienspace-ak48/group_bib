@@ -21,6 +21,7 @@ const ParticipantCheckin = require('../../../model/ParticipantCheckin');
 const eventService = require('../services/event.service');
 const participantCheckinService = require('../services/participantCheckin.service');
 const MailConfig = require('../../../model/MailConfig');
+const eventBulkMailService = require('../services/eventBulkMail.service');
 const { setDefaultAutoSelectFamilyAttemptTimeout } = require('net');
 
 //function helper
@@ -39,6 +40,52 @@ function validateRow(row) {
 }
 const formatDate = (date) => {
     return new Date(date).toLocaleDateString('vi-VN');
+};
+const formatDobSafe = (d) => {
+    if (!d) return '—';
+    const x = new Date(d);
+    if (Number.isNaN(x.getTime())) return '—';
+    return x.toLocaleDateString('vi-VN');
+};
+const formatDateTimeVi = (d) => {
+    if (!d) return '—';
+    const x = new Date(d);
+    if (Number.isNaN(x.getTime())) return '—';
+    return x.toLocaleString('vi-VN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+};
+/** pickup: giờ 24h (khớp Excel Time / HH:mm) */
+const formatTime24hVi = (d) => {
+    if (!d) return '—';
+    const x = new Date(d);
+    if (Number.isNaN(x.getTime())) return '—';
+    return x.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+};
+const buildPickupRangeString = (ps, pe) => {
+    const a = ps ? formatTime24hVi(ps) : '—';
+    const b = pe ? formatTime24hVi(pe) : '—';
+    return `${a} - ${b}`;
+};
+/** zone là "1" hoặc số 1 → tick xanh trong ô; ngược lại → X đỏ */
+const buildZoneIndicatorHtml = (zoneVal) => {
+    const isOne =
+        zoneVal === 1 ||
+        zoneVal === true ||
+        String(zoneVal != null ? zoneVal : '').trim() === '1';
+    if (isOne) {
+        return '<span style="display:inline-block;border:2px solid #2e7d32;border-radius:4px;background:#e8f5e9;color:#2e7d32;font-size:18px;line-height:1;padding:4px 10px;font-weight:bold;">&#10003;</span>';
+    }
+    return '<span style="display:inline-block;border:2px solid #c62828;border-radius:4px;background:#ffebee;color:#c62828;font-size:18px;line-height:1;padding:4px 10px;font-weight:bold;">&#10007;</span>';
+};
+const genderLabelOld = (g) => {
+    if (g === 1 || g === true) return 'Nam';
+    if (g === 0 || g === false) return 'Nữ';
+    return '—';
 };
 async function sendMailDomainQRCode(data, subject, name) {
     const messages = data.map((e) => ({}));
@@ -232,6 +279,7 @@ const eventController = () => {
         FormEdit: async (req, res) => {
             try {
                 const slug = req.params.slug;
+                console.log(slug);
                 const event = await EventService.GetBySlug(slug);
                 res.render(VNAME + 'formEdit', { layout: VLAYOUT, event: event || {}, slug });
             } catch (error) {
@@ -295,7 +343,7 @@ const eventController = () => {
                 // console.log(eventDTO);
                 const result = await EventService.UpdateBySlug(slug, eventDTO);
                 if (!result) return res.status(500).json({ success: false, mess: 'update failed' });
-                return res.json({ success: true, redirect: '/admin/event/type-checkin' });
+                return res.json({ success: true, redirect: '/admin/event' });
             } catch (error) {
                 console.log(CNAME, error.message);
                 res.status(500).json({ success: false, mess: error.message });
@@ -574,7 +622,9 @@ const eventController = () => {
             const _eventSlug = req.params.slug;
             const event = await EventService.GetBySlug(_eventSlug);
             const _eventId = event._id;
+            console.log('a ', _eventId.toString());
             const mailConfig = await MailConfig.findOne({ event_id: _eventId });
+            console.log(mailConfig);
             try {
                 const event = await EventService.GetBySlug(_eventSlug);
                 res.render(VNAME + 'sendmail', { layout: VLAYOUT, event, event_slug: _eventSlug, mc: mailConfig });
@@ -632,6 +682,8 @@ const eventController = () => {
                         </td>
                      </tr>`;
                 }
+                const endMailImageSection = eventBulkMailService.buildEndMailImageSection(mailConfig);
+                const endMailAttach = eventBulkMailService.getEndMailImageAttachment(mailConfig);
 
                 // console.log('check mail ', mailConfig);
                 //
@@ -657,11 +709,16 @@ const eventController = () => {
                         // Replace dynamic data
                         htmlTemplate = htmlTemplate
                             .replace('{{fullname}}', r.fullname)
+                            .replace('{{gender}}', genderLabelOld(r.gender))
+                            .replace('{{dob}}', formatDobSafe(r.dob))
+                            .replace('{{email}}', r.email || '')
+                            .replace('{{phone}}', r.phone || '')
+                            .replace('{{pickup_range}}', buildPickupRangeString(r.pickup_start, r.pickup_end))
+                            .replace('{{zone_cell}}', buildZoneIndicatorHtml(r.zone != null ? r.zone : r.line))
                             .replace('{{distance}}', r.distance)
                             .replace('{{category}}', r.distance)
                             .replace('{{cccd}}', r.cccd)
                             .replace('{{code}}', r.bib)
-                            .replace('{{line}}', r.line)
                             .replace('{{tshirt_size}}', r.tshirt_size)
                             .replace('{{event_name}}', _eventName)
                             .replace('{{location}}', _eventLocation)
@@ -672,6 +729,7 @@ const eventController = () => {
                             .replace('{{sender_name}}', mailConfig.sender_name)
                             // .replace('{{mail_footer}}', mailConfig.mail_footer)
                             .replace('<!-- BANNER_OR_TEXT_PLACEHOLDER -->', bannerOrTextSection)
+                            .replace('<!-- END_MAIL_IMAGE_PLACEHOLDER -->', endMailImageSection)
                             //
                             //Thêm các replace cho footer
                             .replaceAll('{{footer_bg_color}}', mailConfig.footer_bg_color || '#ffffff')
@@ -692,32 +750,35 @@ const eventController = () => {
                             },
                             subject: mailConfig.title,
                             html: htmlTemplate,
-                            attachments: showBanner
-                                ? [
-                                      {
-                                          content: bannerBase64,
-                                          filename: 'banner.png',
-                                          type: 'image/png',
-                                          disposition: 'inline',
-                                          content_id: 'banner',
-                                      },
-                                      {
-                                          content: base64Data,
-                                          filename: 'qrcode.png',
-                                          type: 'image/png',
-                                          disposition: 'inline',
-                                          content_id: 'qrcode',
-                                      },
-                                  ]
-                                : [
-                                      {
-                                          content: base64Data,
-                                          filename: 'qrcode.png',
-                                          type: 'image/png',
-                                          disposition: 'inline',
-                                          content_id: 'qrcode',
-                                      },
-                                  ],
+                            attachments: (() => {
+                                const att = [];
+                                if (showBanner) {
+                                    att.push({
+                                        content: bannerBase64,
+                                        filename: 'banner.png',
+                                        type: 'image/png',
+                                        disposition: 'inline',
+                                        content_id: 'banner',
+                                    });
+                                }
+                                if (endMailAttach) {
+                                    att.push({
+                                        content: endMailAttach.content,
+                                        filename: endMailAttach.filename,
+                                        type: endMailAttach.type,
+                                        disposition: 'inline',
+                                        content_id: 'endmail',
+                                    });
+                                }
+                                att.push({
+                                    content: base64Data,
+                                    filename: 'qrcode.png',
+                                    type: 'image/png',
+                                    disposition: 'inline',
+                                    content_id: 'qrcode',
+                                });
+                                return att;
+                            })(),
                         };
                     }),
                 );
@@ -804,6 +865,8 @@ const eventController = () => {
                 </td>
             </tr>`;
                 }
+                const endMailImageSection = eventBulkMailService.buildEndMailImageSection(mailConfig);
+                const endMailAttach = eventBulkMailService.getEndMailImageAttachment(mailConfig);
 
                 // Tìm runner cụ thể
                 const runner = await ParticipantCheckin.findOne({
@@ -842,12 +905,17 @@ const eventController = () => {
                 // Replace dynamic data
                 htmlTemplate = htmlTemplate
                     .replace('{{fullname}}', runner.fullname || '')
+                    .replace('{{gender}}', genderLabelOld(runner.gender))
+                    .replace('{{dob}}', formatDobSafe(runner.dob))
+                    .replace('{{email}}', runner.email || '')
+                    .replace('{{phone}}', runner.phone || '')
+                    .replace('{{pickup_range}}', buildPickupRangeString(runner.pickup_start, runner.pickup_end))
+                    .replace('{{zone_cell}}', buildZoneIndicatorHtml(runner.zone != null ? runner.zone : runner.line))
                     .replace('{{distance}}', runner.distance || '')
                     .replace('{{category}}', runner.distance || '')
                     .replace('{{cccd}}', runner.cccd || '')
                     .replace('{{code}}', runner.bib || '')
                     .replace('{{tshirt_size}}', runner.tshirt_size || '')
-                    .replace('{{line}}', runner.line || '')
                     .replace('{{event_name}}', _eventName)
                     .replace('{{location}}', _eventLocation)
                     .replace('{{start_date}}', _eventStart)
@@ -856,6 +924,7 @@ const eventController = () => {
                     .replace('{{content_2}}', mailConfig.content_2 || '')
                     .replace('{{sender_name}}', mailConfig.sender_name || '')
                     .replace('<!-- BANNER_OR_TEXT_PLACEHOLDER -->', bannerOrTextSection)
+                    .replace('<!-- END_MAIL_IMAGE_PLACEHOLDER -->', endMailImageSection)
                     //new
                     //Thêm các replace cho footer
                     .replaceAll('{{footer_bg_color}}', mailConfig.footer_bg_color || '#ffffff')
@@ -876,32 +945,35 @@ const eventController = () => {
                     },
                     subject: mailConfig.title,
                     html: htmlTemplate,
-                    attachments: showBanner
-                        ? [
-                              {
-                                  content: bannerBase64,
-                                  filename: 'banner.png',
-                                  type: 'image/png',
-                                  disposition: 'inline',
-                                  content_id: 'banner',
-                              },
-                              {
-                                  content: base64Data,
-                                  filename: 'qrcode.png',
-                                  type: 'image/png',
-                                  disposition: 'inline',
-                                  content_id: 'qrcode',
-                              },
-                          ]
-                        : [
-                              {
-                                  content: base64Data,
-                                  filename: 'qrcode.png',
-                                  type: 'image/png',
-                                  disposition: 'inline',
-                                  content_id: 'qrcode',
-                              },
-                          ],
+                    attachments: (() => {
+                        const att = [];
+                        if (showBanner) {
+                            att.push({
+                                content: bannerBase64,
+                                filename: 'banner.png',
+                                type: 'image/png',
+                                disposition: 'inline',
+                                content_id: 'banner',
+                            });
+                        }
+                        if (endMailAttach) {
+                            att.push({
+                                content: endMailAttach.content,
+                                filename: endMailAttach.filename,
+                                type: endMailAttach.type,
+                                disposition: 'inline',
+                                content_id: 'endmail',
+                            });
+                        }
+                        att.push({
+                            content: base64Data,
+                            filename: 'qrcode.png',
+                            type: 'image/png',
+                            disposition: 'inline',
+                            content_id: 'qrcode',
+                        });
+                        return att;
+                    })(),
                 };
 
                 // Gửi mail

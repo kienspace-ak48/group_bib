@@ -60,7 +60,7 @@
               <div class="d-inline-flex flex-wrap gap-1 justify-content-end">
                 <% var _ws = ev.workflow_step != null ? Math.min(4, Math.max(0, Number(ev.workflow_step))) : 0; %>
                 <a href="/admin/event/<%= ev._id %>/step/<%= _ws %>" class="btn btn-sm btn-primary">Mở workspace</a>
-                <form method="POST" action="/admin/event/<%= ev._id %>/delete" class="d-inline" onsubmit="return confirm('Xóa vĩnh viễn sự kiện này và toàn bộ VĐV?');">
+                <form method="POST" action="/admin/event/<%= ev._id %>/delete" class="d-inline" onsubmit="return confirm('Xóa vĩnh viễn sự kiện này và toàn bộ người tham dự?');">
                   <button type="submit" class="btn btn-sm btn-outline-danger">Xóa</button>
                 </form>
               </div>

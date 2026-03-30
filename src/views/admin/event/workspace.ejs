@@ -26,7 +26,7 @@
 <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
   <div>
     <h4 class="mb-1"><%= ev.name || 'Sự kiện' %></h4>
-    <p class="text-body-secondary small mb-0"><code><%= ev.slug || '' %></code> · VĐV: <strong><%= typeof participantCount !== 'undefined' ? participantCount : 0 %></strong></p>
+    <p class="text-body-secondary small mb-0"><code><%= ev.slug || '' %></code> · Người tham dự: <strong><%= typeof participantCount !== 'undefined' ? participantCount : 0 %></strong></p>
   </div>
   <a href="/admin/event" class="btn btn-sm btn-outline-secondary">← Danh sách</a>
 </div>
@@ -50,9 +50,25 @@
 <% if (ws === 0) { %>
 <%- include('./_step_init', { event: ev, ws: ws, isoDate: isoDate }) %>
 <% } else if (ws === 1) { %>
-<%- include('./_step_athletes', { event: ev, ws: ws, participants: participants, participantCount: participantCount }) %>
+<div class="w-100" style="min-width: 0; max-width: 100%">
+<%- include('./_step_athletes', {
+  event: ev,
+  ws: ws,
+  participants: participants,
+  participantCount: participantCount,
+  participantPagination: typeof participantPagination !== 'undefined' ? participantPagination : null,
+  participantFilters: typeof participantFilters !== 'undefined' ? participantFilters : { q_name: '', q_bib: '', q_phone: '', q_cccd: '' },
+  sendgridConfigured: typeof sendgridConfigured !== 'undefined' ? sendgridConfigured : false,
+}) %>
+</div>
 <% } else if (ws === 2) { %>
-<%- include('./_step_mail', { ws: ws }) %>
+<%- include('./_step_mail', {
+  ws: ws,
+  event: ev,
+  mailConfig: typeof mailConfig !== 'undefined' ? mailConfig : null,
+  mailEligibleCount: typeof mailEligibleCount !== 'undefined' ? mailEligibleCount : 0,
+  sendgridConfigured: typeof sendgridConfigured !== 'undefined' ? sendgridConfigured : false,
+}) %>
 <% } else if (ws === 3) { %>
 <%- include('./_step_checkin', { ws: ws }) %>
 <% } else { %>
@@ -61,8 +77,8 @@
 
 <div class="card border-danger border-opacity-25 mb-4">
   <div class="card-body py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
-    <div class="small text-danger">Xóa vĩnh viễn sự kiện này và toàn bộ VĐV đã nhập.</div>
-    <form method="POST" action="/admin/event/<%= ev._id %>/delete" class="d-inline" onsubmit="return confirm('Xóa vĩnh viễn sự kiện và danh sách VĐV?');">
+    <div class="small text-danger">Xóa vĩnh viễn sự kiện này và toàn bộ người tham dự đã nhập.</div>
+    <form method="POST" action="/admin/event/<%= ev._id %>/delete" class="d-inline" onsubmit="return confirm('Xóa vĩnh viễn sự kiện và danh sách người tham dự?');">
       <button type="submit" class="btn btn-sm btn-outline-danger">Xóa sự kiện</button>
     </form>
   </div>

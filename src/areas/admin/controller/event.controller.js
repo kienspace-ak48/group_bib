@@ -11,10 +11,14 @@ const xlsx = require('xlsx');
 const eventCheckinHService = require('../services/eventCheckinH.service');
 const participantCheckinHService = require('../services/participantCheckinH.service');
 const auditLogService = require('../services/auditLog.service');
+const eventMailConfigService = require('../services/eventMailConfig.service');
+const eventBulkMailService = require('../services/eventBulkMail.service');
 const { convertRowCheckinH, generateUID } = require('../../../utils/participantCheckinExcelRow.util');
 
 const BATCH_SIZE = 1000;
 const PARTICIPANT_LIST_LIMIT = 10000;
+const PARTICIPANT_PAGE_DEFAULT = 20;
+const PARTICIPANT_PAGE_MAX = 100;
 
 function stepPath(eventId, step) {
     const n = Math.min(4, Math.max(0, Number(step) || 0));
@@ -29,6 +33,26 @@ function maxConfirmedFromEvent(ev) {
 /** Bước xa nhất có thể mở (chưa xác nhận bước biên = max_confirmed + 1) */
 function maxAllowedFromEvent(ev) {
     return Math.min(4, maxConfirmedFromEvent(ev) + 1);
+}
+
+/** Giữ bộ lọc + trang khi redirect sau thêm/sửa/xóa ở bước 2 */
+function redirectSuffixStep1Athletes(body) {
+    if (!body || typeof body !== 'object') return '';
+    const q = new URLSearchParams();
+    const name = String(body.ret_q_name || '').trim();
+    const bib = String(body.ret_q_bib || '').trim();
+    const phone = String(body.ret_q_phone || '').trim();
+    const cccd = String(body.ret_q_cccd || '').trim();
+    if (name) q.set('q_name', name);
+    if (bib) q.set('q_bib', bib);
+    if (phone) q.set('q_phone', phone);
+    if (cccd) q.set('q_cccd', cccd);
+    const page = String(body.ret_page || '').trim();
+    if (page) q.set('page', page);
+    const perPage = String(body.ret_perPage || '').trim();
+    if (perPage) q.set('perPage', perPage);
+    const s = q.toString();
+    return s ? `?${s}` : '';
 }
 
 const adminEventController = () => {
@@ -90,7 +114,7 @@ const adminEventController = () => {
             }
         },
 
-        /** Xóa sự kiện + toàn bộ VĐV */
+        /** Xóa sự kiện + toàn bộ người tham dự */
         destroy: async (req, res) => {
             try {
                 const { id } = req.params;
@@ -113,7 +137,7 @@ const adminEventController = () => {
                 }
                 req.session.flash = {
                     type: ok ? 'success' : 'danger',
-                    message: ok ? 'Đã xóa sự kiện và danh sách VĐV.' : 'Không xóa được sự kiện.',
+                    message: ok ? 'Đã xóa sự kiện và danh sách người tham dự.' : 'Không xóa được sự kiện.',
                 };
                 return res.redirect('/admin/event');
             } catch (error) {
@@ -177,10 +201,60 @@ const adminEventController = () => {
 
                 const participantCount = await participantCheckinHService.countByEventId(event._id);
                 let participants = [];
+                let participantPagination = null;
+                let participantFilters = { q_name: '', q_bib: '', q_phone: '', q_cccd: '' };
                 if (n === 1) {
-                    participants = await participantCheckinHService.findByEventId(event._id, {
-                        limit: PARTICIPANT_LIST_LIMIT,
+                    const q_name = String(req.query.q_name || '').trim();
+                    const q_bib = String(req.query.q_bib || '').trim();
+                    const q_phone = String(req.query.q_phone || '').trim();
+                    const q_cccd = String(req.query.q_cccd || '').trim();
+                    participantFilters = { q_name, q_bib, q_phone, q_cccd };
+                    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+                    const perPage = Math.min(
+                        PARTICIPANT_PAGE_MAX,
+                        Math.max(5, parseInt(req.query.perPage, 10) || PARTICIPANT_PAGE_DEFAULT),
+                    );
+                    const filters = {
+                        fullname: q_name,
+                        bib: q_bib,
+                        phone: q_phone,
+                        cccd: q_cccd,
+                    };
+                    const listTotal = await participantCheckinHService.countByEventIdWithFilters(event._id, filters);
+                    const totalPages = Math.max(1, Math.ceil(listTotal / perPage));
+                    const safePage = Math.min(page, totalPages);
+                    const skip = (safePage - 1) * perPage;
+                    participants = await participantCheckinHService.findByEventIdWithFilters(event._id, filters, {
+                        skip,
+                        limit: perPage,
                     });
+                    const qsBase = new URLSearchParams();
+                    if (q_name) qsBase.set('q_name', q_name);
+                    if (q_bib) qsBase.set('q_bib', q_bib);
+                    if (q_phone) qsBase.set('q_phone', q_phone);
+                    if (q_cccd) qsBase.set('q_cccd', q_cccd);
+                    if (perPage !== PARTICIPANT_PAGE_DEFAULT) qsBase.set('perPage', String(perPage));
+                    const filterQuery = qsBase.toString();
+                    participantPagination = {
+                        page: safePage,
+                        perPage,
+                        total: listTotal,
+                        totalPages,
+                        hasPrev: safePage > 1,
+                        hasNext: safePage < totalPages,
+                        filterQuery,
+                    };
+                }
+
+                let mailConfig = null;
+                let mailEligibleCount = 0;
+                let sendgridConfigured = false;
+                if (n === 1 || n === 2) {
+                    sendgridConfigured = eventBulkMailService.isSendGridConfigured();
+                }
+                if (n === 2) {
+                    mailConfig = await eventMailConfigService.findByEventId(refreshed._id);
+                    mailEligibleCount = await participantCheckinHService.countWithValidEmailByEventId(refreshed._id);
                 }
 
                 const flash = req.session.flash;
@@ -196,6 +270,11 @@ const adminEventController = () => {
                     showConfirmStep,
                     participants,
                     participantCount,
+                    participantPagination,
+                    participantFilters,
+                    mailConfig,
+                    mailEligibleCount,
+                    sendgridConfigured,
                     flash: flash || null,
                 });
             } catch (error) {
@@ -304,7 +383,7 @@ const adminEventController = () => {
                 }
 
                 const prefix = uidPrefixFromEvent(event);
-                const runners = [];
+                const rows = [];
                 let skipped = 0;
                 for (let i = 0; i < excelData.length; i++) {
                     const row = excelData[i];
@@ -313,13 +392,18 @@ const adminEventController = () => {
                         skipped++;
                         continue;
                     }
-                    runners.push({
+                    const uid = generateUID(prefix);
+                    const qrFromFile = base.qr_code && String(base.qr_code).trim();
+                    rows.push({
                         ...base,
-                        uid: generateUID(prefix),
+                        uid,
+                        qr_code: qrFromFile || uid,
+                        checkin_method: base.checkin_method || 'import',
+                        status: base.status || 'registered',
                     });
                 }
 
-                if (!runners.length) {
+                if (!rows.length) {
                     req.session.flash = {
                         type: 'danger',
                         message: 'Không có dòng hợp lệ (cần ít nhất họ tên + CCCD).',
@@ -328,15 +412,15 @@ const adminEventController = () => {
                 }
 
                 let totalInserted = 0;
-                for (let i = 0; i < runners.length; i += BATCH_SIZE) {
-                    const batch = runners.slice(i, i + BATCH_SIZE);
+                for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+                    const batch = rows.slice(i, i + BATCH_SIZE);
                     const { inserted } = await participantCheckinHService.insertMany(batch);
                     totalInserted += inserted;
                 }
 
                 const parts = [
                     mode === 'reset' ? 'Đã xóa danh cũ và import' : 'Đã import thêm',
-                    `${totalInserted}/${runners.length} bản ghi.`,
+                    `${totalInserted}/${rows.length} bản ghi.`,
                 ];
                 if (skipped) parts.push(`Bỏ qua ${skipped} dòng thiếu họ tên/CCCD.`);
                 await auditLogService.write({
@@ -344,7 +428,7 @@ const adminEventController = () => {
                     action: mode === 'reset' ? 'update' : 'create',
                     resource: 'participant_checkin_h',
                     documentId: id,
-                    summary: `Import VĐV sự kiện ${id}: ${parts.join(' ')}`,
+                    summary: `Import người tham dự sự kiện ${id}: ${parts.join(' ')}`,
                     req,
                 });
                 req.session.flash = { type: 'success', message: parts.join(' ') };
@@ -356,7 +440,7 @@ const adminEventController = () => {
             }
         },
 
-        /** Thêm VĐV thủ công */
+        /** Thêm người tham dự thủ công */
         addParticipantManual: async (req, res) => {
             const { id } = req.params;
             try {
@@ -371,13 +455,7 @@ const adminEventController = () => {
                 const cccd = (body.cccd || '').trim();
                 if (!fullname || !cccd) {
                     req.session.flash = { type: 'danger', message: 'Họ tên và CCCD là bắt buộc.' };
-                    return res.redirect(stepPath(id, 1));
-                }
-
-                const dup = await participantCheckinHService.findOneByEventCccd(event._id, cccd);
-                if (dup) {
-                    req.session.flash = { type: 'warning', message: 'CCCD này đã tồn tại trong sự kiện.' };
-                    return res.redirect(stepPath(id, 1));
+                    return res.redirect(stepPath(id, 1) + redirectSuffixStep1Athletes(body));
                 }
 
                 const g = body.gender;
@@ -391,56 +469,161 @@ const adminEventController = () => {
                     if (!Number.isNaN(d.getTime())) dob = d;
                 }
 
-                const nat = (body.nationality || '').trim();
                 const str = (k) => ((body[k] || '') + '').trim() || undefined;
+                const uidVal = generateUID(uidPrefixFromEvent(event));
+                const qrManual = str('qr_code');
+                const methods = ['scan', 'manual', 'kiosk', 'import', 'app'];
+                const statuses = ['pending', 'registered', 'checked_in', 'cancelled'];
+                const m = (str('checkin_method') || 'import').toLowerCase();
+                const s = (str('status') || 'registered').toLowerCase();
+                let pickup_start;
+                let pickup_end;
+                if (body.pickup_start) {
+                    const ps = new Date(body.pickup_start);
+                    if (!Number.isNaN(ps.getTime())) pickup_start = ps;
+                }
+                if (body.pickup_end) {
+                    const pe = new Date(body.pickup_end);
+                    if (!Number.isNaN(pe.getTime())) pickup_end = pe;
+                }
                 const payload = {
-                    uid: generateUID(uidPrefixFromEvent(event)),
+                    uid: uidVal,
                     event_id: event._id,
                     fullname,
                     cccd,
-                    bib: str('bib'),
-                    distance: str('distance'),
-                    distance_name: str('distance_name'),
-                    tshirt_size: str('tshirt_size'),
-                    bib_name: str('bib_name'),
                     email: str('email'),
                     phone: str('phone'),
                     dob,
-                    line: str('line'),
                     gender,
-                    nationality: nat || undefined,
-                    nationlity: nat || undefined,
-                    nation: str('nation'),
-                    city: str('city'),
-                    patron_name: str('patron_name'),
-                    patron_phone: str('patron_phone'),
-                    team: str('team'),
-                    blood: str('blood'),
-                    medical: str('medical'),
-                    medicine: str('medicine'),
-                    chip_id: str('chip_id'),
-                    mail_status: str('mail_status'),
-                    group_checkin_status: str('group_checkin_status'),
-                    authorization_status: str('authorization_status'),
-                    waiver_status: str('waiver_status'),
-                    order_item_id: str('order_item_id'),
-                    order_id: str('order_id'),
+                    zone: str('zone'),
+                    qr_code: qrManual || uidVal,
+                    bib: str('bib'),
+                    bib_name: str('bib_name'),
+                    distance: str('distance'),
+                    item: str('item'),
+                    checkin_method: methods.includes(m) ? m : 'import',
+                    status: statuses.includes(s) ? s : 'registered',
+                    checkin_by: str('checkin_by'),
+                    pickup_start,
+                    pickup_end,
                 };
+                if (body.checkin_time) {
+                    const ct = new Date(body.checkin_time);
+                    if (!Number.isNaN(ct.getTime())) payload.checkin_time = ct;
+                }
 
                 const created = await participantCheckinHService.createOne(payload);
                 req.session.flash = {
                     type: created ? 'success' : 'danger',
-                    message: created ? 'Đã thêm VĐV.' : 'Không thêm được (kiểm tra dữ liệu).',
+                    message: created ? 'Đã thêm người tham dự.' : 'Không thêm được (kiểm tra dữ liệu).',
                 };
-                return res.redirect(stepPath(id, 1));
+                return res.redirect(stepPath(id, 1) + redirectSuffixStep1Athletes(body));
             } catch (error) {
                 console.log(CNAME, error.message);
                 req.session.flash = { type: 'danger', message: 'Lỗi: ' + error.message };
-                return res.redirect(stepPath(id, 1));
+                return res.redirect(stepPath(id, 1) + redirectSuffixStep1Athletes(req.body));
             }
         },
 
-        /** Tải file Excel mẫu import VĐV */
+        /** Cập nhật một người tham dự (bước 2) */
+        updateParticipant: async (req, res) => {
+            const { id, participantId } = req.params;
+            try {
+                const event = await eventCheckinHService.getById(id);
+                if (!event) {
+                    req.session.flash = { type: 'warning', message: 'Không tìm thấy sự kiện.' };
+                    return res.redirect('/admin/event');
+                }
+                const existing = await participantCheckinHService.getById(participantId);
+                if (!existing || String(existing.event_id) !== String(event._id)) {
+                    req.session.flash = { type: 'danger', message: 'Không tìm thấy người tham dự.' };
+                    return res.redirect(stepPath(id, 1) + redirectSuffixStep1Athletes(req.body));
+                }
+
+                const body = req.body;
+                const fullname = (body.fullname || '').trim();
+                const cccd = (body.cccd || '').trim();
+                if (!fullname || !cccd) {
+                    req.session.flash = { type: 'danger', message: 'Họ tên và CCCD là bắt buộc.' };
+                    return res.redirect(stepPath(id, 1) + redirectSuffixStep1Athletes(body));
+                }
+
+                const g = body.gender;
+                let gender;
+                if (g === 'M' || g === '1') gender = true;
+                else if (g === 'F' || g === '0') gender = false;
+
+                let dob;
+                if (body.dob) {
+                    const d = new Date(body.dob);
+                    if (!Number.isNaN(d.getTime())) dob = d;
+                }
+
+                const str = (k) => ((body[k] || '') + '').trim() || undefined;
+                const uidKeep = existing.uid;
+                const qrManual = str('qr_code');
+                const methods = ['scan', 'manual', 'kiosk', 'import', 'app'];
+                const statuses = ['pending', 'registered', 'checked_in', 'cancelled'];
+                const m = (str('checkin_method') || 'import').toLowerCase();
+                const s = (str('status') || 'registered').toLowerCase();
+                let pickup_start;
+                let pickup_end;
+                if (body.pickup_start) {
+                    const ps = new Date(body.pickup_start);
+                    if (!Number.isNaN(ps.getTime())) pickup_start = ps;
+                }
+                if (body.pickup_end) {
+                    const pe = new Date(body.pickup_end);
+                    if (!Number.isNaN(pe.getTime())) pickup_end = pe;
+                }
+                const payload = {
+                    fullname,
+                    cccd,
+                    email: str('email'),
+                    phone: str('phone'),
+                    dob,
+                    gender,
+                    zone: str('zone'),
+                    qr_code: qrManual || uidKeep,
+                    bib: str('bib'),
+                    bib_name: str('bib_name'),
+                    distance: str('distance'),
+                    item: str('item'),
+                    checkin_method: methods.includes(m) ? m : 'import',
+                    status: statuses.includes(s) ? s : 'registered',
+                    checkin_by: str('checkin_by'),
+                    pickup_start,
+                    pickup_end,
+                };
+                if (body.checkin_time) {
+                    const ct = new Date(body.checkin_time);
+                    if (!Number.isNaN(ct.getTime())) payload.checkin_time = ct;
+                }
+
+                const updated = await participantCheckinHService.updateByIdAndEvent(participantId, id, payload);
+                req.session.flash = {
+                    type: updated ? 'success' : 'danger',
+                    message: updated ? 'Đã cập nhật người tham dự.' : 'Không cập nhật được.',
+                };
+                if (updated) {
+                    await auditLogService.write({
+                        actorId: req.user?._id,
+                        action: 'update',
+                        resource: 'participant_checkin_h',
+                        documentId: participantId,
+                        summary: `Cập nhật người tham dự ${participantId} sự kiện ${id}`,
+                        req,
+                    });
+                }
+                return res.redirect(stepPath(id, 1) + redirectSuffixStep1Athletes(body));
+            } catch (error) {
+                console.log(CNAME, error.message);
+                req.session.flash = { type: 'danger', message: 'Lỗi: ' + error.message };
+                return res.redirect(stepPath(id, 1) + redirectSuffixStep1Athletes(req.body));
+            }
+        },
+
+        /** Tải file Excel mẫu import danh sách */
         downloadAthleteImportTemplate: (req, res) => {
             try {
                 if (!fs.existsSync(ATHLETE_IMPORT_TEMPLATE)) {
@@ -453,7 +636,231 @@ const adminEventController = () => {
             }
         },
 
-        /** Xóa một VĐV khỏi sự kiện */
+        /** Lưu cấu hình mail (bước 3 — gửi QR) */
+        saveMailConfig: async (req, res) => {
+            const { id } = req.params;
+            try {
+                const event = await eventCheckinHService.getById(id);
+                if (!event) {
+                    return res.status(404).json({ success: false, message: 'Không tìm thấy sự kiện.' });
+                }
+                const body = req.body || {};
+                const existing = await eventMailConfigService.findByEventId(event._id);
+                const d = (k, fallback = '') =>
+                    body[k] !== undefined && body[k] !== null ? String(body[k]) : (existing?.[k] ?? fallback);
+                const payload = {
+                    sender_name: d('sender_name', ''),
+                    title: d('title', ''),
+                    content_1: d('content_1', ''),
+                    content_2: d('content_2', ''),
+                    banner_text: d('banner_text', ''),
+                    banner_img: body.banner_img !== undefined ? String(body.banner_img || '') : existing?.banner_img,
+                    end_mail_img: body.end_mail_img !== undefined ? String(body.end_mail_img || '') : existing?.end_mail_img,
+                    banner_option: body.banner_option !== undefined ? !!body.banner_option : !!existing?.banner_option,
+                    footer_email: d('footer_email', ''),
+                    footer_hotline: d('footer_hotline', ''),
+                    footer_company_vi: d('footer_company_vi', ''),
+                    footer_company_en: d('footer_company_en', ''),
+                    footer_bg_color: d('footer_bg_color', '#f8f8f8'),
+                    footer_text_color: d('footer_text_color', '#666666'),
+                    footer_link_color: d('footer_link_color', '#0066cc'),
+                    footer_border_color: d('footer_border_color', '#e0e0e0'),
+                };
+                const doc = await eventMailConfigService.upsert(event._id, payload);
+                if (!doc) {
+                    return res.status(500).json({ success: false, message: 'Không lưu được cấu hình mail.' });
+                }
+                await auditLogService.write({
+                    actorId: req.user?._id,
+                    action: 'update',
+                    resource: 'mail_config',
+                    documentId: event._id,
+                    summary: `Cập nhật cấu hình mail sự kiện ${event.name || id}`,
+                    req,
+                });
+                return res.json({ success: true });
+            } catch (error) {
+                console.log(CNAME, error.message);
+                return res.status(500).json({ success: false, message: error.message || 'Lỗi server.' });
+            }
+        },
+
+        /** Upload banner email (multipart) */
+        uploadMailBanner: async (req, res) => {
+            const { id } = req.params;
+            try {
+                const event = await eventCheckinHService.getById(id);
+                if (!event) {
+                    return res.status(404).json({ success: false, message: 'Không tìm thấy sự kiện.' });
+                }
+                const file = req.file;
+                if (!file || !file.buffer) {
+                    return res.status(400).json({ success: false, message: 'Vui lòng chọn file ảnh.' });
+                }
+
+                const existing = await eventMailConfigService.findByEventId(event._id);
+                if (existing && existing.banner_img) {
+                    const rel = String(existing.banner_img).replace(/^\//, '');
+                    const oldAbs = path.join(myPathConfig.root, 'public', rel);
+                    if (fs.existsSync(oldAbs)) {
+                        try {
+                            fs.unlinkSync(oldAbs);
+                        } catch (e) {
+                            console.log(CNAME, 'unlink banner', e.message);
+                        }
+                    }
+                }
+
+                const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
+                const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}-${safeName}`;
+                const absDir = path.join(myPathConfig.root, 'public', 'email_img');
+                if (!fs.existsSync(absDir)) {
+                    fs.mkdirSync(absDir, { recursive: true });
+                }
+                const absFile = path.join(absDir, unique);
+                fs.writeFileSync(absFile, file.buffer);
+                const pathDB = '/email_img/' + unique;
+                const doc = await eventMailConfigService.setBannerImg(event._id, pathDB);
+                if (!doc) {
+                    return res.status(500).json({ success: false, message: 'Không lưu được đường dẫn banner.' });
+                }
+                return res.json({ success: true, banner_img: pathDB });
+            } catch (error) {
+                console.log(CNAME, error.message);
+                return res.status(500).json({ success: false, message: error.message || 'Lỗi upload.' });
+            }
+        },
+
+        /** Upload ảnh cuối email (multipart, lưu /email_img/...) */
+        uploadMailEndImage: async (req, res) => {
+            const { id } = req.params;
+            try {
+                const event = await eventCheckinHService.getById(id);
+                if (!event) {
+                    return res.status(404).json({ success: false, message: 'Không tìm thấy sự kiện.' });
+                }
+                const file = req.file;
+                if (!file || !file.buffer) {
+                    return res.status(400).json({ success: false, message: 'Vui lòng chọn file ảnh.' });
+                }
+
+                const existing = await eventMailConfigService.findByEventId(event._id);
+                if (existing && existing.end_mail_img) {
+                    const rel = String(existing.end_mail_img).replace(/^\//, '');
+                    const oldAbs = path.join(myPathConfig.root, 'public', rel);
+                    if (fs.existsSync(oldAbs)) {
+                        try {
+                            fs.unlinkSync(oldAbs);
+                        } catch (e) {
+                            console.log(CNAME, 'unlink end_mail_img', e.message);
+                        }
+                    }
+                }
+
+                const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
+                const unique = `end-${Date.now()}-${Math.round(Math.random() * 1e9)}-${safeName}`;
+                const absDir = path.join(myPathConfig.root, 'public', 'email_img');
+                if (!fs.existsSync(absDir)) {
+                    fs.mkdirSync(absDir, { recursive: true });
+                }
+                const absFile = path.join(absDir, unique);
+                fs.writeFileSync(absFile, file.buffer);
+                const pathDB = '/email_img/' + unique;
+                const doc = await eventMailConfigService.setEndMailImg(event._id, pathDB);
+                if (!doc) {
+                    return res.status(500).json({ success: false, message: 'Không lưu được đường dẫn ảnh cuối mail.' });
+                }
+                return res.json({ success: true, end_mail_img: pathDB });
+            } catch (error) {
+                console.log(CNAME, error.message);
+                return res.status(500).json({ success: false, message: error.message || 'Lỗi upload.' });
+            }
+        },
+
+        /** Gửi mail QR cho một người (thủ công / gửi lại) */
+        sendParticipantQrMail: async (req, res) => {
+            const { id, participantId } = req.params;
+            try {
+                const event = await eventCheckinHService.getById(id);
+                if (!event) {
+                    return res.status(404).json({ success: false, message: 'Không tìm thấy sự kiện.' });
+                }
+                if (!eventBulkMailService.isSendGridConfigured()) {
+                    return res.status(503).json({
+                        success: false,
+                        message:
+                            'Chưa cấu hình SendGrid: cần API key (SENDGRID_API_KEY hoặc SENDGRID_API_KEY_DOMAIN) và địa chỉ From đã verify (SENDGRID_FROM_EMAIL hoặc SENDGRID_FROM_DOMAIN hoặc SENDGRID_FROM).',
+                    });
+                }
+                const p = await participantCheckinHService.getById(participantId);
+                if (!p) {
+                    return res.status(404).json({ success: false, message: 'Không tìm thấy người tham dự.' });
+                }
+                if (String(p.event_id) !== String(event._id)) {
+                    return res.status(400).json({ success: false, message: 'Người tham dự không thuộc sự kiện này.' });
+                }
+                await eventBulkMailService.sendQrMailToParticipant(event, p);
+                await auditLogService.write({
+                    actorId: req.user?._id,
+                    action: 'create',
+                    resource: 'mail_single',
+                    documentId: event._id,
+                    summary: `Gửi mail QR thủ công: participant ${participantId} (${p.email || ''})`,
+                    req,
+                });
+                return res.json({ success: true, message: 'Đã gửi email.' });
+            } catch (error) {
+                console.log(CNAME, error.message);
+                return res.status(500).json({ success: false, message: error.message || 'Lỗi gửi mail.' });
+            }
+        },
+
+        /** Gửi mail QR hàng loạt (SendGrid) */
+        sendBulkQrMail: async (req, res) => {
+            const { id } = req.params;
+            try {
+                const event = await eventCheckinHService.getById(id);
+                if (!event) {
+                    return res.status(404).json({ success: false, message: 'Không tìm thấy sự kiện.' });
+                }
+                if (!eventBulkMailService.isSendGridConfigured()) {
+                    return res.status(503).json({
+                        success: false,
+                        message:
+                            'Chưa cấu hình SendGrid: cần API key (SENDGRID_API_KEY hoặc SENDGRID_API_KEY_DOMAIN) và địa chỉ From đã verify (SENDGRID_FROM_EMAIL hoặc SENDGRID_FROM_DOMAIN hoặc SENDGRID_FROM).',
+                    });
+                }
+                const result = await eventBulkMailService.sendBulkQrMail(event);
+                const anySent = result.sent > 0;
+                const noneToSend = result.totalRecipients === 0;
+                const allFailed = !noneToSend && !anySent;
+                await auditLogService.write({
+                    actorId: req.user?._id,
+                    action: 'create',
+                    resource: 'mail_bulk',
+                    documentId: event._id,
+                    summary: `Gửi mail QR hàng loạt: ${result.sent}/${result.totalRecipients} gửi, lỗi ${result.errors.length}`,
+                    req,
+                });
+                return res.json({
+                    success: anySent || noneToSend,
+                    sent: result.sent,
+                    totalRecipients: result.totalRecipients,
+                    errors: result.errors,
+                    message:
+                        allFailed && result.errors.length
+                            ? result.errors[0]
+                            : !anySent && noneToSend && result.errors[0]
+                              ? result.errors[0]
+                              : undefined,
+                });
+            } catch (error) {
+                console.log(CNAME, error.message);
+                return res.status(500).json({ success: false, message: error.message || 'Lỗi gửi mail.' });
+            }
+        },
+
+        /** Xóa một người tham dự khỏi sự kiện */
         deleteParticipant: async (req, res) => {
             const { id, participantId } = req.params;
             try {
@@ -469,19 +876,19 @@ const adminEventController = () => {
                         action: 'delete',
                         resource: 'participant_checkin_h',
                         documentId: participantId,
-                        summary: `Xóa VĐV khỏi sự kiện ${id}`,
+                        summary: `Xóa người tham dự khỏi sự kiện ${id}`,
                         req,
                     });
                 }
                 req.session.flash = {
                     type: ok ? 'success' : 'danger',
-                    message: ok ? 'Đã xóa VĐV.' : 'Không xóa được.',
+                    message: ok ? 'Đã xóa người tham dự.' : 'Không xóa được.',
                 };
-                return res.redirect(stepPath(id, 1));
+                return res.redirect(stepPath(id, 1) + redirectSuffixStep1Athletes(req.body));
             } catch (error) {
                 console.log(CNAME, error.message);
-                req.session.flash = { type: 'danger', message: 'Lỗi xóa VĐV.' };
-                return res.redirect(stepPath(id, 1));
+                req.session.flash = { type: 'danger', message: 'Lỗi xóa người tham dự.' };
+                return res.redirect(stepPath(id, 1) + redirectSuffixStep1Athletes(req.body));
             }
         },
     };

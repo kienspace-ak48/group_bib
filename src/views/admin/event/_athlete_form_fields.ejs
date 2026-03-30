@@ -1,0 +1,88 @@
+<% var p = typeof prefix !== 'undefined' ? prefix : 'manual'; %>
+        <div class="col-md-4">
+          <label class="form-label small">Họ tên <span class="text-danger">*</span></label>
+          <input type="text" name="fullname" class="form-control form-control-sm <%= p %>-fullname" required maxlength="200" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small">CCCD <span class="text-danger">*</span></label>
+          <input type="text" name="cccd" class="form-control form-control-sm <%= p %>-cccd" required maxlength="20" />
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small">BIB</label>
+          <input type="text" name="bib" class="form-control form-control-sm <%= p %>-bib" maxlength="50" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small">BIB name</label>
+          <input type="text" name="bib_name" class="form-control form-control-sm <%= p %>-bib_name" maxlength="120" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small">Cự ly / distance</label>
+          <input type="text" name="distance" class="form-control form-control-sm <%= p %>-distance" maxlength="120" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small">Item / vật phẩm</label>
+          <input type="text" name="item" class="form-control form-control-sm <%= p %>-item" maxlength="120" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small">Zone / khu</label>
+          <input type="text" name="zone" class="form-control form-control-sm <%= p %>-zone" maxlength="80" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small">QR code (tùy)</label>
+          <input type="text" name="qr_code" class="form-control form-control-sm <%= p %>-qr_code" maxlength="200" placeholder="Để trống = dùng uid" />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label small">Email</label>
+          <input type="email" name="email" class="form-control form-control-sm <%= p %>-email" maxlength="120" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small">Điện thoại</label>
+          <input type="text" name="phone" class="form-control form-control-sm <%= p %>-phone" maxlength="30" />
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small">Ngày sinh</label>
+          <input type="date" name="dob" class="form-control form-control-sm <%= p %>-dob" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small">Giới tính</label>
+          <select name="gender" class="form-select form-select-sm <%= p %>-gender">
+            <option value="">—</option>
+            <option value="M">Nam</option>
+            <option value="F">Nữ</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small">checkin_method</label>
+          <select name="checkin_method" class="form-select form-select-sm <%= p %>-checkin_method">
+            <option value="import">import</option>
+            <option value="manual">manual</option>
+            <option value="scan">scan</option>
+            <option value="kiosk">kiosk</option>
+            <option value="app">app</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small">status</label>
+          <select name="status" class="form-select form-select-sm <%= p %>-status">
+            <option value="registered">registered</option>
+            <option value="pending">pending</option>
+            <option value="checked_in">checked_in</option>
+            <option value="cancelled">cancelled</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small">checkin_by</label>
+          <input type="text" name="checkin_by" class="form-control form-control-sm <%= p %>-checkin_by" maxlength="120" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small">checkin_time</label>
+          <input type="datetime-local" name="checkin_time" class="form-control form-control-sm <%= p %>-checkin_time" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small">pickup_start</label>
+          <input type="datetime-local" name="pickup_start" class="form-control form-control-sm <%= p %>-pickup_start" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small">pickup_end</label>
+          <input type="datetime-local" name="pickup_end" class="form-control form-control-sm <%= p %>-pickup_end" />
+        </div>

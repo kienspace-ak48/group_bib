@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const slugify = require('slugify');
 
-/** Giai đoạn workflow: 0 Khởi tạo | 1 Quản lý VĐV | 2 Mail QR | 3 Check-in | 4 Kết thúc */
+/** Giai đoạn workflow: 0 Khởi tạo | 1 Quản lý người tham dự | 2 Mail QR | 3 Check-in | 4 Kết thúc */
 const WORKFLOW_STEPS = {
     INIT: 0,
     ATHLETES: 1,

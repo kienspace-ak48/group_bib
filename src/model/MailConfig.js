@@ -10,6 +10,8 @@ const MailConfigSchema = new mongoose.Schema(
         content_2: String,
         banner_text: String,
         banner_img: String,
+        /** Ảnh hiển thị phía trên footer (cuối nội dung chính), đường dẫn public e.g. /email_img/... */
+        end_mail_img: String,
         banner_option: { type: Boolean, default: false },
         //new
          // Thêm các trường cho footer

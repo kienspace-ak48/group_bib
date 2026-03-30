@@ -562,9 +562,9 @@
                     }
                 },
                 {
-                    data: 'checkin_status',   // trả về true/false hoặc string "true"/"false"/"checkin"/"pending"
+                    data: 'status',
                     render: function (data, type, row) {
-                        let isChecked = (data === true || data === 'true' || data === 'checkin');
+                        let isChecked = (data === 'checked_in' || row.checkin_status === true || row.checkin_status === 'true');
                         let statusText = isChecked ? "Đã check-in" : "Chưa check-in";
                         let badgeClass = isChecked ? "status-checkin" : "status-pending";
                         let icon = isChecked ? '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-hourglass-half"></i>';

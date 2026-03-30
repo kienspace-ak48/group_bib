@@ -3,8 +3,14 @@ const mongoose = require('mongoose');
 const excelDateToJSDate = require('./excelDataToJSDate.util');
 
 /**
- * Map một dòng Excel (cùng convention cột với RunnerCheckinImport cũ) → payload ParticipantCheckin_h.
- * Cột ngày sinh: dob(mm/dd/yyyy)
+ * Map một dòng Excel → payload ParticipantCheckin_h (trừ uid — gán ở controller).
+ *
+ * Ngày (dob, checkin_time): ô Date/DateTime Excel (serial ≥ 1 hoặc có ngày) hoặc chuỗi parse được.
+ *
+ * pickup_start / pickup_end — **chỉ giờ (24h) chuẩn Excel**:
+ * - Ô định dạng **Time** → số serial trong [0, 1) = phần của 24 giờ (vd 08:00 ≈ 0,333…).
+ * - Hoặc chuỗi `HH:mm` / `HH:mm:ss` (24h).
+ * - Serial ≥ 1: vẫn hỗ trợ ngày giờ đầy đủ (Date/DateTime) như cũ.
  */
 function parseDobCell(dobExcel) {
     if (dobExcel == null || dobExcel === '') return null;
@@ -16,7 +22,6 @@ function parseDobCell(dobExcel) {
     return Number.isNaN(d.getTime()) ? null : d;
 }
 
-/** Lấy giá trị ô theo nhiều tên cột có thể có trong file mẫu / tiếng Việt */
 function firstCell(row, ...keys) {
     for (const k of keys) {
         if (row[k] != null && row[k] !== '') {
@@ -36,6 +41,79 @@ function parseDobFromRow(row) {
     return c || null;
 }
 
+function parseOptionalDate(row, ...keys) {
+    const raw = firstCell(row, ...keys);
+    if (raw == null || raw === '') return undefined;
+    if (typeof raw === 'number' && !Number.isNaN(raw)) {
+        const d = excelDateToJSDate(raw);
+        return d && !Number.isNaN(d.getTime()) ? d : undefined;
+    }
+    const d = new Date(raw);
+    return Number.isNaN(d.getTime()) ? undefined : d;
+}
+
+/** Giá trị ô gốc (không ép String) — cần để đọc số serial Time trong Excel */
+function firstRawCell(row, ...keys) {
+    for (const k of keys) {
+        if (row[k] != null && row[k] !== '') return row[k];
+    }
+    return undefined;
+}
+
+/** Serial [0,1) = phần của ngày 24h → Date cố định 2000-01-01 (giờ local) để lưu và hiển thị giờ */
+function fractionOfDayToLocalDateTime(serial) {
+    const ms = serial * 86400000;
+    const totalSec = Math.round(ms / 1000);
+    const h = Math.floor(totalSec / 3600) % 24;
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    return new Date(2000, 0, 1, h, m, s);
+}
+
+/**
+ * pickup_start / pickup_end: ưu tiên Time Excel (serial 0–1) hoặc chuỗi HH:mm(:ss).
+ */
+function parsePickupTimeCell(row, ...keys) {
+    const raw = firstRawCell(row, ...keys);
+    if (raw == null || raw === '') return undefined;
+
+    if (typeof raw === 'number' && !Number.isNaN(raw)) {
+        if (raw >= 0 && raw < 1) return fractionOfDayToLocalDateTime(raw);
+        if (raw >= 1) {
+            const d = excelDateToJSDate(raw);
+            return d && !Number.isNaN(d.getTime()) ? d : undefined;
+        }
+        return undefined;
+    }
+
+    const str = String(raw).trim();
+    const num = Number(str);
+    if (str !== '' && !Number.isNaN(num) && /^-?\d+(\.\d+)?([eE][+-]?\d+)?$/.test(str)) {
+        if (num >= 0 && num < 1) return fractionOfDayToLocalDateTime(num);
+        if (num >= 1) {
+            const d = excelDateToJSDate(num);
+            return d && !Number.isNaN(d.getTime()) ? d : undefined;
+        }
+        return undefined;
+    }
+
+    const m = str.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+    if (m) {
+        let hh = parseInt(m[1], 10);
+        const mm = parseInt(m[2], 10);
+        const ss = m[3] ? parseInt(m[3], 10) : 0;
+        if (mm < 0 || mm > 59 || ss < 0 || ss > 59) return undefined;
+        if (hh === 24) {
+            if (mm !== 0 || ss !== 0) return undefined;
+            hh = 0;
+        } else if (hh < 0 || hh > 23) return undefined;
+        return new Date(2000, 0, 1, hh, mm, ss);
+    }
+
+    const d = new Date(str);
+    return Number.isNaN(d.getTime()) ? undefined : d;
+}
+
 function convertRowCheckinH(row, eventId) {
     const dob = parseDobFromRow(row);
     const g = firstCell(row, 'gender', 'gioi_tinh', 'Giới tính') || row.gender;
@@ -46,49 +124,44 @@ function convertRowCheckinH(row, eventId) {
               ? false
               : undefined;
 
-    const nat = row.nationality != null ? String(row.nationality).trim() : '';
     const fullname =
         firstCell(row, 'fullname', 'ho_ten', 'Họ tên', 'name') ||
         (row.fullname != null ? String(row.fullname).trim() : '');
     const cccdRaw = firstCell(row, 'cccd', 'CCCD', 'cmnd', 'CMND') || (row.cccd != null ? String(row.cccd).trim() : '');
 
+    const statusRaw = (firstCell(row, 'status', 'trang_thai', 'Trạng thái') || '').toLowerCase();
+    const allowedStatus = ['pending', 'registered', 'checked_in', 'cancelled'];
+    const status = allowedStatus.includes(statusRaw) ? statusRaw : undefined;
+
+    const methodRaw = (firstCell(row, 'checkin_method', 'checkinMethod') || '').toLowerCase();
+    const allowedMethod = ['scan', 'manual', 'kiosk', 'import', 'app'];
+    const checkin_method = allowedMethod.includes(methodRaw) ? methodRaw : undefined;
+
+    const pickup_start = parsePickupTimeCell(row, 'pickup_start', 'pickupStart', 'Pickup start');
+    const pickup_end = parsePickupTimeCell(row, 'pickup_end', 'pickupEnd', 'Pickup end');
+
     return {
         event_id: new mongoose.Types.ObjectId(String(eventId)),
         cccd: cccdRaw,
-        bib: firstCell(row, 'bib', 'BIB') || (row.bib != null ? String(row.bib).trim() : undefined),
         fullname,
-        distance:
-            firstCell(row, 'distance', 'cu_ly', 'Cự ly') ||
-            (row.distance != null ? String(row.distance).trim() : undefined),
-        distance_name: firstCell(row, 'distance_name', 'ten_cu_ly'),
-        tshirt_size:
-            firstCell(row, 'tshirt_size', 'size_ao', 'Size áo', 'size') ||
-            (row.tshirt_size != null ? String(row.tshirt_size).trim() : undefined),
-        bib_name: firstCell(row, 'bib_name') || (row.bib_name != null ? String(row.bib_name).trim() : undefined),
         email: firstCell(row, 'email', 'Email') || (row.email != null ? String(row.email).trim() : undefined),
         phone:
             firstCell(row, 'phone', 'dien_thoai', 'Phone', 'SĐT') ||
             (row.phone != null ? String(row.phone).trim() : undefined),
         dob: dob || undefined,
-        line: firstCell(row, 'line', 'Line') || (row.line != null ? String(row.line).trim() : undefined),
         gender,
-        nationality: nat || undefined,
-        nationlity: nat || undefined,
-        nation: firstCell(row, 'nation') || (row.nation != null ? String(row.nation).trim() : undefined),
-        city: firstCell(row, 'city', 'thanh_pho') || (row.city != null ? String(row.city).trim() : undefined),
-        patron_name: firstCell(row, 'patron_name') || (row.patron_name != null ? String(row.patron_name).trim() : undefined),
-        patron_phone: firstCell(row, 'patron_phone') || (row.patron_phone != null ? String(row.patron_phone).trim() : undefined),
-        team: firstCell(row, 'team') || (row.team != null ? String(row.team).trim() : undefined),
-        blood: firstCell(row, 'blood') || (row.blood != null ? String(row.blood).trim() : undefined),
-        medical: firstCell(row, 'medical') || (row.medical != null ? String(row.medical).trim() : undefined),
-        medicine: firstCell(row, 'medicine') || (row.medicine != null ? String(row.medicine).trim() : undefined),
-        chip_id: firstCell(row, 'chip_id', 'ChipId', 'chipId', 'CHIP'),
-        mail_status: firstCell(row, 'mail_status', 'Mail_status', 'Mail Status'),
-        group_checkin_status: firstCell(row, 'group_checkin_status', 'checkin_nhom', 'Checkin theo nhóm'),
-        authorization_status: firstCell(row, 'authorization_status', 'uy_quyen', 'Ủy quyền'),
-        waiver_status: firstCell(row, 'waiver_status', 'waiver', 'Waiver'),
-        order_id: firstCell(row, 'order_id', 'orderId'),
-        order_item_id: firstCell(row, 'order_item_id', 'orderItemId'),
+        zone: firstCell(row, 'zone', 'khu_vuc', 'Khu vực', 'Zone'),
+        qr_code: firstCell(row, 'qr_code', 'qrCode', 'QR', 'QR code'),
+        checkin_method,
+        status,
+        checkin_by: firstCell(row, 'checkin_by', 'checkinBy'),
+        checkin_time: parseOptionalDate(row, 'checkin_time', 'checkinTime', 'Checkin time'),
+        bib: firstCell(row, 'bib', 'BIB') || (row.bib != null ? String(row.bib).trim() : undefined),
+        bib_name: firstCell(row, 'bib_name', 'bibName', 'BIB name', 'Ten BIB'),
+        distance: firstCell(row, 'distance', 'cu_ly', 'Cự ly'),
+        item: firstCell(row, 'item', 'vat_pham', 'Item'),
+        pickup_start,
+        pickup_end,
     };
 }
 

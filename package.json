@@ -6,7 +6,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon --inspect src/server.js",
     "tailwind": "npx @tailwindcss/cli -i src/main.css -o public/css/main.css --watch",
-    "swagger": "node src/swagger.js"
+    "swagger": "node src/swagger.js",
+    "generate:athlete-template": "node scripts/generate-athlete-import-template.js"
   },
   "keywords": [],
   "author": "",
