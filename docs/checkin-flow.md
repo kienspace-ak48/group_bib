@@ -65,7 +65,7 @@ mindmap
 | Workspace | 5 bước 0→4: khởi tạo → người tham dự → mail QR → check-in → kết thúc. |
 | Điều hướng | Chỉ mở tới bước `max_confirmed_step + 1`; xác nhận lần lượt, không nhảy cóc. |
 | Nhập liệu | Excel / form thủ công → `participant_checkin_h` (tối thiểu fullname + CCCD mỗi dòng). |
-| Dữ liệu mở rộng | `bib`, `bib_name`, `distance`, `item`, `zone`, `status`, `checkin_method`, `pickup_*`, v.v. — import gán `uid` + `qr_code` (mặc định trùng `uid`). |
+| Dữ liệu mở rộng | `bib`, `bib_name`, `distance`, `item`, `zone`, `status`, `checkin_method`, `pickup_time_range`, v.v. — import gán `uid` + `qr_code` (mặc định trùng `uid`). |
 | Tool công khai | View có sẵn; route `/tool-checkin` có thể gắn sau — luồng đầy đủ hiện ở admin. |
 
 ---
@@ -180,7 +180,7 @@ sequenceDiagram
 
 ## 4. Dữ liệu người tham dự (BIB + chip)
 
-Trên [ParticipantCheckin_h](../src/model/ParticipantCheckin_h.js): `event_id` (FK), `uid` (sinh khi import), `qr_code` (thường trùng `uid`), thông tin cá nhân, `zone`, `bib` / `bib_name` / `distance` / `item`, `status`, `checkin_method`, `checkin_by` / `checkin_time`, `pickup_start` / `pickup_end`.
+Trên [ParticipantCheckin_h](../src/model/ParticipantCheckin_h.js): `event_id` (FK), `uid` (sinh khi import), `qr_code` (thường trùng `uid`), thông tin cá nhân, `zone`, `bib` / `bib_name` / `distance` / `item`, `status`, `checkin_method`, `checkin_by` / `checkin_time`, `pickup_time_range` (chuỗi khung giờ nhận, vd `08:00 - 10:00`).
 
 Import Excel map qua [participantCheckinExcelRow.util.js](../src/utils/participantCheckinExcelRow.util.js) (sheet đầu; cột tối thiểu `fullname` + `cccd`).
 

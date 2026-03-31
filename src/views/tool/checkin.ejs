@@ -2,12 +2,13 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Quản lý Check-in | Hội thao Sư phạm</title>
     <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts: Inter + Outfit cho hiện đại -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/main.css" />
     <!-- DataTables CSS -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
     <!-- QR Scanner lib -->
@@ -15,498 +16,18 @@
     <!-- jQuery & DataTables JS -->
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            background: #f1f5f9;
-            font-family: 'Inter', sans-serif;
-        }
-
-        /* Smooth scroll & modern touches */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #e2e8f0;
-            border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #94a3b8;
-            border-radius: 10px;
-        }
-
-        /* main container */
-        .dashboard-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 24px 20px 40px;
-        }
-
-        /* event header card */
-        .event-card {
-            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-            border-radius: 28px;
-            padding: 24px 28px;
-            margin-bottom: 28px;
-            box-shadow: 0 12px 28px -8px rgba(79, 70, 229, 0.3);
-            transition: transform 0.2s ease;
-            position: relative;
-        }
-        .event-card-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 16px;
-            margin-bottom: 8px;
-            flex-wrap: wrap;
-        }
-        .event-card-top .event-title {
-            flex: 1;
-            min-width: 0;
-        }
-        .event-title {
-            font-family: 'Outfit', sans-serif;
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: white;
-            letter-spacing: -0.3px;
-            margin-bottom: 0;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-        .event-card .btn-logout {
-            flex-shrink: 0;
-            margin-left: auto;
-            background: rgba(255, 255, 255, 0.18);
-            backdrop-filter: blur(6px);
-            color: #fff;
-            border: 1px solid rgba(255, 255, 255, 0.35);
-        }
-        .event-card .btn-logout:hover {
-            background: rgba(255, 255, 255, 0.28);
-            color: #fff;
-            border-color: rgba(255, 255, 255, 0.55);
-        }
-        .event-badge {
-            background: rgba(255,255,255,0.2);
-            backdrop-filter: blur(4px);
-            padding: 6px 14px;
-            border-radius: 40px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            color: #fef9c3;
-        }
-        .event-stats {
-            display: flex;
-            gap: 24px;
-            margin-top: 12px;
-            flex-wrap: wrap;
-        }
-        .stat-chip {
-            background: rgba(255,255,255,0.15);
-            border-radius: 60px;
-            padding: 6px 16px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            color: white;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        /* action toolbar */
-        .action-toolbar {
-            background: white;
-            border-radius: 24px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03), 0 1px 2px rgba(0, 0, 0, 0.05);
-            padding: 16px 24px;
-            margin-bottom: 24px;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            align-items: center;
-            gap: 16px;
-        }
-        .scan-btn {
-            background: linear-gradient(105deg, #4f46e5 0%, #6366f1 100%);
-            border: none;
-            padding: 12px 28px;
-            border-radius: 48px;
-            font-weight: 600;
-            font-size: 1rem;
-            color: white;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            cursor: pointer;
-            transition: all 0.25s ease;
-            box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
-        }
-        .scan-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 20px -8px rgba(79, 70, 229, 0.5);
-            background: linear-gradient(105deg, #4338ca 0%, #4f46e5 100%);
-        }
-        .action-toolbar-right {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 12px;
-        }
-        .btn-logout {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 18px;
-            border-radius: 48px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            color: #64748b;
-            background: #f1f5f9;
-            border: 1px solid #e2e8f0;
-            text-decoration: none;
-            transition: background 0.2s, color 0.2s, border-color 0.2s;
-        }
-        .btn-logout:hover {
-            background: #fee2e2;
-            color: #b91c1c;
-            border-color: #fecaca;
-        }
-        .filter-chips {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        .chip {
-            background: #f1f5f9;
-            border-radius: 40px;
-            padding: 8px 16px;
-            font-size: 0.8rem;
-            font-weight: 500;
-            color: #1e293b;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.2s;
-            cursor: pointer;
-        }
-        .chip i {
-            font-size: 0.75rem;
-            color: #64748b;
-        }
-        .chip.active {
-            background: #e0e7ff;
-            color: #4338ca;
-            border-left: 3px solid #4f46e5;
-        }
-        .chip:hover {
-            background: #e2e8f0;
-        }
-
-        /* DataTable wrapper refinement */
-        .data-table-wrapper {
-            background: white;
-            border-radius: 28px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
-            overflow: hidden;
-            transition: all 0.2s;
-        }
-        #participant_tbl {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-        }
-        #participant_tbl thead th {
-            background: #f8fafc;
-            padding: 18px 20px;
-            font-size: 0.8rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #475569;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        #participant_tbl tbody td {
-            padding: 16px 20px;
-            font-size: 0.85rem;
-            vertical-align: middle;
-            border-bottom: 1px solid #f0f2f5;
-            color: #1e293b;
-        }
-        #participant_tbl tbody td:nth-child(3) {
-            white-space: nowrap;
-        }
-        #participant_tbl tbody tr:hover {
-            background-color: #fefce8;
-            transition: 0.1s;
-        }
-        /* name + bib — gọn, một dòng khi đủ chỗ */
-        .athlete-name {
-            font-weight: 600;
-            color: #1e293b;
-            font-size: 0.92rem;
-            display: inline-flex;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 8px;
-            row-gap: 4px;
-        }
-        .athlete-bib {
-            font-size: 0.72rem;
-            background: #eef2ff;
-            padding: 3px 10px;
-            border-radius: 8px;
-            color: #4338ca;
-            font-weight: 700;
-            letter-spacing: 0.02em;
-            white-space: nowrap;
-        }
-        .contact-row {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            font-size: 0.8rem;
-            color: #475569;
-            line-height: 1.35;
-        }
-        .contact-row .contact-line {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 260px;
-        }
-        /* status badges — không xuống dòng */
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            white-space: nowrap;
-            gap: 8px;
-            background: #f1f5f9;
-            padding: 5px 12px;
-            border-radius: 40px;
-            font-weight: 600;
-            font-size: 0.75rem;
-            width: fit-content;
-            max-width: 100%;
-        }
-        .status-checkin {
-            background: #dcfce7;
-            color: #15803d;
-        }
-        .status-checkin i {
-            color: #16a34a;
-        }
-        .status-pending {
-            background: #fff3e3;
-            color: #b45309;
-        }
-        .status-pending i {
-            color: #ea580c;
-        }
-        .status-checkout {
-            background: #fee2e2;
-            color: #b91c1c;
-        }
-        /* info clickable style */
-        .clickable-name {
-            cursor: pointer;
-            font-weight: 700;
-            color: #4f46e5;
-            transition: all 0.15s;
-            display: inline;
-        }
-        .clickable-name:hover {
-            color: #6366f1;
-            text-decoration: underline;
-            text-underline-offset: 3px;
-        }
-
-        /* Search area */
-        .search-area {
-            flex: 2;
-            min-width: 240px;
-        }
-        .search-input-group {
-            position: relative;
-        }
-        .search-input-group i {
-            position: absolute;
-            left: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #94a3b8;
-            font-size: 0.9rem;
-        }
-        .search-input-group input {
-            width: 100%;
-            padding: 12px 16px 12px 44px;
-            border-radius: 60px;
-            border: 1px solid #e2e8f0;
-            background: #ffffff;
-            font-size: 0.9rem;
-            transition: all 0.2s;
-        }
-        .search-input-group input:focus {
-            outline: none;
-            border-color: #818cf8;
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-        }
-        /* datatable override */
-        .dataTables_wrapper .dataTables_filter {
-            display: none;
-        }
-        .dataTables_wrapper .dataTables_info {
-            padding: 16px 20px;
-            font-size: 0.75rem;
-            color: #64748b;
-        }
-        .dataTables_wrapper .dataTables_paginate {
-            padding: 12px 20px;
-        }
-        .paginate_button {
-            border-radius: 30px !important;
-            margin: 0 3px !important;
-            background: #f1f5f9 !important;
-            border: none !important;
-            color: #334155 !important;
-        }
-        .paginate_button.current {
-            background: #4f46e5 !important;
-            color: white !important;
-            box-shadow: 0 2px 6px rgba(79,70,229,0.3);
-        }
-
-        /* MODAL SCANNER HIỆN ĐẠI */
-        #scanModal {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.92);
-            backdrop-filter: blur(8px);
-            z-index: 10000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-        }
-        .scanner-container {
-            width: 90%;
-            max-width: 520px;
-            background: #0f172a;
-            border-radius: 48px;
-            overflow: hidden;
-            box-shadow: 0 30px 40px -20px black;
-            position: relative;
-            border: 1px solid rgba(255,255,255,0.2);
-        }
-        .scanner-header {
-            padding: 18px 24px;
-            background: rgba(0,0,0,0.5);
-            color: white;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-weight: 600;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-        .qr-reader-area {
-            position: relative;
-            width: 100%;
-            aspect-ratio: 1 / 1;
-            background: #000;
-        }
-        #qr-reader {
-            width: 100%;
-            height: 100%;
-        }
-        #qr-reader video {
-            width: 100% !important;
-            height: 100% !important;
-            object-fit: cover;
-        }
-        .scan-guide {
-            position: absolute;
-            inset: 20px;
-            border: 2px solid rgba(79, 70, 229, 0.7);
-            border-radius: 28px;
-            box-shadow: 0 0 0 4000px rgba(0,0,0,0.5);
-            pointer-events: none;
-            z-index: 5;
-        }
-        .close-scanner {
-            background: rgba(255,255,255,0.15);
-            border: none;
-            color: white;
-            font-size: 1rem;
-            padding: 10px 24px;
-            border-radius: 60px;
-            font-weight: 500;
-            margin: 20px auto;
-            display: block;
-            width: fit-content;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .close-scanner:hover {
-            background: #ef4444;
-            transform: scale(0.98);
-        }
-        .hidden {
-            display: none !important;
-        }
-
-        @media (max-width: 640px) {
-            .dashboard-container {
-                padding: 16px;
-            }
-            .event-title {
-                font-size: 1.4rem;
-            }
-            .event-card-top {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            .event-card .btn-logout {
-                align-self: flex-end;
-            }
-            .scan-btn {
-                width: 100%;
-                justify-content: center;
-            }
-            .action-toolbar {
-                flex-direction: column;
-                align-items: stretch;
-            }
-        }
-    </style>
 </head>
-<body>
+<body class="checkin-page">
 <div class="dashboard-container">
     <!-- Event Header -->
-    <div class="event-card">
-        <div class="event-card-top flex items-start justify-between">
-            <div class="event-title">
-                <span id="eventName" class="text-xl md:text-2xl"><%= event && event.name ? event.name : 'Sự kiện' %></span>
-            </div>
-            <a href="/auth/normal/admin/logout" class="btn-logout" title="Đăng xuất">
-                <i class="fas fa-right-from-bracket" aria-hidden="true"></i>
-                <span>Đăng xuất</span>
+    <div class="checkin-event-header">
+        <div class="flex items-start justify-between gap-2 sm:gap-4">
+            <h1 class="checkin-event-title">
+                <span id="eventName" class=""><%= event && event.name ? event.name : 'Sự kiện' %></span>
+            </h1>
+            <a href="/auth/normal/admin/logout" class="checkin-logout-btn" title="Đăng xuất" aria-label="Đăng xuất">
+                <i class="fas fa-right-from-bracket text-sm sm:text-base" aria-hidden="true"></i>
             </a>
-        </div>
-        <div class="event-stats">
-            <div class="stat-chip"><i class="fas fa-users"></i> <span id="totalParticipants">0</span> VĐV</div>
-            <div class="stat-chip"><i class="fas fa-check-circle"></i> <span id="checkedInCount">0</span> Đã check-in</div>
-            <div class="stat-chip"><i class="fas fa-clock"></i>
-                <% if (event && event.start_date) { %><%= new Date(event.start_date).toLocaleString('vi-VN') %><% } else { %>—<% } %>
-                <% if (event && event.end_date) { %> · <%= new Date(event.end_date).toLocaleString('vi-VN') %><% } %>
-            </div>
         </div>
     </div>
 
@@ -519,27 +40,38 @@
             </div>
         </div>
         <div class="action-toolbar-right">
-            <button id="openScan" type="button" class="scan-btn">
-                <i class="fas fa-qrcode"></i> Scan QR
+            <button id="openScan" type="button" class="scan-btn js-open-scan" aria-label="Mở quét mã QR">
+                <i class="fas fa-qrcode" aria-hidden="true"></i> Scan QR
             </button>
         </div>
     </div>
 
+    <div class="mobile-scan-fab" role="presentation">
+        <button type="button" class="scan-btn js-open-scan" aria-label="Mở quét mã QR">
+            <i class="fas fa-qrcode" aria-hidden="true"></i> Scan QR
+        </button>
+    </div>
+
     <!-- Filter chips (nâng cao UX) -->
-    <div class="filter-chips" style="margin-bottom: 18px;">
+    <div class="filter-chips">
         <div class="chip active" data-filter="all"><i class="fas fa-list-ul" aria-hidden="true"></i> Tất cả</div>
-        <div class="chip" data-filter="true"><i class="fas fa-check-circle" style="color:#16a34a" aria-hidden="true"></i> Đã check-in</div>
+        <div class="chip" data-filter="true"><i class="fas fa-check-circle text-green-600" aria-hidden="true"></i> Đã check-in</div>
         <div class="chip" data-filter="false"><i class="fas fa-hourglass-half" aria-hidden="true"></i> Chưa check-in</div>
     </div>
 
     <!-- Table wrapper -->
-    <div class="data-table-wrapper overflow-x-auto">
-        <table id="participant_tbl" class="display" style="width:100%">
+    <div class="data-table-wrapper">
+        <table id="participant_tbl" class="display w-full table-fixed text-left" style="width:100%">
+            <colgroup>
+                <col class="checkin-col-athlete" />
+                <col class="checkin-col-contact" />
+                <col class="checkin-col-status" />
+            </colgroup>
             <thead>
                 <tr>
                     <th>Vận động viên</th>
                     <th>Liên hệ</th>
-                    <th>Trạng thái</th>
+                    <th class="whitespace-nowrap !text-center">Trạng thái</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -552,7 +84,7 @@
     <div class="scanner-container">
         <div class="scanner-header">
             <span><i class="fas fa-qrcode"></i> Quét mã check-in</span>
-            <i class="fas fa-close" id="closeScanIcon" style="cursor:pointer; font-size:1.3rem;"></i>
+            <i class="fas fa-close cursor-pointer text-xl" id="closeScanIcon" role="button" tabindex="0" aria-label="Đóng"></i>
         </div>
         <div class="qr-reader-area">
             <div id="qr-reader"></div>
@@ -563,8 +95,9 @@
 </div>
 
 <!-- Form ẩn submit -->
-<form action="/tool-checkin/info" method="GET" style="display: none" id="checkinForm" target="checkinWindow">
+<form action="/tool-checkin/info" method="GET" class="hidden" id="checkinForm" target="checkinWindow">
     <input type="text" name="code" id="code_hidden" />
+    <input type="hidden" name="return_to" value="/tool-checkin" />
 </form>
 
 <script>
@@ -585,6 +118,12 @@
         dataTable = $('#participant_tbl').DataTable({
             processing: true,
             serverSide: true,
+            autoWidth: false,
+            columnDefs: [
+                { width: '35%', targets: 0 },
+                { width: '40%', targets: 1 },
+                { width: '25%', targets: 2, className: "text-center" }
+            ],
             ajax: {
                 url: '/tool-checkin/get-data',
                 type: 'GET',
@@ -597,8 +136,8 @@
                     // optional loading
                 }
             },
-            info: true,
-            dom: 'rtip',
+            info: false,
+            dom: 'rtp',
             searching: false,
             ordering: false,
             pageLength: 10,
@@ -638,7 +177,7 @@
                             ? `<span class="contact-line">${escapeHtml(email)}</span>`
                             : '';
                         if (!phoneLine && !emailLine) {
-                            return '<span class="contact-line" style="color:#94a3b8">—</span>';
+                            return '<span class="contact-line text-slate-400">—</span>';
                         }
                         return `<div class="contact-row">${phoneLine}${emailLine}</div>`;
                     }
@@ -647,38 +186,25 @@
                     data: 'status',
                     render: function (data, type, row) {
                         let isChecked = (data === 'checked_in' || row.checkin_status === true || row.checkin_status === 'true');
-                        let statusText = isChecked ? "Đã check-in" : "Chưa check-in";
+                        var compact = typeof window !== 'undefined' && window.innerWidth <= 640;
+                        let statusText = compact
+                            ? (isChecked ? 'Đã CI' : 'Chưa')
+                            : (isChecked ? 'Đã check-in' : 'Chưa check-in');
                         let badgeClass = isChecked ? "status-checkin" : "status-pending";
                         let icon = isChecked
                             ? '<i class="fas fa-check-circle" aria-hidden="true"></i>'
                             : '<i class="fas fa-hourglass-half" aria-hidden="true"></i>';
-                        return `<div class="status-badge ${badgeClass}">${icon} ${statusText}</div>`;
+                        return `<div class="status-badge ${badgeClass}">${icon}</div>`;
                     }
                 }
             ],
             createdRow: function (row, data, dataIndex) {
-                // Gắn uid vào row để dễ xử lý click
                 let uidVal = data.uid || data.code || '';
                 $(row).attr('data-uid', uidVal);
             },
-            drawCallback: function() {
-                // cập nhật thống kê nếu api trả về tổng số (giả sử phản hồi có recordsTotal & checkedInCount)
-                // Ta có thể lấy từ ajax response (cần backend tùy chỉnh) nhưng demo UI có thể tự tính
-                // Nếu api trả về thêm total và checked, ta parse; tạm thời lấy từ dataTable page.info()
-                let info = dataTable.page.info();
-                if (info && info.recordsTotal) {
-                    $('#totalParticipants').text(info.recordsTotal);
-                }
-                // Nếu backend gửi thêm x-total-checked trong header, cập nhật. Nhưng tạm tính từ filter all
-                if (currentFilter === 'all') {
-                    // gọi nhẹ nhàng cập nhật số checked (có thể gọi api riêng, nhưng tối ưu UX)
-                    $.get('/tool-checkin/get-stats', function(stats) {
-                        if(stats) {
-                            $('#checkedInCount').text(stats.checkedCount || 0);
-                        }
-                    }).fail(()=>{});
-                }
-            }
+            drawCallback: function () {
+                $('#participant_tbl').css('width', '100%');
+            },
         });
         
         // Reset về trang 1 khi đổi filter — nếu không, start cũ có thể > tổng số sau lọc → bảng trống
@@ -732,8 +258,10 @@
     let html5QrCode = null;
     let isScanning = false;
     const scanModal = document.getElementById('scanModal');
-    const openScanBtn = document.getElementById('openScan');
     const closeScanBtns = [document.getElementById('closeScanBtn'), document.getElementById('closeScanIcon')];
+    document.querySelectorAll('.js-open-scan').forEach(function (btn) {
+        btn.addEventListener('click', startScan);
+    });
     
     async function startScan() {
         if (isScanning) return;
@@ -751,9 +279,11 @@
             if (!devices.length) throw new Error('Không tìm thấy camera');
             // ưu tiên camera sau (thường là camera sau điện thoại)
             const cameraId = devices.length > 1 ? devices[1].id : devices[0].id;
+            var vw = Math.min(window.innerWidth || 360, window.innerHeight || 640);
+            var boxSize = Math.max(180, Math.min(280, Math.floor(vw * 0.72)));
             await html5QrCode.start(cameraId, {
                 fps: 12,
-                qrbox: { width: 260, height: 260 },
+                qrbox: { width: boxSize, height: boxSize },
                 aspectRatio: 1.0
             }, (decodedText) => {
                 // Khi quét thành công
@@ -781,7 +311,6 @@
         isScanning = false;
     }
     
-    openScanBtn.addEventListener('click', startScan);
     closeScanBtns.forEach(btn => btn && btn.addEventListener('click', stopScan));
     // click ra ngoài backdrop (chỉ modal background) - dùng overlay click
     scanModal.addEventListener('click', function(e) {
@@ -805,24 +334,6 @@
     // Khởi tạo DataTable
     initDataTable();
 
-    function refreshStats() {
-        $.get('/tool-checkin/get-stats', function(stats) {
-            if (stats && typeof stats.checkedCount !== 'undefined') {
-                $('#checkedInCount').text(stats.checkedCount);
-            }
-            if (stats && typeof stats.totalParticipants !== 'undefined') {
-                $('#totalParticipants').text(stats.totalParticipants);
-            }
-        }).fail(function () {
-            if (dataTable && dataTable.page.info().recordsTotal) {
-                $('#totalParticipants').text(dataTable.page.info().recordsTotal);
-            }
-        });
-    }
-    refreshStats();
-    setInterval(function () {
-        if (dataTable) refreshStats();
-    }, 5000);
     
     // Xử lý phím tắt ESC để đóng scanner
     document.addEventListener('keydown', function(e) {

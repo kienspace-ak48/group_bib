@@ -16,6 +16,7 @@ const auditLogService = require('../services/auditLog.service');
 const eventMailConfigService = require('../services/eventMailConfig.service');
 const eventBulkMailService = require('../services/eventBulkMail.service');
 const { convertRowCheckinH, generateUID } = require('../../../utils/participantCheckinExcelRow.util');
+const { normalizePickupTimeRange } = require('../../../utils/pickupTimeRange.util');
 
 const BATCH_SIZE = 1000;
 const PARTICIPANT_LIST_LIMIT = 10000;
@@ -611,8 +612,7 @@ const adminEventController = () => {
                         checkin_time: fmtDt(p.checkin_time),
                         checkin_by: p.checkin_by || '',
                         qr_mail_sent_at: fmtDt(p.qr_mail_sent_at),
-                        pickup_start: fmtDt(p.pickup_start),
-                        pickup_end: fmtDt(p.pickup_end),
+                        pickup_time_range: p.pickup_time_range != null ? String(p.pickup_time_range) : '',
                     };
                 });
                 const ws = xlsx.utils.json_to_sheet(exportRows);
@@ -773,16 +773,7 @@ const adminEventController = () => {
                 const statuses = ['pending', 'registered', 'checked_in', 'cancelled'];
                 const m = (str('checkin_method') || 'import').toLowerCase();
                 const s = (str('status') || 'registered').toLowerCase();
-                let pickup_start;
-                let pickup_end;
-                if (body.pickup_start) {
-                    const ps = new Date(body.pickup_start);
-                    if (!Number.isNaN(ps.getTime())) pickup_start = ps;
-                }
-                if (body.pickup_end) {
-                    const pe = new Date(body.pickup_end);
-                    if (!Number.isNaN(pe.getTime())) pickup_end = pe;
-                }
+                const pickup_time_range = normalizePickupTimeRange(body.pickup_time_range);
                 const payload = {
                     uid: uidVal,
                     event_id: event._id,
@@ -801,8 +792,7 @@ const adminEventController = () => {
                     checkin_method: methods.includes(m) ? m : 'import',
                     status: statuses.includes(s) ? s : 'registered',
                     checkin_by: str('checkin_by'),
-                    pickup_start,
-                    pickup_end,
+                    pickup_time_range,
                 };
                 if (body.checkin_time) {
                     const ct = new Date(body.checkin_time);
@@ -863,16 +853,7 @@ const adminEventController = () => {
                 const statuses = ['pending', 'registered', 'checked_in', 'cancelled'];
                 const m = (str('checkin_method') || 'import').toLowerCase();
                 const s = (str('status') || 'registered').toLowerCase();
-                let pickup_start;
-                let pickup_end;
-                if (body.pickup_start) {
-                    const ps = new Date(body.pickup_start);
-                    if (!Number.isNaN(ps.getTime())) pickup_start = ps;
-                }
-                if (body.pickup_end) {
-                    const pe = new Date(body.pickup_end);
-                    if (!Number.isNaN(pe.getTime())) pickup_end = pe;
-                }
+                const pickup_time_range = normalizePickupTimeRange(body.pickup_time_range);
                 const payload = {
                     fullname,
                     cccd,
@@ -889,8 +870,7 @@ const adminEventController = () => {
                     checkin_method: methods.includes(m) ? m : 'import',
                     status: statuses.includes(s) ? s : 'registered',
                     checkin_by: str('checkin_by'),
-                    pickup_start,
-                    pickup_end,
+                    pickup_time_range,
                 };
                 if (body.checkin_time) {
                     const ct = new Date(body.checkin_time);

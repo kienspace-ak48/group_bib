@@ -93,8 +93,9 @@
     };
     if (p.dob) o.dob_iso = new Date(p.dob).toISOString();
     if (p.checkin_time) o.checkin_time_iso = new Date(p.checkin_time).toISOString();
-    if (p.pickup_start) o.pickup_start_iso = new Date(p.pickup_start).toISOString();
-    if (p.pickup_end) o.pickup_end_iso = new Date(p.pickup_end).toISOString();
+    if (p.pickup_time_range != null && String(p.pickup_time_range).trim() !== '') {
+      o.pickup_time_range = String(p.pickup_time_range);
+    }
     return encodeURIComponent(JSON.stringify(o));
   }
 %>
@@ -123,7 +124,7 @@
       Import Excel (sheet đầu): cột gợi ý <code>fullname</code>, <code>cccd</code>, <code>email</code>, <code>phone</code>,
       <code>dob</code> / <code>dob(mm/dd/yyyy)</code>, <code>gender</code>, <code>zone</code>, <code>bib</code>, <code>bib_name</code>, <code>distance</code>, <code>item</code>,
       <code>qr_code</code> (tùy; nếu trống sẽ dùng mã <code>uid</code> sinh tự động), <code>status</code>, <code>checkin_method</code>,
-      <code>pickup_start</code>, <code>pickup_end</code> — chỉ <strong>giờ 24h</strong> chuẩn Excel: định dạng ô <strong>Time</strong> (vd <code>HH:mm</code>) hoặc gõ <code>08:00</code>; để trống nếu không dùng. …
+      <code>pickup_time_range</code> — chuỗi tự do (vd <code>08:00 - 10:00</code>); hoặc cột cũ <code>pickup_start</code> / <code>pickup_end</code> (giờ Excel Time / <code>HH:mm</code>) sẽ được ghép khi import. …
       Mỗi dòng sau import sẽ có <code>uid</code> duy nhất (prefix theo sự kiện, giống logic cũ <code>generateUID</code>).
       Có thể import nhiều dòng trùng họ tên / SĐT / CCCD — mỗi dòng là một bản ghi riêng (mã <code>uid</code> khác nhau).
       Chế độ <strong>Thêm mới</strong> giữ danh sách hiện có; <strong>Xóa danh sách cũ rồi import</strong> xóa toàn bộ người tham dự của sự kiện trước khi nạp file.
@@ -534,8 +535,7 @@
     set('.edit-status', data.status || 'registered');
     set('.edit-checkin_by', data.checkin_by);
     set('.edit-checkin_time', toDatetimeLocal(data.checkin_time_iso));
-    set('.edit-pickup_start', toDatetimeLocal(data.pickup_start_iso));
-    set('.edit-pickup_end', toDatetimeLocal(data.pickup_end_iso));
+    set('.edit-pickup_time_range', data.pickup_time_range != null ? String(data.pickup_time_range) : '');
     var btnEdit = document.getElementById('btnEditSendMail');
     if (btnEdit) {
       btnEdit.dataset.participantId = data._id || '';

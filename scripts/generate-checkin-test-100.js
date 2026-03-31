@@ -27,8 +27,7 @@ const headers = [
     'checkin_method',
     'checkin_by',
     'checkin_time',
-    'pickup_start',
-    'pickup_end',
+    'pickup_time_range',
 ];
 
 const distances = ['5km', '10km', '21km', '42km', 'Fun run'];
@@ -61,8 +60,7 @@ for (let i = 1; i <= 100; i++) {
         'import',
         '',
         '',
-        '',
-        '',
+        i % 4 === 0 ? '07:00 - 09:00' : '',
     ]);
 }
 

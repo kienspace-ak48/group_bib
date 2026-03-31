@@ -45,38 +45,39 @@
                 <!-- Athlete Profile Card -->
                 <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
                     <!-- Header with gradient & status -->
-                    <div class="bg-gradient-to-r from-indigo-600 to-purple-600 p-5 md:p-6">
+                    <div class="bg-gradient-to-r from-indigo-600 to-purple-600 p-4 sm:p-5 md:p-6">
                         <% var _checkedIn = (pc.status === 'checked_in' || pc.checkin_status === true); %>
-                        <h2 class="text-xl md:text-2xl font-bold text-white mb-4 tracking-tight"><%= event.name %></h2>
-                        <div class="flex flex-col sm:flex-row sm:items-stretch gap-4 sm:gap-5">
-                            <div class="flex-1 min-w-0 rounded-2xl border border-white/25 bg-white/10 backdrop-blur-md px-4 py-3.5 md:px-5 md:py-4 shadow-inner shadow-black/10">
-                                <div class="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
-                                    <div class="flex items-baseline gap-2 flex-wrap">
-                                        <span class="text-[11px] font-semibold uppercase tracking-wider text-white/60">Category</span>
-                                        <span class="text-white text-lg font-semibold tabular-nums"><%= pc.zone || '—' %></span>
+                        <h2 class="text-lg sm:text-xl md:text-2xl font-bold text-white mb-3 sm:mb-4 tracking-tight leading-snug"><%= event.name %></h2>
+                        <div class="rounded-2xl border border-white/25 bg-white/10 backdrop-blur-md px-3 py-3 sm:px-4 sm:py-3.5 md:px-5 md:py-4 shadow-inner shadow-black/10">
+                            <div class="flex flex-col gap-3 md:flex-row md:items-center md:gap-5 md:min-w-0">
+                                <!-- Category: full width, wrap — không truncate -->
+                                <div class="min-w-0 flex-1 md:min-w-[40%]">
+                                    <p class="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-white/60 mb-1">Category</p>
+                                    <p class="text-white text-base sm:text-lg font-semibold leading-snug break-words [overflow-wrap:anywhere]"><%= pc.zone || '—' %></p>
+                                </div>
+                                <!-- Code + trạng thái: cùng hàng (mobile), md+ dính nhóm bên phải -->
+                                <div class="flex flex-row flex-wrap items-center justify-between gap-3 sm:gap-4 md:flex-nowrap md:justify-end md:gap-4 md:shrink-0">
+                                    <div class="flex min-w-0 items-baseline gap-2 border-t border-white/20 pt-2.5 md:border-t-0 md:border-l md:border-white/25 md:pt-0 md:pl-4">
+                                        <span class="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-white/60 shrink-0">Code</span>
+                                        <span class="text-amber-200 text-lg sm:text-xl md:text-2xl font-bold tabular-nums tracking-tight"><%= pc.bib || '—' %></span>
                                     </div>
-                                    <div class="hidden sm:block h-9 w-px bg-white/25 shrink-0" aria-hidden="true"></div>
-                                    <div class="flex items-baseline gap-2 flex-wrap">
-                                        <span class="text-[11px] font-semibold uppercase tracking-wider text-white/60">Code</span>
-                                        <span class="text-amber-200 text-xl md:text-2xl font-bold tabular-nums tracking-tight"><%= pc.bib || '—' %></span>
+                                    <% if (_checkedIn) { %>
+                                    <div class="inline-flex flex-row items-center gap-2 sm:gap-2.5 rounded-xl border border-emerald-300/35 bg-emerald-500/15 px-2.5 py-2 sm:px-3 sm:py-2.5 text-white shadow-md shadow-black/10">
+                                        <span class="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-400/25 ring-1 ring-white/20">
+                                            <i class="fas fa-check-circle text-emerald-100 text-base sm:text-lg" aria-hidden="true"></i>
+                                        </span>
+                                        <span class="font-semibold text-[11px] sm:text-sm whitespace-nowrap leading-tight">Đã check-in</span>
                                     </div>
+                                    <% } else { %>
+                                    <div class="inline-flex flex-row items-center gap-2 sm:gap-2.5 rounded-xl border border-amber-300/35 bg-amber-500/15 px-2.5 py-2 sm:px-3 sm:py-2.5 text-white shadow-md shadow-black/10">
+                                        <span class="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg bg-amber-400/25 ring-1 ring-white/20">
+                                            <i class="fas fa-hourglass-half text-amber-100 text-base sm:text-lg" aria-hidden="true"></i>
+                                        </span>
+                                        <span class="font-semibold text-[11px] sm:text-sm whitespace-nowrap leading-tight">Chưa check-in</span>
+                                    </div>
+                                    <% } %>
                                 </div>
                             </div>
-                            <% if (_checkedIn) { %>
-                            <div class="shrink-0 inline-flex flex-row items-center justify-center gap-3 self-stretch rounded-2xl border border-emerald-300/35 bg-emerald-500/15 backdrop-blur-md px-4 py-3 text-white shadow-lg shadow-black/10 min-w-[168px]">
-                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-400/25 ring-1 ring-white/20">
-                                    <i class="fas fa-check-circle text-emerald-100 text-lg"></i>
-                                </span>
-                                <span class="font-semibold text-sm whitespace-nowrap">Đã check-in</span>
-                            </div>
-                            <% } else { %>
-                            <div class="shrink-0 inline-flex flex-row items-center justify-center gap-3 self-stretch rounded-2xl border border-amber-300/35 bg-amber-500/15 backdrop-blur-md px-4 py-3 text-white shadow-lg shadow-black/10 min-w-[168px]">
-                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-400/25 ring-1 ring-white/20">
-                                    <i class="fas fa-hourglass-half text-amber-100 text-lg"></i>
-                                </span>
-                                <span class="font-semibold text-sm whitespace-nowrap">Chưa check-in</span>
-                            </div>
-                            <% } %>
                         </div>
                     </div>
 
@@ -168,19 +169,20 @@
                                     Contact Information
                                 </h3>
 
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 items-start">
-                                    <div class="flex flex-col gap-1.5 min-h-[4rem]">
-                                        <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Phone</p>
-                                        <p class="text-sm font-semibold text-gray-900 break-words leading-relaxed">
-                                            <%= pc.phone || 'N/A' %>
-                                        </p>
-                                    </div>
+                                <div class="grid grid-cols-[2fr_1fr] no-wrap gap-x-8 gap-y-4 items-start">
                                     <div class="flex flex-col gap-1.5 min-h-[4rem]">
                                         <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Email</p>
                                         <p class="text-sm font-semibold text-gray-900 break-all leading-relaxed">
                                             <%= pc.email || 'N/A' %>
                                         </p>
                                     </div>
+                                    <div class="flex flex-col gap-1.5 min-h-[4rem]">
+                                        <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Phone</p>
+                                        <p class="text-sm font-semibold text-gray-900 break-words leading-relaxed">
+                                            <%= pc.phone || 'N/A' %>
+                                        </p>
+                                    </div>
+                                    
                                 </div>
                             </div>
                             <% if (_checkedIn && (pc.checkin_signature_path || pc.checkin_photo_path)) { %>
@@ -269,33 +271,38 @@
                 </div>
 
                 <!-- Action Buttons -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <% if (typeof returnTo !== 'undefined' && returnTo) { %>
-                    <a href="<%= returnTo %>" class="flex-1 max-w-xs">
-                        <button type="button" class="w-full bg-slate-600 hover:bg-slate-700 text-white font-medium py-3.5 px-6 rounded-xl transition flex items-center justify-center shadow-sm">
-                            <i class="fas fa-users mr-2"></i>
-                            Quay lại danh sách nhóm
-                        </button>
-                    </a>
-                    <% } %>
-                    <a href="/tool-checkin" class="flex-1 max-w-xs">
-                        <button class="w-full bg-gray-700 hover:bg-gray-800 text-white font-medium py-3.5 px-6 rounded-xl transition flex items-center justify-center shadow-sm">
+                 <div class="w-full flex justify-between items-center">
+                    <div class="grid grid-cols-2 gap-4">
+                        <% if (typeof returnTo !== 'undefined' && returnTo) { %>
+                        <!-- <a href="<%#= returnTo %>" class="flex-1 max-w-xs">
+                            <button type="button" class="w-full bg-slate-600 hover:bg-slate-700 text-white font-bold px-3 py-2 rounded-xl transition flex items-center justify-center shadow-sm">
+                                <i class="fas fa-users mr-2"></i>
+                                Quay lại danh sách nhóm
+                            </button>
+                        </a> -->
+                        <% } %>
+                        <button
+                            type="button"
+                            id="btn_back_checkin"
+                            class="flex-1 max-w-xs bg-gray-700 hover:bg-gray-800 text-white font-bold px-3 py-2 rounded-xl transition flex items-center justify-center shadow-sm"
+                        >
                             <i class="fas fa-arrow-left mr-2"></i>
                             Back
                         </button>
-                    </a>
-
-                    <% if (!_checkedIn) { %>
-                    <button
-                        type="button"
-                        id="btn_submit_checkin"
-                        class="flex-1 max-w-xs bg-green-600 hover:bg-green-700 text-white font-medium py-3.5 px-6 rounded-xl transition flex items-center justify-center shadow-md active:scale-95"
-                    >
-                        <i class="fas fa-check-circle mr-2"></i>
-                        Hoàn tất check-in
-                    </button>
-                    <% } %>
-                </div>
+    
+                        <% if (!_checkedIn) { %>
+                        <button
+                            type="button"
+                            id="btn_submit_checkin"
+                            class="flex-1 max-w-xs bg-green-600 hover:bg-green-700 text-white font-bold px-3 py-2 rounded-xl transition flex items-center justify-center shadow-md active:scale-95"
+                        >
+                            <i class="fas fa-check-circle mr-2"></i>
+                            Hoàn tất check-in
+                        </button>
+                        <% } %>
+                    </div>
+                 </div>
+        
             </div>
         </main>
     </div>
@@ -348,6 +355,27 @@
 
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
     <script>
+        /** Mở từ tool check-in (cửa sổ popup): đóng và refresh tab check-in — không load /tool-checkin trong tab phụ */
+        function checkinToolCloseAndRefreshOpener() {
+            if (window.opener && !window.opener.closed) {
+                try {
+                    window.opener.location.reload();
+                } catch (e) {}
+                window.close();
+                return true;
+            }
+            return false;
+        }
+        function checkinToolGoBack() {
+            if (checkinToolCloseAndRefreshOpener()) return;
+            var retEl = document.getElementById('return_to');
+            if (retEl && retEl.value) {
+                window.location.href = retEl.value;
+                return;
+            }
+            window.location.href = '/tool-checkin';
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
             let stream;
             let photoBlob = null;
@@ -372,6 +400,12 @@
             const cameraBox = document.getElementById('cameraBox');
             const previewBox = document.getElementById('previewBox');
             const btnModalCloseX = document.getElementById('modal_close_x');
+            const btnBackCheckin = document.getElementById('btn_back_checkin');
+            if (btnBackCheckin) {
+                btnBackCheckin.addEventListener('click', function () {
+                    checkinToolGoBack();
+                });
+            }
 
             let signaturePad = null;
             var inlinePhotoObjectUrl = null;
@@ -694,6 +728,9 @@
                     })
                     .then(function (res) {
                         if (res.ok && res.body && res.body.success) {
+                            if (checkinToolCloseAndRefreshOpener()) {
+                                return;
+                            }
                             var retEl = document.getElementById('return_to');
                             if (retEl && retEl.value) {
                                 window.location.href = retEl.value;

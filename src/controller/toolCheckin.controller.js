@@ -148,6 +148,8 @@ const toolCheckinController = () => {
             let returnTo = '';
             if (returnToRaw.startsWith('/tool-checkin/group-auth/')) {
                 returnTo = returnToRaw;
+            } else if (returnToRaw === '/tool-checkin' || returnToRaw === '/tool-checkin/') {
+                returnTo = '/tool-checkin';
             }
             const gaIdQuery = (req.query.ga_id || '').trim();
             let checkinViaGroupId = '';

@@ -22,6 +22,7 @@ const eventService = require('../services/event.service');
 const participantCheckinService = require('../services/participantCheckin.service');
 const MailConfig = require('../../../model/MailConfig');
 const eventBulkMailService = require('../services/eventBulkMail.service');
+const { resolvePickupRangeDisplay } = require('../../../utils/pickupTimeRange.util');
 const { setDefaultAutoSelectFamilyAttemptTimeout } = require('net');
 
 //function helper
@@ -58,18 +59,6 @@ const formatDateTimeVi = (d) => {
         hour: '2-digit',
         minute: '2-digit',
     });
-};
-/** pickup: giờ 24h (khớp Excel Time / HH:mm) */
-const formatTime24hVi = (d) => {
-    if (!d) return '—';
-    const x = new Date(d);
-    if (Number.isNaN(x.getTime())) return '—';
-    return x.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
-};
-const buildPickupRangeString = (ps, pe) => {
-    const a = ps ? formatTime24hVi(ps) : '—';
-    const b = pe ? formatTime24hVi(pe) : '—';
-    return `${a} - ${b}`;
 };
 /** zone là "1" hoặc số 1 → tick xanh trong ô; ngược lại → X đỏ */
 const buildZoneIndicatorHtml = (zoneVal) => {
@@ -713,7 +702,7 @@ const eventController = () => {
                             .replace('{{dob}}', formatDobSafe(r.dob))
                             .replace('{{email}}', r.email || '')
                             .replace('{{phone}}', r.phone || '')
-                            .replace('{{pickup_range}}', buildPickupRangeString(r.pickup_start, r.pickup_end))
+                            .replace('{{pickup_range}}', resolvePickupRangeDisplay(r.pickup_time_range, r.pickup_start, r.pickup_end))
                             .replace('{{zone_cell}}', buildZoneIndicatorHtml(r.zone != null ? r.zone : r.line))
                             .replace('{{distance}}', r.distance)
                             .replace('{{category}}', r.distance)
@@ -909,7 +898,7 @@ const eventController = () => {
                     .replace('{{dob}}', formatDobSafe(runner.dob))
                     .replace('{{email}}', runner.email || '')
                     .replace('{{phone}}', runner.phone || '')
-                    .replace('{{pickup_range}}', buildPickupRangeString(runner.pickup_start, runner.pickup_end))
+                    .replace('{{pickup_range}}', resolvePickupRangeDisplay(runner.pickup_time_range, runner.pickup_start, runner.pickup_end))
                     .replace('{{zone_cell}}', buildZoneIndicatorHtml(runner.zone != null ? runner.zone : runner.line))
                     .replace('{{distance}}', runner.distance || '')
                     .replace('{{category}}', runner.distance || '')

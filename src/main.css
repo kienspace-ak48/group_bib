@@ -1,5 +1,7 @@
 @import 'tailwindcss';
 @import "flowbite";
+
+@source "./views/**/*.ejs";
 /* Theme */
 @theme {
     /* Screen breakpoints 16px = 1rem*/
@@ -95,5 +97,375 @@
 
     .input-group > .btn:last-child {
         @apply rounded-r-md;
+    }
+
+    /* Trang tool check-in — header + bảng (dùng trong checkin.ejs) */
+    .checkin-event-header {
+        @apply mb-4 rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 px-4 py-3.5 shadow-lg shadow-indigo-500/25 sm:mb-7 sm:rounded-[28px] sm:p-6 sm:px-8;
+    }
+    .checkin-event-title {
+        @apply min-w-0 flex-1 pr-2 text-xs font-bold leading-snug tracking-tight text-white sm:pr-3 sm:text-lg md:text-xl;
+        font-family: 'Outfit', ui-sans-serif, system-ui, sans-serif;
+    }
+    .checkin-logout-btn {
+        @apply inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/35 bg-white/15 text-white shadow-sm backdrop-blur-sm transition hover:bg-white/25 active:scale-95 sm:h-11 sm:w-11 sm:rounded-2xl;
+    }
+
+    /* --- Trang tool/checkin.ejs (toàn bộ scoped dưới .checkin-page) --- */
+    .checkin-page {
+        @apply bg-slate-100 text-slate-900 antialiased;
+        font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+    .checkin-page ::-webkit-scrollbar {
+        @apply h-1.5 w-1.5;
+    }
+    .checkin-page ::-webkit-scrollbar-track {
+        @apply rounded-[10px] bg-slate-200;
+    }
+    .checkin-page ::-webkit-scrollbar-thumb {
+        @apply rounded-[10px] bg-slate-400;
+    }
+
+    .checkin-page .dashboard-container {
+        @apply mx-auto max-w-[1400px] px-5 pb-10 pt-6;
+    }
+    .checkin-page .action-toolbar {
+        @apply mb-6 flex flex-wrap items-center justify-between gap-4 rounded-3xl bg-white p-4 shadow-sm sm:px-6;
+        box-shadow:
+            0 4px 12px rgba(0, 0, 0, 0.03),
+            0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+    .checkin-page .scan-btn {
+        @apply flex cursor-pointer items-center gap-3 rounded-full border-0 px-7 py-3 text-base font-semibold text-white transition-all duration-200 ease-out;
+        background: linear-gradient(105deg, #4f46e5 0%, #6366f1 100%);
+        box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
+    }
+    .checkin-page .scan-btn:hover {
+        @apply -translate-y-0.5;
+        background: linear-gradient(105deg, #4338ca 0%, #4f46e5 100%);
+        box-shadow: 0 12px 20px -8px rgba(79, 70, 229, 0.5);
+    }
+    .checkin-page .action-toolbar-right {
+        @apply flex flex-wrap items-center gap-3;
+    }
+
+    .checkin-page .filter-chips {
+        @apply -mx-1 mb-[18px] flex flex-nowrap gap-2.5 overflow-x-auto overflow-y-hidden scroll-p-2 px-0.5 pb-3 pt-1;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+    .checkin-page .filter-chips::-webkit-scrollbar {
+        @apply hidden;
+    }
+    .checkin-page .chip {
+        @apply inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-2 whitespace-nowrap rounded-[40px] bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-800 transition-colors duration-200;
+    }
+    .checkin-page .chip i {
+        @apply text-xs text-slate-500;
+    }
+    .checkin-page .chip.active {
+        @apply border-l-[3px] border-indigo-600 bg-indigo-100 text-indigo-800;
+    }
+    .checkin-page .chip:hover {
+        @apply bg-slate-200;
+    }
+    @media (min-width: 641px) {
+        .checkin-page .filter-chips {
+            @apply mb-[18px] flex-wrap overflow-x-visible pb-0;
+        }
+    }
+
+    .checkin-page .data-table-wrapper {
+        @apply overflow-hidden rounded-[28px] bg-white shadow-md transition-shadow duration-200;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+    }
+    .checkin-page #participant_tbl {
+        @apply w-full border-separate border-spacing-0;
+    }
+    .checkin-page #participant_tbl thead th {
+        @apply border-b border-slate-200 bg-slate-50 px-5 py-[18px] text-xs font-bold uppercase tracking-wide text-slate-600;
+    }
+    .checkin-page #participant_tbl tbody td {
+        @apply border-b border-slate-100 px-5 py-4 align-middle text-sm text-slate-800;
+    }
+    .checkin-page #participant_tbl col.checkin-col-athlete {
+        @apply w-[28%];
+    }
+    .checkin-page #participant_tbl col.checkin-col-contact {
+        width: 50%;
+    }
+    .checkin-page #participant_tbl col.checkin-col-status {
+        @apply w-[22%];
+    }
+    .checkin-page #participant_tbl thead th:nth-child(3),
+    .checkin-page #participant_tbl tbody td:nth-child(3) {
+        @apply whitespace-normal;
+    }
+    .checkin-page #participant_tbl tbody tr:hover {
+        @apply bg-amber-50 transition-colors duration-100;
+    }
+
+    .checkin-page .athlete-name {
+        @apply inline-flex flex-wrap items-center gap-2 gap-y-1 text-[0.92rem] font-semibold text-slate-800;
+    }
+    .checkin-page .athlete-bib {
+        @apply whitespace-nowrap rounded-lg bg-indigo-50 px-2.5 py-0.5 text-[0.72rem] font-bold tracking-wide text-indigo-800;
+    }
+    .checkin-page .contact-row {
+        @apply flex flex-col gap-1 text-sm leading-snug text-slate-600;
+    }
+    .checkin-page .contact-row .contact-line {
+        @apply max-w-[260px] overflow-hidden text-ellipsis whitespace-nowrap;
+    }
+    .checkin-page .status-badge {
+        @apply inline-flex max-w-full w-fit items-center gap-2 whitespace-nowrap rounded-[40px] bg-slate-100 px-3 py-1.5 text-xs font-semibold;
+    }
+    .checkin-page .status-checkin {
+        @apply bg-green-100 text-green-700;
+    }
+    .checkin-page .status-checkin i {
+        @apply text-green-600;
+    }
+    .checkin-page .status-pending {
+        @apply bg-amber-50 text-amber-800;
+    }
+    .checkin-page .status-pending i {
+        @apply text-orange-600;
+    }
+    .checkin-page .status-checkout {
+        @apply bg-red-100 text-red-800;
+    }
+    .checkin-page .clickable-name {
+        @apply inline cursor-pointer font-bold text-indigo-600 transition-colors duration-150 hover:text-indigo-500 hover:underline;
+        text-underline-offset: 3px;
+    }
+
+    .checkin-page .search-area {
+        @apply min-w-[240px] flex-[2];
+    }
+    .checkin-page .search-input-group {
+        @apply relative;
+    }
+    .checkin-page .search-input-group i {
+        @apply pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400;
+        font-size: 0.9rem;
+    }
+    .checkin-page .search-input-group input {
+        @apply min-h-12 w-full rounded-full border border-slate-200 bg-white py-3 pl-11 pr-4 text-base transition-shadow duration-200;
+    }
+    .checkin-page .search-input-group input:focus {
+        @apply border-indigo-400 outline-none ring-[3px] ring-indigo-500/10;
+    }
+
+    .checkin-page .dataTables_wrapper .dataTables_filter {
+        @apply hidden;
+    }
+    .checkin-page .dataTables_wrapper .dataTables_info {
+        @apply hidden;
+    }
+    .checkin-page .dataTables_wrapper .dataTables_paginate {
+        @apply flex max-w-full flex-nowrap items-center justify-center gap-1 overflow-x-auto overflow-y-hidden px-2 pb-3.5 pt-2.5;
+        line-height: 1;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+    .checkin-page .dataTables_wrapper .dataTables_paginate::-webkit-scrollbar {
+        @apply hidden;
+    }
+    .checkin-page .dataTables_wrapper .dataTables_paginate .paginate_button {
+        @apply shrink-0;
+        float: none !important;
+    }
+    /* DataTables dùng <a class="paginate_button"> — flex + line-height 0 để số/icon căn giữa thật sự */
+    .checkin-page .dataTables_wrapper .dataTables_paginate a.paginate_button,
+    .checkin-page .paginate_button,
+    .checkin-page .paginate_button.current,
+    .checkin-page .paginate_button.disabled {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        margin: 0 !important;
+        min-height: 1.75rem !important;
+        min-width: 1.75rem !important;
+        height: 1.75rem !important;
+        max-height: 1.75rem !important;
+        padding: 0 0.35rem !important;
+        font-size: 0.7rem !important;
+        line-height: 1 !important;
+        vertical-align: middle !important;
+        box-sizing: border-box !important;
+        box-shadow: none !important;
+        border: none !important;
+        border-radius: 9999px !important;
+        background-color: #f1f5f9 !important;
+        color: #334155 !important;
+    }
+    .checkin-page .dataTables_wrapper .dataTables_paginate a.paginate_button i {
+        line-height: 1 !important;
+        display: block !important;
+    }
+    .checkin-page .paginate_button.current {
+        background-color: #4f46e5 !important;
+        color: #fff !important;
+    }
+
+    .checkin-page #scanModal {
+        @apply fixed inset-0 z-[10000] flex items-center justify-center bg-black/92 backdrop-blur-sm transition-all duration-300 ease-out;
+    }
+    .checkin-page .scanner-container {
+        @apply relative max-h-[min(100vh,100dvh)] w-[min(100%,520px)] max-w-lg overflow-hidden rounded-[48px] border border-white/20 bg-slate-950 shadow-2xl;
+        margin: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+            env(safe-area-inset-left);
+        box-shadow: 0 30px 40px -20px black;
+    }
+    .checkin-page .scanner-header {
+        @apply flex items-center justify-between border-b border-white/10 bg-black/50 px-6 py-[18px] font-semibold text-white;
+    }
+    .checkin-page .qr-reader-area {
+        @apply relative aspect-square w-full bg-black;
+    }
+    .checkin-page #qr-reader {
+        @apply h-full w-full;
+    }
+    .checkin-page #qr-reader video {
+        @apply h-full w-full object-cover;
+    }
+    .checkin-page .scan-guide {
+        @apply pointer-events-none absolute z-[5] border-2 border-indigo-500/70;
+        inset: 20px;
+        border-radius: 28px;
+        box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.5);
+    }
+    .checkin-page .close-scanner {
+        @apply mx-auto mb-5 mt-5 block w-fit cursor-pointer rounded-full border-0 bg-white/15 px-6 py-2.5 text-base font-medium text-white transition hover:scale-[0.98] hover:bg-red-500;
+    }
+    .checkin-page .mobile-scan-fab {
+        @apply hidden;
+    }
+
+    @media (max-width: 640px) {
+        .checkin-page .dashboard-container {
+            padding: 12px 12px calc(88px + env(safe-area-inset-bottom));
+        }
+        .checkin-page .dataTables_wrapper {
+            @apply max-w-full overflow-x-hidden;
+        }
+        .checkin-page .scan-btn {
+            @apply min-h-[52px] w-full justify-center rounded-2xl text-[1.05rem];
+        }
+        .checkin-page .action-toolbar {
+            @apply mb-3.5 flex-col gap-3 rounded-2xl p-4;
+        }
+        .checkin-page .search-area {
+            @apply w-full min-w-0;
+        }
+        .checkin-page .action-toolbar-right {
+            @apply w-full;
+        }
+        .checkin-page .filter-chips {
+            @apply mb-3;
+        }
+        .checkin-page .filter-chips .chip {
+            @apply min-h-10 px-3 py-2 text-[0.78rem];
+        }
+
+        .checkin-page .data-table-wrapper {
+            @apply max-w-full overflow-x-hidden rounded-xl bg-white;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+        }
+        .checkin-page #participant_tbl {
+            @apply !max-w-full !min-w-0 table-fixed border-separate border-spacing-0;
+            width: 100% !important;
+        }
+        .checkin-page #participant_tbl col.checkin-col-athlete {
+            @apply w-[30%];
+        }
+        .checkin-page #participant_tbl col.checkin-col-contact {
+            @apply w-[45%];
+        }
+        .checkin-page #participant_tbl col.checkin-col-status {
+            @apply w-[25%];
+        }
+        .checkin-page #participant_tbl thead th {
+            @apply px-1 pb-2 pt-2 text-[0.62rem] leading-tight tracking-wide;
+            hyphens: none;
+        }
+        .checkin-page #participant_tbl tbody td {
+            @apply p-1.5 align-top text-[0.6875rem] break-words;
+            overflow-wrap: anywhere;
+        }
+        .checkin-page #participant_tbl tbody td:nth-child(3) {
+            @apply whitespace-normal;
+        }
+        .checkin-page .athlete-name {
+            @apply gap-1 text-[0.7rem] leading-tight;
+        }
+        .checkin-page .athlete-bib {
+            @apply rounded px-1.5 py-px text-[0.55rem];
+        }
+        .checkin-page .contact-row {
+            @apply gap-0.5 text-[0.65rem] leading-snug;
+        }
+        .checkin-page .contact-row .contact-line {
+            @apply max-w-none whitespace-normal break-words;
+            overflow: visible;
+            text-overflow: unset;
+        }
+        .checkin-page .status-badge {
+            @apply max-w-full gap-1 whitespace-normal break-words py-1.5 text-[0.6rem] leading-tight;
+        }
+        .checkin-page .status-badge i {
+            @apply text-[0.55rem];
+        }
+        .checkin-page .clickable-name {
+            @apply break-words;
+        }
+        .checkin-page .dataTables_wrapper .dataTables_paginate {
+            @apply !gap-0.5 !px-0.5 !pb-2.5 !pt-1.5;
+        }
+        .checkin-page .dataTables_wrapper .dataTables_paginate a.paginate_button,
+        .checkin-page .paginate_button,
+        .checkin-page .paginate_button.current,
+        .checkin-page .paginate_button.disabled {
+            min-height: 1.35rem !important;
+            min-width: 1.35rem !important;
+            height: 1.35rem !important;
+            max-height: 1.35rem !important;
+            padding: 0 0.25rem !important;
+            font-size: 0.6rem !important;
+        }
+        .checkin-page .dataTables_wrapper .dataTables_paginate .paginate_button .fa-chevron-left,
+        .checkin-page .dataTables_wrapper .dataTables_paginate .paginate_button .fa-chevron-right {
+            font-size: 0.5rem;
+        }
+
+        .checkin-page .mobile-scan-fab {
+            @apply pointer-events-none fixed bottom-[calc(12px+env(safe-area-inset-bottom))] left-3 right-3 z-[100] flex justify-center;
+        }
+        .checkin-page .mobile-scan-fab .scan-btn {
+            @apply pointer-events-auto max-w-md shadow-xl;
+            box-shadow: 0 8px 24px rgba(79, 70, 229, 0.45);
+        }
+        .checkin-page .action-toolbar-right .scan-btn {
+            @apply hidden;
+        }
+        .checkin-page .scanner-container {
+            @apply m-0 max-h-none min-h-dvh w-full max-w-none rounded-none;
+        }
+        .checkin-page #scanModal {
+            @apply items-stretch justify-stretch p-0;
+        }
+        .checkin-page .scanner-header {
+            padding: calc(14px + env(safe-area-inset-top)) 16px 14px;
+        }
+        .checkin-page .close-scanner {
+            @apply mb-[calc(20px+env(safe-area-inset-bottom))] min-h-12 px-7 py-3;
+        }
     }
 }

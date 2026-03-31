@@ -1,16 +1,15 @@
 const crypto = require('crypto');
 const mongoose = require('mongoose');
 const excelDateToJSDate = require('./excelDataToJSDate.util');
+const { normalizePickupTimeRange } = require('./pickupTimeRange.util');
 
 /**
  * Map một dòng Excel → payload ParticipantCheckin_h (trừ uid — gán ở controller).
  *
  * Ngày (dob, checkin_time): ô Date/DateTime Excel (serial ≥ 1 hoặc có ngày) hoặc chuỗi parse được.
  *
- * pickup_start / pickup_end — **chỉ giờ (24h) chuẩn Excel**:
- * - Ô định dạng **Time** → số serial trong [0, 1) = phần của 24 giờ (vd 08:00 ≈ 0,333…).
- * - Hoặc chuỗi `HH:mm` / `HH:mm:ss` (24h).
- * - Serial ≥ 1: vẫn hỗ trợ ngày giờ đầy đủ (Date/DateTime) như cũ.
+ * pickup_time_range: chuỗi tự do (vd "08:00 - 10:00"). Cột cũ pickup_start / pickup_end vẫn đọc được:
+ * giờ 24h chuẩn Excel (Time serial [0,1), HH:mm, …) và ghép thành một chuỗi.
  */
 function parseDobCell(dobExcel) {
     if (dobExcel == null || dobExcel === '') return null;
@@ -70,8 +69,49 @@ function fractionOfDayToLocalDateTime(serial) {
     return new Date(2000, 0, 1, h, m, s);
 }
 
+function formatHHmmFromPickupDate(d) {
+    if (!d) return '';
+    const x = d instanceof Date ? d : new Date(d);
+    if (Number.isNaN(x.getTime())) return '';
+    const h = x.getHours();
+    const m = x.getMinutes();
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+/** Ưu tiên cột pickup_time_range; không có thì ghép từ pickup_start / pickup_end (legacy). */
+function parsePickupTimeRangeForRow(row) {
+    const direct = firstCell(
+        row,
+        'pickup_time_range',
+        'pickupTimeRange',
+        'Pickup time',
+        'pickup_hours',
+        'pickup',
+    );
+    if (direct) {
+        const n = normalizePickupTimeRange(direct);
+        return n || undefined;
+    }
+    const ps = parsePickupTimeCell(row, 'pickup_start', 'pickupStart', 'Pickup start');
+    const pe = parsePickupTimeCell(row, 'pickup_end', 'pickupEnd', 'Pickup end');
+    if (ps && pe) {
+        const a = formatHHmmFromPickupDate(ps);
+        const b = formatHHmmFromPickupDate(pe);
+        if (a && b) return normalizePickupTimeRange(`${a} - ${b}`) || undefined;
+    }
+    if (ps) {
+        const a = formatHHmmFromPickupDate(ps);
+        return a ? normalizePickupTimeRange(a) || undefined : undefined;
+    }
+    if (pe) {
+        const b = formatHHmmFromPickupDate(pe);
+        return b ? normalizePickupTimeRange(b) || undefined : undefined;
+    }
+    return undefined;
+}
+
 /**
- * pickup_start / pickup_end: ưu tiên Time Excel (serial 0–1) hoặc chuỗi HH:mm(:ss).
+ * pickup_start / pickup_end (legacy): ưu tiên Time Excel (serial 0–1) hoặc chuỗi HH:mm(:ss).
  */
 function parsePickupTimeCell(row, ...keys) {
     const raw = firstRawCell(row, ...keys);
@@ -137,8 +177,7 @@ function convertRowCheckinH(row, eventId) {
     const allowedMethod = ['scan', 'manual', 'kiosk', 'import', 'app'];
     const checkin_method = allowedMethod.includes(methodRaw) ? methodRaw : undefined;
 
-    const pickup_start = parsePickupTimeCell(row, 'pickup_start', 'pickupStart', 'Pickup start');
-    const pickup_end = parsePickupTimeCell(row, 'pickup_end', 'pickupEnd', 'Pickup end');
+    const pickup_time_range = parsePickupTimeRangeForRow(row);
 
     return {
         event_id: new mongoose.Types.ObjectId(String(eventId)),
@@ -160,8 +199,7 @@ function convertRowCheckinH(row, eventId) {
         bib_name: firstCell(row, 'bib_name', 'bibName', 'BIB name', 'Ten BIB'),
         distance: firstCell(row, 'distance', 'cu_ly', 'Cự ly'),
         item: firstCell(row, 'item', 'vat_pham', 'Item'),
-        pickup_start,
-        pickup_end,
+        pickup_time_range,
     };
 }
 

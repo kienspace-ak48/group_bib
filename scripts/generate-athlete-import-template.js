@@ -25,8 +25,7 @@ const headers = [
     'checkin_method',
     'checkin_by',
     'checkin_time',
-    'pickup_start',
-    'pickup_end',
+    'pickup_time_range',
 ];
 
 const exampleRows = [
@@ -47,8 +46,7 @@ const exampleRows = [
         'import',
         '',
         '',
-        8 / 24,
-        18 / 24,
+        '08:00 - 10:00',
     ],
     [
         'Tran Thi B',
@@ -68,28 +66,11 @@ const exampleRows = [
         '',
         '',
         '',
-        '',
     ],
 ];
 
 const wsData = xlsx.utils.aoa_to_sheet([headers, ...exampleRows]);
 wsData['!cols'] = headers.map(() => ({ wch: 16 }));
-
-const pickupStartCol = headers.indexOf('pickup_start');
-const pickupEndCol = headers.indexOf('pickup_end');
-for (let r = 1; r <= exampleRows.length; r++) {
-    const row = exampleRows[r - 1];
-    const vStart = row[pickupStartCol];
-    const vEnd = row[pickupEndCol];
-    if (typeof vStart === 'number' && pickupStartCol >= 0) {
-        const addr = xlsx.utils.encode_cell({ r, c: pickupStartCol });
-        wsData[addr] = { t: 'n', v: vStart, z: 'HH:mm' };
-    }
-    if (typeof vEnd === 'number' && pickupEndCol >= 0) {
-        const addr = xlsx.utils.encode_cell({ r, c: pickupEndCol });
-        wsData[addr] = { t: 'n', v: vEnd, z: 'HH:mm' };
-    }
-}
 
 const guideAoA = [
     ['Ten cot', 'Bat buoc', 'Ghi chu'],
@@ -100,9 +81,9 @@ const guideAoA = [
     ['checkin_method', 'Khong', 'scan | manual | kiosk | import | app. Mac dinh: import.'],
     ['qr_code', 'Khong', 'De trong: he thong gan bang uid sau khi import.'],
     [
-        'pickup_start, pickup_end',
+        'pickup_time_range',
         'Khong',
-        'Chi gio 24h chuan Excel: dinh dang o Time (Ho tro: HH:mm) hoac nhap 08:00 / 18:30. He thong doc so serial 0–1 (phan cua ngay). Khong bat buoc nhap ngay.',
+        'Chuoi khung gio nhan (vd 08:00 - 10:00). Co the dung cot cu pickup_start + pickup_end (gio Excel Time / HH:mm) — se duoc ghep khi import.',
     ],
     ['checkin_time', 'Khong', 'Ngay gio day du: o Excel Date/DateTime hoac chuoi parse duoc.'],
     ['Cac cot khac', 'Khong', 'email, phone, zone, bib, bib_name, distance, item, checkin_by...'],

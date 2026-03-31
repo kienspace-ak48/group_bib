@@ -53,8 +53,8 @@ const ParticipantCheckinSchema = new mongoose.Schema(
         bib_name: String,
         distance: String,
         item: String,
-        pickup_start: Date,
-        pickup_end: Date,
+        /** Khung giờ nhận (vd "08:00 - 10:00") — một chuỗi, thay cho pickup_start / pickup_end */
+        pickup_time_range: { type: String, default: '', maxlength: 120 },
         /** Lần gửi mail QR gần nhất (thủ công hoặc hàng loạt) */
         qr_mail_sent_at: Date,
         /** Đường dẫn public (vd /uploads/checkin/...) sau khi check-in có chữ ký */

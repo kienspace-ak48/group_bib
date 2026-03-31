@@ -5,6 +5,7 @@ const QRCode = require('qrcode');
 const myPathConfig = require('../../../config/mypath.config');
 const eventMailConfigService = require('./eventMailConfig.service');
 const participantCheckinHService = require('./participantCheckinH.service');
+const { resolvePickupRangeDisplay } = require('../../../utils/pickupTimeRange.util');
 
 const CNAME = 'eventBulkMail.service.js ';
 const TEMPLATE_REL = path.join('src', 'views', 'mail_template', 'template_one.html');
@@ -90,20 +91,6 @@ function formatDateTimeVi(d) {
         hour: '2-digit',
         minute: '2-digit',
     });
-}
-
-/** Giờ 24h (pickup từ Excel Time / HH:mm) */
-function formatTime24hVi(d) {
-    if (!d) return '—';
-    const x = new Date(d);
-    if (Number.isNaN(x.getTime())) return '—';
-    return x.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
-}
-
-function buildPickupRangeString(start, end) {
-    const a = start ? formatTime24hVi(start) : '—';
-    const b = end ? formatTime24hVi(end) : '—';
-    return `${a} - ${b}`;
 }
 
 /** `zone` là "1" hoặc số 1 → tick xanh trong ô; ngược lại → X đỏ (HTML, không escape) */
@@ -220,7 +207,7 @@ function buildTemplateVars(event, mailConfig, r) {
         bibname: escapeHtml(r.bib_name != null ? String(r.bib_name) : ''),
         email: r.email && String(r.email).trim() ? escapeHtml(String(r.email).trim()) : '—',
         phone: r.phone && String(r.phone).trim() ? escapeHtml(String(r.phone).trim()) : '—',
-        pickup_range: buildPickupRangeString(r.pickup_start, r.pickup_end),
+        pickup_range: escapeHtml(resolvePickupRangeDisplay(r.pickup_time_range, r.pickup_start, r.pickup_end)),
         zone_cell: buildZoneIndicatorHtml(r.zone != null ? r.zone : r.line),
         content_1: mc.content_1 == null ? '' : String(mc.content_1),
         content_2: mc.content_2 == null ? '' : String(mc.content_2),
