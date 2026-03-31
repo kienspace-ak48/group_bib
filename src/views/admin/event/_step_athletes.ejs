@@ -1,3 +1,8 @@
+<style>
+  th {
+    white-space: nowrap;
+}
+</style>
 <% 
   function dash(v) { return (v != null && String(v).trim() !== '') ? v : '—'; }
   function statusIconHtml(st, legacy) {
@@ -56,6 +61,7 @@
   var pf = typeof participantFilters !== 'undefined' && participantFilters ? participantFilters : { q_name: '', q_bib: '', q_phone: '', q_cccd: '' };
   var pp = typeof participantPagination !== 'undefined' && participantPagination ? participantPagination : null;
   var defaultPerPage = 20;
+  var atTab = typeof athletesTab !== 'undefined' && athletesTab === 'group' ? 'group' : 'athletes';
   function step1Query(pageNum) {
     var parts = [];
     if (pf.q_name) parts.push('q_name=' + encodeURIComponent(pf.q_name));
@@ -64,6 +70,7 @@
     if (pf.q_cccd) parts.push('q_cccd=' + encodeURIComponent(pf.q_cccd));
     parts.push('page=' + encodeURIComponent(String(pageNum)));
     if (pp && pp.perPage && pp.perPage !== defaultPerPage) parts.push('perPage=' + encodeURIComponent(String(pp.perPage)));
+    if (atTab === 'group') parts.push('tab=group');
     return '?' + parts.join('&');
   }
   function participantRowJson(p) {
@@ -92,13 +99,25 @@
   }
 %>
 <div class="card border-0 shadow-sm mb-4 min-w-0 <%= ws === 1 ? 'border-primary border-2' : '' %>">
-  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-    <div>
-      <strong>2. Quản lý người tham dự</strong>
-      <span class="small text-body-secondary ms-2">Model: <code>participant_checkin_h</code></span>
+  <div class="card-header border-bottom-0 pb-0">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-0">
+      <div>
+        <strong>2. Quản lý người tham dự</strong>
+        <span class="small text-body-secondary ms-2">Model: <code>participant_checkin_h</code></span>
+      </div>
+      <% if (ws === 1) { %><span class="badge bg-primary">Đang làm</span><% } %>
     </div>
-    <% if (ws === 1) { %><span class="badge bg-primary">Đang làm</span><% } %>
+    <ul class="nav nav-tabs card-header-tabs mt-2 mb-0" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link <%= atTab === 'athletes' ? 'active' : '' %>" id="tab-athletes" data-coreui-toggle="tab" data-coreui-target="#paneAthletes" type="button" role="tab" aria-controls="paneAthletes" aria-selected="<%= atTab === 'athletes' ? 'true' : 'false' %>">VĐV</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link <%= atTab === 'group' ? 'active' : '' %>" id="tab-group" data-coreui-toggle="tab" data-coreui-target="#paneGroup" type="button" role="tab" aria-controls="paneGroup" aria-selected="<%= atTab === 'group' ? 'true' : 'false' %>">Uỷ quyền nhóm</button>
+      </li>
+    </ul>
   </div>
+  <div class="tab-content border-top">
+  <div class="tab-pane fade <%= atTab === 'athletes' ? 'show active' : '' %>" id="paneAthletes" role="tabpanel" aria-labelledby="tab-athletes">
   <div class="card-body border-bottom">
     <p class="small text-body-secondary mb-3">
       Import Excel (sheet đầu): cột gợi ý <code>fullname</code>, <code>cccd</code>, <code>email</code>, <code>phone</code>,
@@ -150,6 +169,7 @@
   <div class="card-body border-bottom">
     <form method="get" action="/admin/event/<%= ev._id %>/step/1" class="row g-2 align-items-end">
       <input type="hidden" name="page" value="1" />
+      <% if (atTab === 'group') { %><input type="hidden" name="tab" value="group" /><% } %>
       <div class="col-md-3 col-lg-2">
         <label class="form-label small mb-0">Họ tên</label>
         <input type="search" name="q_name" class="form-control form-control-sm" value="<%= pf.q_name %>" placeholder="Tên" autocomplete="off" />
@@ -178,7 +198,7 @@
       </div>
       <div class="col-md-12 col-lg-2 d-flex gap-2">
         <button type="submit" class="btn btn-sm btn-outline-primary">Tìm kiếm</button>
-        <a href="/admin/event/<%= ev._id %>/step/1" class="btn btn-sm btn-outline-secondary">Xóa lọc</a>
+        <a href="/admin/event/<%= ev._id %>/step/1<%= atTab === 'group' ? '?tab=group' : '' %>" class="btn btn-sm btn-outline-secondary">Xóa lọc</a>
       </div>
     </form>
     <% if (pp) { %>
@@ -192,7 +212,7 @@
     <% } %>
   </div>
 
-  <div class="card-body p-0 overflow-hidden" style="min-width: 0">
+  <div class="card-body p-0 " style="min-width: 0">
     <div class="table-responsive step-athletes-scroll-x w-100">
       <table class="table table-sm table-striped table-hover align-middle mb-0 athlete-table-fixed" style="min-width: 880px">
         <colgroup>
@@ -233,7 +253,7 @@
             </td>
             <td class="text-center small"><%= dash(p.zone) %></td>
             <td class="text-start js-open-edit participant-name-col" role="button" tabindex="0" title="Click để sửa">
-              <div class="d-flex align-items-start flex-wrap gap-1 mb-1">
+              <div class="d-flex align-items-center flex-wrap gap-1 mb-1">
                 <%- genderBadgeHtml(p.gender) %>
                 <span class="fw-medium"><%= dash(p.fullname) %></span>
               </div>
@@ -305,6 +325,14 @@
       </ul>
     </nav>
     <% } %>
+  </div>
+  </div>
+  <div class="tab-pane fade <%= atTab === 'group' ? 'show active' : '' %>" id="paneGroup" role="tabpanel" aria-labelledby="tab-group">
+    <%- include('./_step_group_auth', {
+      event: ev,
+      groupAuthorizations: typeof groupAuthorizations !== 'undefined' ? groupAuthorizations : [],
+    }) %>
+  </div>
   </div>
 </div>
 

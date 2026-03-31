@@ -4,7 +4,22 @@ const VNAME = 'admin/system';
 const bcrypt = require('bcrypt');
 const mongoose = require('mongoose');
 const AccountSystem = require('../../../model/account_system.model');
+const EventCheckin = require('../../../model/EventCheckin_h');
 const ROLES = AccountSystem.ROLES;
+
+async function loadEventsForAccountForm() {
+    return EventCheckin.find({})
+        .select('name start_date end_date')
+        .sort({ updatedAt: -1 })
+        .limit(500)
+        .lean();
+}
+
+function parseCheckinEventId(body) {
+    const raw = (body.checkin_event_id || '').trim();
+    if (!raw || !mongoose.Types.ObjectId.isValid(raw)) return null;
+    return new mongoose.Types.ObjectId(raw);
+}
 const loginHistoryService = require('../services/loginHistory.service');
 const auditLogService = require('../services/auditLog.service');
 
@@ -46,10 +61,12 @@ const systemAccountController = () => {
             try {
                 const flash = req.session.flash;
                 delete req.session.flash;
+                const events = await loadEventsForAccountForm();
                 return res.render(VNAME + '/account_form', {
                     layout: VLAYOUT,
                     roles: ROLES,
                     account: null,
+                    events,
                     flash: flash || null,
                 });
             } catch (e) {
@@ -84,6 +101,19 @@ const systemAccountController = () => {
                 if (role === 'admin' && !permissions.length) {
                     permissions = ['admin.event', 'admin.dashboard'];
                 }
+                let checkin_event_id = null;
+                if (role === 'account_checkin') {
+                    checkin_event_id = parseCheckinEventId(body);
+                    if (!checkin_event_id) {
+                        req.session.flash = { type: 'danger', message: 'Tài khoản check-in phải chọn sự kiện.' };
+                        return res.redirect('/admin/system/accounts/new');
+                    }
+                    const ev = await EventCheckin.findById(checkin_event_id).select('_id').lean();
+                    if (!ev) {
+                        req.session.flash = { type: 'danger', message: 'Sự kiện không tồn tại.' };
+                        return res.redirect('/admin/system/accounts/new');
+                    }
+                }
                 const hash = await bcrypt.hash(password, 12);
                 const doc = await AccountSystem.create({
                     email,
@@ -93,6 +123,7 @@ const systemAccountController = () => {
                     status: body.status === 'on' || body.status === 'true',
                     role,
                     permissions,
+                    checkin_event_id,
                 });
                 await auditLogService.write({
                     actorId: req.user?._id,
@@ -123,12 +154,14 @@ const systemAccountController = () => {
                     req.session.flash = { type: 'warning', message: 'Không tìm thấy tài khoản.' };
                     return res.redirect('/admin/system/accounts');
                 }
+                const events = await loadEventsForAccountForm();
                 const flash = req.session.flash;
                 delete req.session.flash;
                 return res.render(VNAME + '/account_form', {
                     layout: VLAYOUT,
                     roles: ROLES,
                     account,
+                    events,
                     flash: flash || null,
                 });
             } catch (e) {
@@ -172,9 +205,25 @@ const systemAccountController = () => {
                 if (role === 'admin' && !permissions.length) {
                     permissions = ['admin.event', 'admin.dashboard'];
                 }
+                let checkin_event_id = null;
+                if (role === 'account_checkin') {
+                    checkin_event_id = parseCheckinEventId(body);
+                    if (!checkin_event_id) {
+                        req.session.flash = { type: 'danger', message: 'Tài khoản check-in phải chọn sự kiện.' };
+                        return res.redirect('/admin/system/accounts/' + id + '/edit');
+                    }
+                    const ev = await EventCheckin.findById(checkin_event_id).select('_id').lean();
+                    if (!ev) {
+                        req.session.flash = { type: 'danger', message: 'Sự kiện không tồn tại.' };
+                        return res.redirect('/admin/system/accounts/' + id + '/edit');
+                    }
+                }
                 const permsBefore = JSON.stringify((existing.permissions || []).slice().sort());
                 const permsAfter = JSON.stringify(permissions.slice().sort());
-                const authChanged = existing.role !== role || permsBefore !== permsAfter;
+                const checkinBefore = existing.checkin_event_id ? String(existing.checkin_event_id) : '';
+                const checkinAfter = role === 'account_checkin' && checkin_event_id ? String(checkin_event_id) : '';
+                const authChanged =
+                    existing.role !== role || permsBefore !== permsAfter || checkinBefore !== checkinAfter;
 
                 existing.email = email;
                 existing.name = name;
@@ -182,6 +231,7 @@ const systemAccountController = () => {
                 existing.status = body.status === 'on' || body.status === 'true';
                 existing.role = role;
                 existing.permissions = permissions;
+                existing.checkin_event_id = role === 'account_checkin' ? checkin_event_id : null;
                 const pwd = (body.password || '').trim();
                 if (pwd) {
                     existing.password = await bcrypt.hash(pwd, 12);

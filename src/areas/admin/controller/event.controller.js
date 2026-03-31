@@ -8,8 +8,10 @@ const myPathConfig = require('../../../config/mypath.config');
 const ATHLETE_IMPORT_TEMPLATE = path.join(myPathConfig.root, 'src/utils/athlete_import_example.xlsx');
 
 const xlsx = require('xlsx');
+const QRCode = require('qrcode');
 const eventCheckinHService = require('../services/eventCheckinH.service');
 const participantCheckinHService = require('../services/participantCheckinH.service');
+const groupAuthorizationHService = require('../services/groupAuthorizationH.service');
 const auditLogService = require('../services/auditLog.service');
 const eventMailConfigService = require('../services/eventMailConfig.service');
 const eventBulkMailService = require('../services/eventBulkMail.service');
@@ -19,6 +21,8 @@ const BATCH_SIZE = 1000;
 const PARTICIPANT_LIST_LIMIT = 10000;
 const PARTICIPANT_PAGE_DEFAULT = 20;
 const PARTICIPANT_PAGE_MAX = 100;
+const CHECKIN_HISTORY_PAGE_DEFAULT = 25;
+const CHECKIN_HISTORY_PAGE_MAX = 100;
 
 function stepPath(eventId, step) {
     const n = Math.min(4, Math.max(0, Number(step) || 0));
@@ -123,6 +127,7 @@ const adminEventController = () => {
                     req.session.flash = { type: 'warning', message: 'Không tìm thấy sự kiện.' };
                     return res.redirect('/admin/event');
                 }
+                await groupAuthorizationHService.deleteByEventId(id);
                 await participantCheckinHService.deleteByEventId(id);
                 const ok = await eventCheckinHService.deleteById(id);
                 if (ok) {
@@ -257,6 +262,36 @@ const adminEventController = () => {
                     mailEligibleCount = await participantCheckinHService.countWithValidEmailByEventId(refreshed._id);
                 }
 
+                let checkinStats = null;
+                if (n === 3) {
+                    checkinStats = await participantCheckinHService.getCheckinDashboardStats(refreshed._id);
+                }
+
+                let groupAuthorizations = [];
+                const athletesTab = String(req.query.tab || '').trim() === 'group' ? 'group' : 'athletes';
+                if (n === 1) {
+                    const rawGroups = await groupAuthorizationHService.listByEventId(refreshed._id);
+                    const hostBase = (process.env.PUBLIC_BASE_URL || '').replace(/\/$/, '')
+                        || `${req.protocol}://${req.get('host')}`;
+                    groupAuthorizations = await Promise.all(
+                        rawGroups.map(async (g) => {
+                            const path = `/tool-checkin/group-auth/${encodeURIComponent(g.token)}`;
+                            const toolFullUrl = `${hostBase}${path}`;
+                            let qrDataUrl = '';
+                            try {
+                                qrDataUrl = await QRCode.toDataURL(toolFullUrl, {
+                                    width: 240,
+                                    margin: 1,
+                                    errorCorrectionLevel: 'M',
+                                });
+                            } catch (e) {
+                                /* ignore */
+                            }
+                            return { ...g, toolFullUrl, toolPath: path, qrDataUrl };
+                        }),
+                    );
+                }
+
                 const flash = req.session.flash;
                 delete req.session.flash;
 
@@ -275,6 +310,98 @@ const adminEventController = () => {
                     mailConfig,
                     mailEligibleCount,
                     sendgridConfigured,
+                    checkinStats,
+                    groupAuthorizations,
+                    athletesTab,
+                    flash: flash || null,
+                });
+            } catch (error) {
+                console.log(CNAME, error.message);
+                return res.redirect('/admin/event');
+            }
+        },
+
+        /** Lịch sử check-in (participant đã checked_in); GET /admin/event/checkin-history?event=&q=&staff=&page= */
+        checkinHistory: async (req, res) => {
+            try {
+                const events = await eventCheckinHService.list();
+                const q = String(req.query.q || '').trim();
+                const staff = String(req.query.staff || '').trim();
+                const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+                const perPage = Math.min(
+                    CHECKIN_HISTORY_PAGE_MAX,
+                    Math.max(5, parseInt(req.query.perPage, 10) || CHECKIN_HISTORY_PAGE_DEFAULT),
+                );
+                const requestedId = String(req.query.event || '').trim();
+
+                let event = null;
+                if (requestedId) {
+                    event = await eventCheckinHService.getById(requestedId);
+                }
+                if (!event && events.length) {
+                    event = events[0];
+                }
+
+                const flash = req.session.flash;
+                delete req.session.flash;
+
+                if (!event) {
+                    return res.render(VNAME + '/checkin_history', {
+                        layout: VLAYOUT,
+                        event: null,
+                        events: events || [],
+                        rows: [],
+                        staffOptions: [],
+                        filters: { q, staff },
+                        historyPagination: null,
+                        flash: flash || null,
+                    });
+                }
+
+                const id = event._id;
+                const [staffOptions, total] = await Promise.all([
+                    participantCheckinHService.distinctCheckinStaff(id),
+                    participantCheckinHService.countCheckedInHistory(id, { q, staff }),
+                ]);
+                const totalPages = Math.max(1, Math.ceil(total / perPage));
+                const safePage = Math.min(page, totalPages);
+                const skip = (safePage - 1) * perPage;
+                const rows = await participantCheckinHService.findCheckedInHistory(
+                    id,
+                    { q, staff },
+                    { skip, limit: perPage },
+                );
+
+                const basePath = '/admin/event/checkin-history';
+                const mkUrl = (pageNum) => {
+                    const p = new URLSearchParams();
+                    p.set('event', String(id));
+                    if (q) p.set('q', q);
+                    if (staff) p.set('staff', staff);
+                    if (perPage !== CHECKIN_HISTORY_PAGE_DEFAULT) p.set('perPage', String(perPage));
+                    if (pageNum > 1) p.set('page', String(pageNum));
+                    return `${basePath}?${p.toString()}`;
+                };
+
+                const historyPagination = {
+                    page: safePage,
+                    perPage,
+                    total,
+                    totalPages,
+                    hasPrev: safePage > 1,
+                    hasNext: safePage < totalPages,
+                    prevUrl: safePage > 1 ? mkUrl(safePage - 1) : null,
+                    nextUrl: safePage < totalPages ? mkUrl(safePage + 1) : null,
+                };
+
+                return res.render(VNAME + '/checkin_history', {
+                    layout: VLAYOUT,
+                    event,
+                    events,
+                    rows,
+                    staffOptions,
+                    filters: { q, staff },
+                    historyPagination,
                     flash: flash || null,
                 });
             } catch (error) {
@@ -340,6 +467,10 @@ const adminEventController = () => {
                 if (body.end_date) payload.end_date = new Date(body.end_date);
                 payload.is_show = !!(body.is_show === 'on' || body.is_show === 'true' || body.is_show === true);
 
+                const capModes = ['none', 'signature', 'photo', 'both'];
+                const rawCap = (body.checkin_capture_mode || '').trim();
+                payload.checkin_capture_mode = capModes.includes(rawCap) ? rawCap : 'both';
+
                 const updated = await eventCheckinHService.updateById(id, payload);
                 req.session.flash = {
                     type: updated ? 'success' : 'danger',
@@ -369,6 +500,7 @@ const adminEventController = () => {
 
                 const mode = (req.body.import_mode || 'append').toLowerCase();
                 if (mode === 'reset') {
+                    await groupAuthorizationHService.deleteByEventId(event._id);
                     await participantCheckinHService.deleteByEventId(event._id);
                 }
 
@@ -437,6 +569,171 @@ const adminEventController = () => {
                 console.log(CNAME, error.message);
                 req.session.flash = { type: 'danger', message: 'Lỗi import Excel: ' + error.message };
                 return res.redirect(stepPath(id, 1));
+            }
+        },
+
+        /** Xuất toàn bộ participant ra Excel (kèm trạng thái check-in) */
+        exportParticipantsExcel: async (req, res) => {
+            const { id } = req.params;
+            try {
+                const event = await eventCheckinHService.getById(id);
+                if (!event) {
+                    req.session.flash = { type: 'warning', message: 'Không tìm thấy sự kiện.' };
+                    return res.redirect('/admin/event');
+                }
+                const rows = await participantCheckinHService.findAllByEventIdForExport(event._id, PARTICIPANT_LIST_LIMIT);
+                const fmtDt = (d) => {
+                    if (!d) return '';
+                    const x = d instanceof Date ? d : new Date(d);
+                    return Number.isNaN(x.getTime()) ? '' : x.toISOString();
+                };
+                const exportRows = rows.map((p) => {
+                    const gender =
+                        p.gender === true ? 'Nam' : p.gender === false ? 'Nữ' : '';
+                    const da_checkin = p.status === 'checked_in' ? 'Có' : 'Không';
+                    return {
+                        uid: p.uid || '',
+                        fullname: p.fullname || '',
+                        cccd: p.cccd || '',
+                        email: p.email || '',
+                        phone: p.phone || '',
+                        dob: fmtDt(p.dob),
+                        gender,
+                        zone: p.zone || '',
+                        bib: p.bib || '',
+                        bib_name: p.bib_name || '',
+                        distance: p.distance || '',
+                        item: p.item || '',
+                        qr_code: p.qr_code || '',
+                        status: p.status || '',
+                        checkin_method: p.checkin_method || '',
+                        da_checkin,
+                        checkin_time: fmtDt(p.checkin_time),
+                        checkin_by: p.checkin_by || '',
+                        qr_mail_sent_at: fmtDt(p.qr_mail_sent_at),
+                        pickup_start: fmtDt(p.pickup_start),
+                        pickup_end: fmtDt(p.pickup_end),
+                    };
+                });
+                const ws = xlsx.utils.json_to_sheet(exportRows);
+                const wb = xlsx.utils.book_new();
+                xlsx.utils.book_append_sheet(wb, ws, 'participants');
+                const buf = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
+                const slug = (event.slug && String(event.slug).trim()) || String(event._id);
+                const safeSlug = slug.replace(/[^a-zA-Z0-9._-]+/g, '_').slice(0, 80) || 'event';
+                const fname = `participants_${safeSlug}_${Date.now()}.xlsx`;
+                await auditLogService.write({
+                    actorId: req.user?._id,
+                    action: 'export',
+                    resource: 'participant_checkin_h',
+                    documentId: id,
+                    summary: `Xuất Excel danh sách VĐV sự kiện ${id}: ${exportRows.length} dòng`,
+                    req,
+                });
+                res.setHeader('Content-Disposition', `attachment; filename="${fname}"`);
+                res.setHeader(
+                    'Content-Type',
+                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                );
+                return res.send(Buffer.from(buf));
+            } catch (error) {
+                console.log(CNAME, error.message);
+                req.session.flash = { type: 'danger', message: 'Lỗi xuất Excel.' };
+                return res.redirect('/admin/event/' + id + '/step/3');
+            }
+        },
+
+        /** Tạo nhóm ủy quyền (đại diện + danh sách BIB) */
+        createGroupAuthorization: async (req, res) => {
+            const { id } = req.params;
+            try {
+                const event = await eventCheckinHService.getById(id);
+                if (!event) {
+                    req.session.flash = { type: 'warning', message: 'Không tìm thấy sự kiện.' };
+                    return res.redirect('/admin/event');
+                }
+                const result = await groupAuthorizationHService.create(id, req.body);
+                if (!result.ok) {
+                    req.session.flash = { type: 'danger', message: result.message || 'Không tạo được nhóm.' };
+                } else {
+                    req.session.flash = { type: 'success', message: 'Đã tạo nhóm ủy quyền.' };
+                    await auditLogService.write({
+                        actorId: req.user?._id,
+                        action: 'create',
+                        resource: 'group_authorization_h',
+                        documentId: result.doc?._id,
+                        summary: `Tạo nhóm ủy quyền sự kiện ${id}`,
+                        req,
+                    });
+                }
+                return res.redirect(`/admin/event/${id}/step/1?tab=group`);
+            } catch (error) {
+                console.log(CNAME, error.message);
+                req.session.flash = { type: 'danger', message: 'Lỗi server.' };
+                return res.redirect(`/admin/event/${id}/step/1?tab=group`);
+            }
+        },
+
+        /** Cập nhật nhóm ủy quyền */
+        updateGroupAuthorization: async (req, res) => {
+            const { id, gaId } = req.params;
+            try {
+                const event = await eventCheckinHService.getById(id);
+                if (!event) {
+                    req.session.flash = { type: 'warning', message: 'Không tìm thấy sự kiện.' };
+                    return res.redirect('/admin/event');
+                }
+                const result = await groupAuthorizationHService.update(gaId, id, req.body);
+                if (!result.ok) {
+                    req.session.flash = { type: 'danger', message: result.message || 'Không cập nhật được.' };
+                } else {
+                    req.session.flash = { type: 'success', message: 'Đã cập nhật nhóm ủy quyền.' };
+                    await auditLogService.write({
+                        actorId: req.user?._id,
+                        action: 'update',
+                        resource: 'group_authorization_h',
+                        documentId: gaId,
+                        summary: `Cập nhật nhóm ủy quyền sự kiện ${id}`,
+                        req,
+                    });
+                }
+                return res.redirect(`/admin/event/${id}/step/1?tab=group`);
+            } catch (error) {
+                console.log(CNAME, error.message);
+                req.session.flash = { type: 'danger', message: 'Lỗi server.' };
+                return res.redirect(`/admin/event/${id}/step/1?tab=group`);
+            }
+        },
+
+        /** Xóa nhóm ủy quyền */
+        deleteGroupAuthorization: async (req, res) => {
+            const { id, gaId } = req.params;
+            try {
+                const event = await eventCheckinHService.getById(id);
+                if (!event) {
+                    req.session.flash = { type: 'warning', message: 'Không tìm thấy sự kiện.' };
+                    return res.redirect('/admin/event');
+                }
+                const result = await groupAuthorizationHService.remove(gaId, id);
+                req.session.flash = {
+                    type: result.ok ? 'success' : 'danger',
+                    message: result.ok ? 'Đã xóa nhóm ủy quyền.' : result.message || 'Không xóa được.',
+                };
+                if (result.ok) {
+                    await auditLogService.write({
+                        actorId: req.user?._id,
+                        action: 'delete',
+                        resource: 'group_authorization_h',
+                        documentId: gaId,
+                        summary: `Xóa nhóm ủy quyền sự kiện ${id}`,
+                        req,
+                    });
+                }
+                return res.redirect(`/admin/event/${id}/step/1?tab=group`);
+            } catch (error) {
+                console.log(CNAME, error.message);
+                req.session.flash = { type: 'danger', message: 'Lỗi server.' };
+                return res.redirect(`/admin/event/${id}/step/1?tab=group`);
             }
         },
 
@@ -869,6 +1166,7 @@ const adminEventController = () => {
                     req.session.flash = { type: 'warning', message: 'Không tìm thấy sự kiện.' };
                     return res.redirect('/admin/event');
                 }
+                await groupAuthorizationHService.onParticipantDeleted(participantId, id);
                 const ok = await participantCheckinHService.deleteByIdAndEvent(participantId, id);
                 if (ok) {
                     await auditLogService.write({

@@ -23,7 +23,7 @@ async function auth(req, res, next) {
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const getInfoLogin = await AccountSystemEntity.findById(decoded.id)
-            .select('_id name username email role permissions token_version')
+            .select('_id name username email role permissions token_version checkin_event_id')
             .lean();
         if (!getInfoLogin) {
             res.clearCookie('token');

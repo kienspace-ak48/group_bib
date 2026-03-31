@@ -57,11 +57,28 @@ const ParticipantCheckinSchema = new mongoose.Schema(
         pickup_end: Date,
         /** Lần gửi mail QR gần nhất (thủ công hoặc hàng loạt) */
         qr_mail_sent_at: Date,
+        /** Đường dẫn public (vd /uploads/checkin/...) sau khi check-in có chữ ký */
+        checkin_signature_path: String,
+        /** Ảnh chụp người tham gia lúc check-in */
+        checkin_photo_path: String,
+        /** Thuộc nhóm ủy quyền (nếu có) — một VĐV tối đa một nhóm */
+        group_authorization_id: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'group_authorization_h',
+            default: undefined,
+        },
+        /** Ghi nhận khi check-in thực hiện theo nhóm ủy quyền (audit) */
+        checkin_via_group_id: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'group_authorization_h',
+            default: undefined,
+        },
     },
     { timestamps: true },
 );
 
 ParticipantCheckinSchema.index({ event_id: 1, cccd: 1 });
+ParticipantCheckinSchema.index({ group_authorization_id: 1 }, { sparse: true });
 
 module.exports = mongoose.model('participant_checkin_h', ParticipantCheckinSchema);
 module.exports.CHECKIN_METHODS = CHECKIN_METHODS;

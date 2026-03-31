@@ -1,4 +1,283 @@
+<% 
+  var ev = typeof event !== 'undefined' && event ? event : {};
+  var evId = ev._id ? String(ev._id) : '';
+  var st = typeof checkinStats !== 'undefined' && checkinStats ? checkinStats : null;
+  var total = st ? (st.total || 0) : 0;
+  var checkedIn = st ? (st.checkedIn || 0) : 0;
+  var notCheckedIn = st ? (st.notCheckedIn || 0) : 0;
+  var cancelled = st ? (st.cancelled || 0) : 0;
+  var pct = st ? (st.pctCheckedIn != null ? st.pctCheckedIn : 0) : 0;
+  var byDist = st && Array.isArray(st.byDistance) ? st.byDistance : [];
+  var chartJson = JSON.stringify({
+    doughnut: [checkedIn, notCheckedIn, cancelled],
+    byDistance: byDist.map(function (d) {
+      return {
+        distance: d.distance,
+        checkedIn: d.checkedIn,
+        notCheckedIn: d.notCheckedIn,
+        cancelled: d.cancelled,
+      };
+    }),
+  });
+%>
+<!--
+  Biểu đồ: dùng Chart.js đã có trong layout admin (public/coreui/vendors/chart.js/js/chart.umd.js).
+  Script khởi tạo phải chạy sau khi file đó load → dùng window "load", không chạy ngay trong body.
+
+  Nếu muốn tách khỏi CoreUI / nâng cấp:
+  - Chart.js 4.x (chính thức): https://www.chartjs.org/ — npm: chart.js
+  - ApexCharts: https://apexcharts.com/ — gọn, đẹp, không phụ thuộc jQuery
+  - Apache ECharts: https://echarts.apache.org/ — biểu đồ nặng, đa dạng
+  Copy vào public/ (hoặc npm + bundle) và include trong layout hoặc chỉ trang này.
+-->
+
 <div class="card border-0 shadow-sm mb-4 <%= ws === 3 ? 'border-primary border-2' : '' %>">
-  <div class="card-header"><strong>4. Check-in</strong> <% if (ws === 3) { %><span class="badge bg-primary ms-2">Đang làm</span><% } %></div>
-  <div class="card-body text-body-secondary small">Màn check-in tại sự kiện (sau).</div>
+  <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <span><strong>4. Check-in</strong> <% if (ws === 3) { %><span class="badge bg-primary ms-2">Đang làm</span><% } %></span>
+    <% if (evId) { %>
+    <div class="d-flex flex-wrap gap-2">
+      <a href="/admin/event/checkin-history?event=<%= evId %>" class="btn btn-sm btn-outline-secondary">Lịch sử check-in (sidebar)</a>
+      <a href="/admin/event/<%= evId %>/participants/export" class="btn btn-sm btn-success">Xuất Excel toàn bộ VĐV</a>
+    </div>
+    <% } %>
+  </div>
+  <div class="card-body">
+    <p class="small text-body-secondary mb-3 mb-md-4">
+      Check-in thực tế do TNV thực hiện qua công cụ <code>/tool-checkin</code> (tài khoản <code>account_checkin</code>). Bảng dưới đây là <strong>báo cáo tổng quan</strong> kèm biểu đồ; chi tiết từng người xem ở bước <strong>2. Quản lý người tham dự</strong>.
+    </p>
+
+    <div class="row g-3 mb-3">
+      <div class="col-6 col-md-4 col-xl-2">
+        <div class="card h-100 border-0 bg-primary bg-opacity-10">
+          <div class="card-body py-3">
+            <div class="small text-body-secondary">Tổng VĐV</div>
+            <div class="fs-4 fw-semibold"><%= total %></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-4 col-xl-2">
+        <div class="card h-100 border-0 bg-success bg-opacity-10">
+          <div class="card-body py-3">
+            <div class="small text-body-secondary">Đã check-in</div>
+            <div class="fs-4 fw-semibold text-success"><%= checkedIn %></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-4 col-xl-2">
+        <div class="card h-100 border-0 bg-warning bg-opacity-10">
+          <div class="card-body py-3">
+            <div class="small text-body-secondary">Chưa check-in</div>
+            <div class="fs-4 fw-semibold text-warning-emphasis"><%= notCheckedIn %></div>
+            <div class="small text-body-tertiary">(trừ đã hủy)</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-4 col-xl-2">
+        <div class="card h-100 border-0 bg-danger bg-opacity-10">
+          <div class="card-body py-3">
+            <div class="small text-body-secondary">Đã hủy</div>
+            <div class="fs-4 fw-semibold text-danger"><%= cancelled %></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-md-8 col-xl-4">
+        <div class="card h-100 border-0 bg-info bg-opacity-10">
+          <div class="card-body py-3">
+            <div class="d-flex justify-content-between align-items-baseline mb-1">
+              <span class="small text-body-secondary">Tiến độ check-in</span>
+              <span class="fw-semibold"><%= pct %>%</span>
+            </div>
+            <div class="progress" style="height: 1.1rem;" role="progressbar" aria-valuenow="<%= Math.round(pct) %>" aria-valuemin="0" aria-valuemax="100" aria-label="Tỷ lệ đã check-in">
+              <div class="progress-bar bg-success" style="width: <%= Math.min(100, Math.max(0, pct)) %>%"><%= Math.round(pct) %>%</div>
+            </div>
+            <div class="small text-body-tertiary mt-1">Trên tổng số VĐV (gồm cả đã hủy trong tổng mẫu số thống kê tổng)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-lg-5">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-header bg-body-tertiary py-2"><strong>Phân bổ trạng thái</strong></div>
+          <div class="card-body d-flex justify-content-center align-items-center pt-3" style="min-height: 280px;">
+            <div class="position-relative w-100" style="max-width: 320px; height: 260px;">
+              <canvas id="checkinChartDoughnut" aria-label="Biểu đồ trạng thái check-in"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-7">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-header bg-body-tertiary py-2"><strong>Theo cự ly</strong> (đã / chưa / hủy)</div>
+          <div class="card-body pt-3" style="min-height: 280px;">
+            <% if (byDist.length) { %>
+            <div class="position-relative h-100" style="min-height: 240px;">
+              <canvas id="checkinChartBar" aria-label="Biểu đồ theo cự ly"></canvas>
+            </div>
+            <% } else { %>
+            <p class="text-body-secondary small mb-0 d-flex align-items-center justify-content-center h-100" style="min-height: 220px;">Chưa có người tham dự hoặc chưa có dữ liệu cự ly để nhóm.</p>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-4 mt-1">
+      <div class="col-12">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-body-tertiary py-2"><strong>Tỷ lệ đã check-in theo cự ly</strong> (% trên từng cự ly)</div>
+          <div class="card-body pt-3" style="min-height: 220px;">
+            <% if (byDist.length) { %>
+            <div class="position-relative h-100" style="min-height: 200px;">
+              <canvas id="checkinChartBarPct" aria-label="Tỷ lệ theo cự ly"></canvas>
+            </div>
+            <% } else { %>
+            <p class="text-body-secondary small mb-0">—</p>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
+
+<script>
+(function () {
+  var raw = <%- chartJson %>;
+
+  function initCheckinCharts() {
+    if (typeof Chart === 'undefined') {
+      console.warn('[check-in step] Chart.js chưa load — kiểm tra layout admin có chart.umd.js sau &lt;body&gt;.');
+      return;
+    }
+
+    var doughnutEl = document.getElementById('checkinChartDoughnut');
+    if (doughnutEl && raw.doughnut) {
+      var ctxD = doughnutEl.getContext('2d');
+      new Chart(ctxD, {
+        type: 'doughnut',
+        data: {
+          labels: ['Đã check-in', 'Chưa check-in', 'Đã hủy'],
+          datasets: [{
+            data: raw.doughnut,
+            backgroundColor: ['#2eb85c', '#f9b115', '#e55353'],
+            borderWidth: 1,
+            borderColor: '#fff',
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '58%',
+          animation: { duration: 500 },
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12 } },
+            tooltip: {
+              callbacks: {
+                label: function (c) {
+                  var v = c.raw != null ? c.raw : 0;
+                  var sum = raw.doughnut.reduce(function (a, b) { return a + b; }, 0) || 1;
+                  var p = Math.round((v / sum) * 1000) / 10;
+                  return c.label + ': ' + v + ' (' + p + '%)';
+                },
+              },
+            },
+          },
+        },
+      });
+    }
+
+    var barEl = document.getElementById('checkinChartBar');
+    if (barEl && raw.byDistance && raw.byDistance.length) {
+      var labels = raw.byDistance.map(function (d) { return d.distance || '—'; });
+      new Chart(barEl.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Đã check-in',
+              data: raw.byDistance.map(function (d) { return d.checkedIn; }),
+              backgroundColor: '#2eb85c',
+            },
+            {
+              label: 'Chưa check-in',
+              data: raw.byDistance.map(function (d) { return d.notCheckedIn; }),
+              backgroundColor: '#f9b115',
+            },
+            {
+              label: 'Đã hủy',
+              data: raw.byDistance.map(function (d) { return d.cancelled; }),
+              backgroundColor: '#e55353',
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 500 },
+          scales: {
+            x: { stacked: true, ticks: { maxRotation: 45, minRotation: 0 } },
+            y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } },
+          },
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 12 } },
+          },
+        },
+      });
+    }
+
+    var barPctEl = document.getElementById('checkinChartBarPct');
+    if (barPctEl && raw.byDistance && raw.byDistance.length) {
+      var labelsP = raw.byDistance.map(function (d) { return d.distance || '—'; });
+      var pctData = raw.byDistance.map(function (d) {
+        var t = (d.checkedIn || 0) + (d.notCheckedIn || 0) + (d.cancelled || 0);
+        if (!t) return 0;
+        return Math.round(((d.checkedIn || 0) / t) * 1000) / 10;
+      });
+      new Chart(barPctEl.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: labelsP,
+          datasets: [{
+            label: '% đã check-in',
+            data: pctData,
+            backgroundColor: 'rgba(32, 107, 196, 0.75)',
+            borderColor: '#206bc4',
+            borderWidth: 1,
+            borderRadius: 4,
+          }],
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 500 },
+          scales: {
+            x: {
+              beginAtZero: true,
+              max: 100,
+              ticks: { callback: function (v) { return v + '%'; } },
+            },
+            y: { ticks: { autoSkip: false } },
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function (c) {
+                  return (c.parsed.x != null ? c.parsed.x : 0) + '% đã check-in';
+                },
+              },
+            },
+          },
+        },
+      });
+    }
+  }
+
+  /* Phải chờ load: Chart.js được đặt cuối layout, sau nội dung bước này */
+  window.addEventListener('load', initCheckinCharts);
+})();
+</script>

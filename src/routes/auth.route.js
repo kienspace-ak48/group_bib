@@ -90,6 +90,9 @@ router.post('/admin/login', loginLimiter, async (req, res) => {
         sameSite: isProd ? 'none' : 'lax',
         maxAge: ms(process.env.JWT_EXPIRE),
     });
+    if (account.role === 'account_checkin') {
+        return res.redirect('/tool-checkin');
+    }
     res.redirect('/admin');
 });
 

@@ -41,7 +41,8 @@
       <div class="col-md-4 d-flex align-items-end">
         <div class="form-check">
           <input class="form-check-input" type="checkbox" name="is_show" id="is_show" value="true" <%= ev.is_show ? 'checked' : '' %> />
-          <label class="form-check-label" for="is_show">Hiển thị công khai</label>
+          <label class="form-check-label" for="is_show">Hiển thị trên trang chủ (client)</label>
+          <div class="form-text">Chỉ khi bật, sự kiện mới xuất hiện trong danh sách công khai; không đăng dữ liệu quản trị / check-in.</div>
         </div>
       </div>
       <div class="col-md-6">
@@ -59,6 +60,29 @@
       <div class="col-md-6">
         <label class="form-label">Zalo</label>
         <input type="text" name="organizer_zalo" class="form-control" value="<%= ev.organizer_zalo || '' %>" />
+      </div>
+      <div class="col-12">
+        <label class="form-label d-block mb-2">Check-in tại quầy (tool check-in)</label>
+        <div class="text-body-secondary small mb-2">Chọn yêu cầu khi nhân viên xác nhật check-in cho VĐV.</div>
+        <% var _cap = ev.checkin_capture_mode || 'both'; %>
+        <div class="d-flex flex-column gap-2">
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="checkin_capture_mode" id="cap_none" value="none" <%= _cap === 'none' ? 'checked' : '' %> />
+            <label class="form-check-label" for="cap_none">Chỉ xác nhận check-in — không bắt buộc chữ ký và không chụp ảnh</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="checkin_capture_mode" id="cap_sig" value="signature" <%= _cap === 'signature' ? 'checked' : '' %> />
+            <label class="form-check-label" for="cap_sig">Bắt buộc chữ ký (không bắt buộc ảnh)</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="checkin_capture_mode" id="cap_photo" value="photo" <%= _cap === 'photo' ? 'checked' : '' %> />
+            <label class="form-check-label" for="cap_photo">Bắt buộc chụp ảnh (không bắt buộc chữ ký)</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="checkin_capture_mode" id="cap_both" value="both" <%= _cap === 'both' ? 'checked' : '' %> />
+            <label class="form-check-label" for="cap_both">Bắt buộc cả chữ ký và ảnh chụp</label>
+          </div>
+        </div>
       </div>
       <div class="col-12">
         <button type="submit" class="btn btn-primary">Lưu thông tin</button>

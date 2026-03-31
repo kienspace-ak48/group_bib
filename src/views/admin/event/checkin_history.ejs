@@ -1,0 +1,170 @@
+<% 
+  var ev = event || {};
+  var evId = ev._id ? String(ev._id) : '';
+  function fmtCheckinTime(d) {
+    if (!d) return '—';
+    var x = new Date(d);
+    if (Number.isNaN(x.getTime())) return '—';
+    var pad = function (n) { return String(n).padStart(2, '0'); };
+    return pad(x.getHours()) + ':' + pad(x.getMinutes()) + ' ' + pad(x.getDate()) + '/' + pad(x.getMonth() + 1) + '/' + x.getFullYear();
+  }
+  var f = typeof filters !== 'undefined' ? filters : { q: '', staff: '' };
+  var hp = typeof historyPagination !== 'undefined' ? historyPagination : null;
+  var hasEvent = !!evId;
+%>
+
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="/admin/event">Sự kiện</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Lịch sử check-in</li>
+  </ol>
+</nav>
+
+<% if (flash && flash.message) { %>
+<div class="alert alert-<%= flash.type === 'success' ? 'success' : flash.type === 'warning' ? 'warning' : 'danger' %> alert-dismissible fade show" role="alert">
+  <%= flash.message %>
+  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+<% } %>
+
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+  <div>
+    <h4 class="mb-1">Lịch sử check-in sự kiện</h4>
+    <p class="text-body-secondary small mb-0">Chọn sự kiện bên dưới để xem chi tiết. Dữ liệu là các bản ghi <code>checked_in</code> (thời gian, TNV, VĐV, BIB, cự ly, ảnh).</p>
+  </div>
+  <% if (hasEvent) { %>
+  <a href="/admin/event/<%= evId %>" class="btn btn-sm btn-outline-secondary">← Workspace sự kiện</a>
+  <% } %>
+</div>
+
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-body">
+    <form method="get" action="/admin/event/checkin-history" class="row g-2 align-items-end">
+      <div class="col-12 col-md-3">
+        <label class="form-label small mb-1">Tìm kiếm</label>
+        <input type="text" name="q" class="form-control form-control-sm" placeholder="Tên, BIB, SĐT, email, TNV…" value="<%= f.q || '' %>" autocomplete="off" <%= hasEvent ? '' : 'disabled' %> />
+      </div>
+      <div class="col-12 col-md-4">
+        <label class="form-label small mb-1">Sự kiện</label>
+        <select class="form-select form-select-sm" id="checkinHistoryEventSelect" name="event" aria-label="Chọn sự kiện" <%= (events && events.length) ? '' : 'disabled' %>>
+          <% if (!events || !events.length) { %>
+          <option value="">— Chưa có sự kiện —</option>
+          <% } else { %>
+          <% events.forEach(function (e) { %>
+          <option value="<%= e._id %>" <%= String(e._id) === evId ? 'selected' : '' %>><%= e.name || e._id %></option>
+          <% }); %>
+          <% } %>
+        </select>
+      </div>
+      <div class="col-12 col-md-3">
+        <label class="form-label small mb-1">TNV check-in</label>
+        <select name="staff" class="form-select form-select-sm" <%= hasEvent ? '' : 'disabled' %>>
+          <option value="">— Tất cả —</option>
+          <% (staffOptions || []).forEach(function (s) { %>
+          <option value="<%= s %>" <%= f.staff === s ? 'selected' : '' %>><%= s %></option>
+          <% }); %>
+        </select>
+      </div>
+      <div class="col-12 col-md-2 d-flex gap-2">
+        <div class="flex-grow-1">
+          <label class="form-label small mb-1 d-none d-md-block">&nbsp;</label>
+          <button type="submit" class="btn btn-sm btn-outline-primary w-100" <%= hasEvent ? '' : 'disabled' %>>Tìm</button>
+        </div>
+      </div>
+      <% if (hp && hp.perPage !== 25) { %>
+      <input type="hidden" name="perPage" value="<%= hp.perPage %>" />
+      <% } %>
+    </form>
+  </div>
+</div>
+
+<% if (!hasEvent) { %>
+<div class="alert alert-secondary mb-0">Chưa có sự kiện check-in nào. Tạo sự kiện tại <a href="/admin/event">Danh sách sự kiện</a> trước.</div>
+<% } else { %>
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-striped table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Thời gian</th>
+            <th>TNV</th>
+            <th>VĐV</th>
+            <th>BIB</th>
+            <th>Cự ly</th>
+            <th class="text-center" style="width: 96px">Hình ảnh</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (!rows || !rows.length) { %>
+          <tr>
+            <td colspan="6" class="text-center text-body-secondary py-5">Chưa có bản ghi check-in nào hoặc không khớp bộ lọc.</td>
+          </tr>
+          <% } else { %>
+          <% rows.forEach(function (row) { %>
+          <tr>
+            <td class="small text-nowrap"><%= fmtCheckinTime(row.checkin_time || row.updatedAt) %></td>
+            <td class="small"><%= row.checkin_by || '—' %></td>
+            <td><%= row.fullname || '—' %></td>
+            <td><code class="small"><%= row.bib || '—' %></code></td>
+            <td class="small"><%= row.distance || '—' %></td>
+            <td class="text-center">
+              <% if (row.checkin_photo_path) { %>
+              <a href="<%= row.checkin_photo_path %>" target="_blank" rel="noopener noreferrer" class="d-inline-block">
+                <img src="<%= row.checkin_photo_path %>" alt="" class="rounded border bg-light" style="width: 56px; height: 72px; object-fit: cover;" loading="lazy" />
+              </a>
+              <% } else { %>
+              <span class="text-body-secondary small">—</span>
+              <% } %>
+            </td>
+          </tr>
+          <% }); %>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+    <% if (hp && hp.total > 0) { %>
+    <div class="card-footer d-flex flex-wrap justify-content-between align-items-center gap-2 py-2 bg-body-tertiary">
+      <div class="small text-body-secondary">
+        <%= hp.total %> bản ghi · Trang <%= hp.page %> / <%= hp.totalPages %>
+      </div>
+      <nav aria-label="Phân trang">
+        <ul class="pagination pagination-sm mb-0">
+          <li class="page-item <%= hp.hasPrev ? '' : 'disabled' %>">
+            <% if (hp.hasPrev && hp.prevUrl) { %>
+            <a class="page-link" href="<%= hp.prevUrl %>">Trước</a>
+            <% } else { %>
+            <span class="page-link">Trước</span>
+            <% } %>
+          </li>
+          <li class="page-item <%= hp.hasNext ? '' : 'disabled' %>">
+            <% if (hp.hasNext && hp.nextUrl) { %>
+            <a class="page-link" href="<%= hp.nextUrl %>">Sau</a>
+            <% } else { %>
+            <span class="page-link">Sau</span>
+            <% } %>
+          </li>
+        </ul>
+      </nav>
+    </div>
+    <% } %>
+  </div>
+</div>
+<% } %>
+
+<script>
+(function () {
+  var sel = document.getElementById('checkinHistoryEventSelect');
+  if (!sel || sel.disabled) return;
+  sel.addEventListener('change', function () {
+    var id = this.value;
+    if (!id) return;
+    var u = new URL(window.location.origin + '/admin/event/checkin-history');
+    u.searchParams.set('event', id);
+    var cur = new URL(window.location.href);
+    var qq = cur.searchParams.get('q');
+    if (qq) u.searchParams.set('q', qq);
+    window.location.href = u.toString();
+  });
+})();
+</script>

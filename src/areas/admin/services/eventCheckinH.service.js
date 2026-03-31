@@ -63,6 +63,7 @@ class EventCheckinHService {
                 'organizer_zalo',
                 'workflow_step',
                 'max_confirmed_step',
+                'checkin_capture_mode',
             ];
             const $set = {};
             for (const k of allowed) {
@@ -116,6 +117,54 @@ class EventCheckinHService {
             console.log(CNAME, e.message);
             return false;
         }
+    }
+
+    /**
+     * Trang chủ client: chỉ sự kiện admin bật "hiển thị công khai".
+     * Trả về object phẳng — không gồm workflow, checkin_capture_mode, Mongo id, v.v.
+     */
+    async listPublicForHome() {
+        try {
+            const select =
+                'name slug short_id desc img_thumb img_banner location start_date end_date race_type status organizer_name organizer_web organizer_fanpage organizer_zalo';
+            const rows = await EventCheckinH.find({ is_show: true }).select(select).sort({ start_date: -1 }).lean();
+            return rows.map((r) => ({
+                name: r.name || '',
+                slug: r.slug || '',
+                short_id: r.short_id || '',
+                desc: r.desc || '',
+                img_thumb: r.img_thumb || '',
+                img_banner: r.img_banner || '',
+                location: r.location || '',
+                start_date: r.start_date,
+                end_date: r.end_date,
+                race_type: r.race_type || '',
+                status: r.status || '',
+                organizer_name: r.organizer_name || '',
+                organizer_web: r.organizer_web || '',
+                organizer_fanpage: r.organizer_fanpage || '',
+                organizer_zalo: r.organizer_zalo || '',
+            }));
+        } catch (e) {
+            console.log(CNAME, e.message);
+            return [];
+        }
+    }
+
+    /** Tháng có ít nhất một sự kiện (lọc UI trang chủ). */
+    buildMonthFilterOptions(events) {
+        const keys = new Set();
+        for (const ev of events) {
+            const d = ev.start_date ? new Date(ev.start_date) : null;
+            if (!d || Number.isNaN(d.getTime())) continue;
+            keys.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+        }
+        return Array.from(keys)
+            .sort()
+            .map((key) => {
+                const [y, m] = key.split('-');
+                return { key, label: `Tháng ${parseInt(m, 10)}/${y}` };
+            });
     }
 }
 

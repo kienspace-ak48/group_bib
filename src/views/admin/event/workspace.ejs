@@ -59,6 +59,8 @@
   participantPagination: typeof participantPagination !== 'undefined' ? participantPagination : null,
   participantFilters: typeof participantFilters !== 'undefined' ? participantFilters : { q_name: '', q_bib: '', q_phone: '', q_cccd: '' },
   sendgridConfigured: typeof sendgridConfigured !== 'undefined' ? sendgridConfigured : false,
+  groupAuthorizations: typeof groupAuthorizations !== 'undefined' ? groupAuthorizations : [],
+  athletesTab: typeof athletesTab !== 'undefined' ? athletesTab : 'athletes',
 }) %>
 </div>
 <% } else if (ws === 2) { %>
@@ -70,7 +72,11 @@
   sendgridConfigured: typeof sendgridConfigured !== 'undefined' ? sendgridConfigured : false,
 }) %>
 <% } else if (ws === 3) { %>
-<%- include('./_step_checkin', { ws: ws }) %>
+<%- include('./_step_checkin', {
+  ws: ws,
+  event: ev,
+  checkinStats: typeof checkinStats !== 'undefined' ? checkinStats : null,
+}) %>
 <% } else { %>
 <%- include('./_step_done', { ws: ws }) %>
 <% } %>

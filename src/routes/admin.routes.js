@@ -42,6 +42,7 @@ router.get('/', dashPerm, adminHomeController.Index);
 router.get('/event', evPerm, adminEventController.Index);
 router.post('/event', evPerm, adminEventController.create);
 router.get('/event/athlete-import-template', evPerm, adminEventController.downloadAthleteImportTemplate);
+router.get('/event/:id/participants/export', evPerm, adminEventController.exportParticipantsExcel);
 router.post('/event/:id/delete', evPerm, adminEventController.destroy);
 router.post('/event/:id/participants/:participantId/delete', evPerm, adminEventController.deleteParticipant);
 router.post(
@@ -53,12 +54,23 @@ router.post(
 router.post('/event/:id/participants/manual', evPerm, adminEventController.addParticipantManual);
 router.post('/event/:id/participants/:participantId/update', evPerm, adminEventController.updateParticipant);
 router.post('/event/:id/participants/:participantId/send-mail', evPerm, adminEventController.sendParticipantQrMail);
+router.post('/event/:id/group-authorizations/:gaId/update', evPerm, adminEventController.updateGroupAuthorization);
+router.post('/event/:id/group-authorizations/:gaId/delete', evPerm, adminEventController.deleteGroupAuthorization);
+router.post('/event/:id/group-authorizations', evPerm, adminEventController.createGroupAuthorization);
 router.post('/event/:id/update', evPerm, adminEventController.updateEvent);
 router.post('/event/:id/mail-config', evPerm, adminEventController.saveMailConfig);
 router.post('/event/:id/mail/banner', evPerm, handleMailBannerUpload, adminEventController.uploadMailBanner);
 router.post('/event/:id/mail/end-image', evPerm, handleMailBannerUpload, adminEventController.uploadMailEndImage);
 router.post('/event/:id/mail/send-bulk', evPerm, adminEventController.sendBulkQrMail);
 router.post('/event/:id/step/confirm', evPerm, adminEventController.confirmStep);
+/** Lịch sử check-in chung (chọn sự kiện bằng ?event=); phải đứng trước /event/:id để không bị nuốt bởi :id */
+router.get('/event/checkin-history', evPerm, adminEventController.checkinHistory);
+/** Tương thích URL cũ /event/:id/checkin-history → chuyển sang ?event= */
+router.get('/event/:id/checkin-history', evPerm, (req, res) => {
+    const q = new URLSearchParams(req.query);
+    q.set('event', req.params.id);
+    res.redirect(302, '/admin/event/checkin-history?' + q.toString());
+});
 router.get('/event/:id/step/:step', evPerm, adminEventController.workspaceStep);
 router.get('/event/:id', evPerm, adminEventController.workspace);
 

@@ -72,7 +72,14 @@
   const showActiveTheme = theme => {
     const activeThemeIcon = document.querySelector('.theme-icon-active use');
     const btnToActive = document.querySelector(`[data-coreui-theme-value="${theme}"]`);
-    const svgOfActiveBtn = btnToActive.querySelector('svg use').getAttribute('xlink:href');
+    if (!activeThemeIcon || !btnToActive) {
+      return;
+    }
+    const svgUse = btnToActive.querySelector('svg use');
+    if (!svgUse) {
+      return;
+    }
+    const svgOfActiveBtn = svgUse.getAttribute('xlink:href');
     for (const element of document.querySelectorAll('[data-coreui-theme-value]')) {
       element.classList.remove('active');
     }

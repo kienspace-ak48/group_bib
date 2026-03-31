@@ -1,0 +1,276 @@
+<% 
+  var ev = typeof event !== 'undefined' ? event : {};
+  var evId = ev._id ? String(ev._id) : '';
+  var groups = typeof groupAuthorizations !== 'undefined' && groupAuthorizations ? groupAuthorizations : [];
+  function bibListFromRow(row) {
+    if (!row.participantPreview || !row.participantPreview.length) return '';
+    return row.participantPreview.map(function (p) { return p.bib || ''; }).filter(Boolean).join(', ');
+  }
+%>
+<div class="card-body border-bottom bg-body-tertiary">
+  <p class="small text-body-secondary mb-0">
+    Một <strong>người đại diện</strong> có thể nhận đồ / check-in hộ nhiều VĐV (theo BIB). Mỗi VĐV chỉ thuộc <strong>tối đa một</strong> nhóm.
+    <strong>Link đầy đủ</strong> và <strong>QR</strong> mở trang danh sách nhóm trong <code>/tool-checkin</code> (TNV đã đăng nhập đúng sự kiện). QR chứa cùng URL — quét bằng điện thoại đã đăng nhập sẵn tài khoản check-in.
+    Có thể đặt biến môi trường <code>PUBLIC_BASE_URL</code> (vd <code>https://ten-mien.com</code>) nếu cần URL tuyệt đối đúng khi có reverse proxy.
+  </p>
+</div>
+<div class="card-header bg-body-tertiary bg-opacity-50 py-2 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+  <span class="small fw-semibold">Danh sách nhóm ủy quyền</span>
+  <button type="button" class="btn btn-sm btn-primary" data-coreui-toggle="modal" data-coreui-target="#groupAuthCreateModal">Thêm nhóm</button>
+</div>
+<div class="card-body p-0">
+  <div class="table-responsive">
+    <table class="table table-sm table-striped table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th class="text-center" style="width: 3rem">STT</th>
+          <th>Thông tin đại diện</th>
+          <th>CCCD</th>
+          <th>BIB</th>
+          <th style="min-width: 10rem">Link &amp; QR</th>
+          <th class="text-end">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (!groups.length) { %>
+        <tr>
+          <td colspan="6" class="text-center text-body-secondary py-4">Chưa có nhóm ủy quyền nào. Tạo nhóm để có <strong>link đầy đủ</strong> và <strong>mã QR</strong> (quét → mở trang nhóm trong công cụ check-in).</td>
+        </tr>
+        <% } else { %>
+        <% groups.forEach(function (row, idx) { %>
+        <% var rep = row.representative || {}; %>
+        <tr>
+          <td class="text-center small"><%= idx + 1 %></td>
+          <td class="small">
+            <div class="fw-medium text-primary"><%= rep.fullname || '—' %></div>
+            <div class="text-body-secondary"><%= rep.email || '—' %></div>
+            <div class="text-body-secondary"><%= rep.phone || '—' %></div>
+          </td>
+          <td class="small"><%= rep.cccd || '—' %></td>
+          <td class="small text-break" style="max-width: 14rem"><%= bibListFromRow(row) || '—' %></td>
+          <td class="small">
+            <% if (row.token) { %>
+            <% var linkUrl = row.toolPath || ('/tool-checkin/group-auth/' + encodeURIComponent(row.token)); %>
+            <% var linkFull = row.toolFullUrl || ''; %>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+              <% if (linkFull) { %>
+              <a href="<%= linkFull %>" target="_blank" rel="noopener noreferrer" class="text-nowrap">Mở link</a>
+              <button type="button" class="btn btn-link btn-sm p-0 js-copy-ga-link" data-full-url="<%= String(linkFull).replace(/&/g, '&amp;').replace(/"/g, '&quot;') %>" title="Sao chép URL đầy đủ">Copy</button>
+              <% } else { %>
+              <span class="text-warning small">Tải lại trang sau khi cập nhật server</span>
+              <% } %>
+              <% if (row.qrDataUrl) { %>
+              <img id="gaQrImg<%= idx %>" src="<%= row.qrDataUrl %>" alt="" class="d-none" aria-hidden="true" />
+              <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2 js-show-ga-qr" data-qr-img-id="gaQrImg<%= idx %>" data-label="<%= String(rep.fullname || 'Nhóm').replace(/&/g, '&amp;').replace(/"/g, '&quot;') %>" title="Xem mã QR nhóm (phóng to)">
+                Mã QR
+              </button>
+              <% } %>
+            </div>
+            <% } else { %>—<% } %>
+          </td>
+          <td class="text-end text-nowrap">
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-secondary py-0 js-edit-group-auth"
+              data-id="<%= row._id %>"
+              data-fullname="<%= encodeURIComponent(rep.fullname || '') %>"
+              data-email="<%= encodeURIComponent(rep.email || '') %>"
+              data-phone="<%= encodeURIComponent(rep.phone || '') %>"
+              data-cccd="<%= encodeURIComponent(rep.cccd || '') %>"
+              data-bib-list="<%= encodeURIComponent(bibListFromRow(row)) %>"
+            >Sửa</button>
+            <form method="POST" action="/admin/event/<%= evId %>/group-authorizations/<%= row._id %>/delete" class="d-inline" onsubmit="return confirm('Xóa nhóm ủy quyền này?');">
+              <button type="submit" class="btn btn-sm btn-outline-danger py-0">Xóa</button>
+            </form>
+          </td>
+        </tr>
+        <% }); %>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal tạo -->
+<div class="modal fade" id="groupAuthCreateModal" tabindex="-1" aria-labelledby="groupAuthCreateModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="groupAuthCreateModalLabel">Thêm nhóm ủy quyền</h5>
+        <button type="button" class="btn-close" data-coreui-dismiss="modal" aria-label="Đóng"></button>
+      </div>
+      <form method="POST" action="/admin/event/<%= evId %>/group-authorizations">
+        <div class="modal-body">
+          <div class="row g-2">
+            <div class="col-md-6">
+              <label class="form-label small">Họ tên đại diện <span class="text-danger">*</span></label>
+              <input type="text" name="fullname" class="form-control" required maxlength="200" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small">CCCD</label>
+              <input type="text" name="cccd" class="form-control" maxlength="20" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small">Email</label>
+              <input type="email" name="email" class="form-control" maxlength="200" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small">SĐT</label>
+              <input type="text" name="phone" class="form-control" maxlength="30" />
+            </div>
+            <div class="col-12">
+              <label class="form-label small">Danh sách BIB <span class="text-danger">*</span></label>
+              <textarea name="bib_list" class="form-control font-monospace" rows="4" required placeholder="Ví dụ: 3412, 5625, 1001 (phân cách bằng dấu phẩy hoặc xuống dòng)"></textarea>
+              <div class="form-text">Chỉ BIB đã tồn tại trong sự kiện này.</div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-coreui-dismiss="modal">Đóng</button>
+          <button type="submit" class="btn btn-primary">Tạo nhóm</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal sửa -->
+<div class="modal fade" id="groupAuthEditModal" tabindex="-1" aria-labelledby="groupAuthEditModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="groupAuthEditModalLabel">Sửa nhóm ủy quyền</h5>
+        <button type="button" class="btn-close" data-coreui-dismiss="modal" aria-label="Đóng"></button>
+      </div>
+      <form method="POST" action="" id="groupAuthEditForm" class="js-group-auth-edit-form">
+        <div class="modal-body">
+          <div class="row g-2">
+            <div class="col-md-6">
+              <label class="form-label small">Họ tên đại diện <span class="text-danger">*</span></label>
+              <input type="text" name="fullname" id="gaEditFullname" class="form-control" required maxlength="200" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small">CCCD</label>
+              <input type="text" name="cccd" id="gaEditCccd" class="form-control" maxlength="20" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small">Email</label>
+              <input type="email" name="email" id="gaEditEmail" class="form-control" maxlength="200" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small">SĐT</label>
+              <input type="text" name="phone" id="gaEditPhone" class="form-control" maxlength="30" />
+            </div>
+            <div class="col-12">
+              <label class="form-label small">Danh sách BIB <span class="text-danger">*</span></label>
+              <textarea name="bib_list" id="gaEditBibList" class="form-control font-monospace" rows="4" required></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-coreui-dismiss="modal">Đóng</button>
+          <button type="submit" class="btn btn-primary">Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="groupAuthQrModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h6 class="modal-title" id="groupAuthQrModalTitle">Mã QR nhóm ủy quyền</h6>
+        <button type="button" class="btn-close" data-coreui-dismiss="modal" aria-label="Đóng"></button>
+      </div>
+      <div class="modal-body text-center">
+        <div id="groupAuthQrModalBody" class="d-flex justify-content-center"></div>
+        <p class="small text-body-secondary mt-2 mb-0">Quét → mở trang nhóm trong công cụ check-in (cùng URL như “Mở link”).</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  function copyText(text, btn) {
+    if (!text) return;
+    function done() {
+      var t = btn.textContent;
+      btn.textContent = 'Đã copy';
+      setTimeout(function () { btn.textContent = t || 'Copy'; }, 1800);
+    }
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(done).catch(function () {
+        fallbackCopy(text, done);
+      });
+    } else {
+      fallbackCopy(text, done);
+    }
+  }
+  function fallbackCopy(text, cb) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+    } catch (e) {}
+    document.body.removeChild(ta);
+    if (cb) cb();
+  }
+  document.querySelectorAll('.js-copy-ga-link').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var u = btn.getAttribute('data-full-url');
+      if (!u) return;
+      copyText(u, btn);
+    });
+  });
+  document.querySelectorAll('.js-show-ga-qr').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var id = btn.getAttribute('data-qr-img-id');
+      var hidden = id ? document.getElementById(id) : null;
+      var data = hidden && hidden.src ? hidden.src : '';
+      var label = btn.getAttribute('data-label') || '';
+      var modalEl = document.getElementById('groupAuthQrModal');
+      var titleEl = document.getElementById('groupAuthQrModalTitle');
+      var bodyEl = document.getElementById('groupAuthQrModalBody');
+      if (!modalEl || !bodyEl) return;
+      if (titleEl) titleEl.textContent = label ? ('QR — ' + label) : 'Mã QR nhóm ủy quyền';
+      bodyEl.innerHTML = '';
+      if (data) {
+        var img = document.createElement('img');
+        img.src = data;
+        img.alt = 'QR';
+        img.className = 'img-fluid rounded border';
+        img.style.maxWidth = 'min(280px, 90vw)';
+        bodyEl.appendChild(img);
+      }
+      var ModalCtor = typeof coreui !== 'undefined' && coreui.Modal ? coreui.Modal : (typeof bootstrap !== 'undefined' ? bootstrap.Modal : null);
+      if (ModalCtor) ModalCtor.getOrCreateInstance(modalEl).show();
+    });
+  });
+  document.querySelectorAll('.js-edit-group-auth').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var id = btn.getAttribute('data-id');
+      var form = document.getElementById('groupAuthEditForm');
+      if (!form || !id) return;
+      form.action = '/admin/event/<%= evId %>/group-authorizations/' + id + '/update';
+      function dec(a) {
+        try { return decodeURIComponent(btn.getAttribute(a) || ''); } catch (e) { return ''; }
+      }
+      document.getElementById('gaEditFullname').value = dec('data-fullname');
+      document.getElementById('gaEditEmail').value = dec('data-email');
+      document.getElementById('gaEditPhone').value = dec('data-phone');
+      document.getElementById('gaEditCccd').value = dec('data-cccd');
+      document.getElementById('gaEditBibList').value = dec('data-bib-list');
+      var el = document.getElementById('groupAuthEditModal');
+      var ModalCtor = typeof coreui !== 'undefined' && coreui.Modal ? coreui.Modal : (typeof bootstrap !== 'undefined' ? bootstrap.Modal : null);
+      if (ModalCtor && el) ModalCtor.getOrCreateInstance(el).show();
+    });
+  });
+})();
+</script>

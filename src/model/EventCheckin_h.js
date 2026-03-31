@@ -45,6 +45,15 @@ const eventSchema = new mongoose.Schema(
             min: -1,
             max: 4,
         },
+        /**
+         * Cấu hình khi check-in tại tool: không thu thập | chỉ chữ ký | chỉ ảnh | cả hai.
+         * none | signature | photo | both
+         */
+        checkin_capture_mode: {
+            type: String,
+            enum: ['none', 'signature', 'photo', 'both'],
+            default: 'both',
+        },
     },
     { timestamps: true },
 );

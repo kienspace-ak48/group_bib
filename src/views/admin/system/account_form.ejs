@@ -34,11 +34,21 @@
       </div>
       <div class="mb-3">
         <label class="form-label">Vai trò</label>
-        <select name="role" class="form-select">
+        <select name="role" id="accountRole" class="form-select">
           <% roles.forEach(function (r) { %>
           <option value="<%= r %>" <%= (account && account.role === r) || (!account && r === 'admin') ? 'selected' : '' %>><%= r %></option>
           <% }); %>
         </select>
+      </div>
+      <div class="mb-3" id="checkinEventWrap" style="display: none;">
+        <label class="form-label">Sự kiện check-in <span class="text-danger">*</span></label>
+        <select name="checkin_event_id" id="checkinEventId" class="form-select">
+          <option value="">— Chọn sự kiện —</option>
+          <% (events || []).forEach(function (ev) { %>
+          <option value="<%= ev._id %>" <%= account && account.checkin_event_id && String(account.checkin_event_id) === String(ev._id) ? 'selected' : '' %>><%= ev.name %><% if (ev.start_date) { %> · <%= new Date(ev.start_date).toLocaleDateString('vi-VN') %><% } %></option>
+          <% }); %>
+        </select>
+        <div class="form-text">Bắt buộc khi vai trò là <code>account_checkin</code>.</div>
       </div>
       <div class="mb-3">
         <label class="form-label">Quyền (mỗi dòng hoặc cách nhau bằng dấu phẩy)</label>
@@ -55,3 +65,17 @@ admin.dashboard<% } %></textarea>
     </form>
   </div>
 </div>
+<script>
+(function () {
+  var sel = document.getElementById('accountRole');
+  var wrap = document.getElementById('checkinEventWrap');
+  var evSel = document.getElementById('checkinEventId');
+  function sync() {
+    var isCheckin = sel && sel.value === 'account_checkin';
+    if (wrap) wrap.style.display = isCheckin ? 'block' : 'none';
+    if (evSel) evSel.required = !!isCheckin;
+  }
+  if (sel) sel.addEventListener('change', sync);
+  sync();
+})();
+</script>

@@ -1,0 +1,52 @@
+<style>
+  .events-public-intro {
+    padding: 96px 20px 8px;
+    background: #f0f0f8;
+    text-align: left;
+  }
+  .events-public-intro__inner {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .events-public-intro h1 {
+    font-size: 28px;
+    font-weight: 800;
+    color: #1e3a5f;
+    margin: 0 0 8px;
+    position: relative;
+    padding-bottom: 8px;
+  }
+  .events-public-intro h1::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 48px;
+    height: 3px;
+    background: #1e3a5f;
+    border-radius: 2px;
+  }
+  .events-public-intro p {
+    color: #64748b;
+    font-size: 15px;
+    margin: 12px 0 0;
+    max-width: 640px;
+    line-height: 1.5;
+  }
+</style>
+
+<!-- <div class="events-public-intro">
+  <div class="events-public-intro__inner">
+    <h1>Sự kiện check-in</h1>
+    <p>Danh sách các giải đang mở trên hệ thống (admin bật hiển thị công khai). Dữ liệu giống khu vực sự kiện trên trang chủ.</p>
+  </div>
+</div> -->
+
+<%- include('partials/road_events_public_block.ejs', {
+  events: typeof events !== 'undefined' ? events : [],
+  eventMonths: typeof eventMonths !== 'undefined' ? eventMonths : [],
+  roadEventsTitle: 'Tất cả sự kiện',
+  roadEventsMoreHref: '/',
+  roadEventsMoreLabel: 'Về trang chủ →',
+  roadEventsSectionId: 'events-list',
+}) %>

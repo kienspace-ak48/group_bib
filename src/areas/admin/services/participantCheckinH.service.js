@@ -2,6 +2,9 @@ const mongoose = require('mongoose');
 const ParticipantCheckinH = require('../../../model/ParticipantCheckin_h');
 
 const CNAME = 'participantCheckinH.service.js ';
+const CHECKIN_HISTORY_LIMIT = 100;
+/** Khớp giới hạn export trong event.controller */
+const EXPORT_PARTICIPANT_MAX = 10000;
 
 function escapeRegex(s) {
     return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -209,6 +212,204 @@ class ParticipantCheckinHService {
         } catch (e) {
             console.log(CNAME, e.message);
             return false;
+        }
+    }
+
+    _buildCheckedInHistoryQuery(eventId, { q, staff } = {}) {
+        const andParts = [this._eventIdQuery(eventId), { status: 'checked_in' }];
+        const staffTrim = String(staff || '').trim();
+        if (staffTrim) {
+            andParts.push({ checkin_by: staffTrim });
+        }
+        const search = String(q || '').trim();
+        if (search) {
+            const rx = new RegExp(escapeRegex(search), 'i');
+            andParts.push({
+                $or: [
+                    { fullname: rx },
+                    { bib: rx },
+                    { phone: rx },
+                    { email: rx },
+                    { cccd: rx },
+                    { checkin_by: rx },
+                ],
+            });
+        }
+        return { $and: andParts };
+    }
+
+    /** Các giá trị checkin_by đã ghi khi check-in (để lọc TNV) */
+    async distinctCheckinStaff(eventId) {
+        try {
+            const q = {
+                $and: [
+                    this._eventIdQuery(eventId),
+                    { status: 'checked_in' },
+                    { checkin_by: { $nin: [null, ''] } },
+                ],
+            };
+            const arr = await ParticipantCheckinH.distinct('checkin_by', q);
+            return (arr || []).filter(Boolean).sort((a, b) => String(a).localeCompare(String(b)));
+        } catch (e) {
+            console.log(CNAME, e.message);
+            return [];
+        }
+    }
+
+    async countCheckedInHistory(eventId, filters = {}) {
+        try {
+            const q = this._buildCheckedInHistoryQuery(eventId, filters);
+            return await ParticipantCheckinH.countDocuments(q);
+        } catch (e) {
+            console.log(CNAME, e.message);
+            return 0;
+        }
+    }
+
+    async findCheckedInHistory(eventId, filters = {}, options = {}) {
+        try {
+            const q = this._buildCheckedInHistoryQuery(eventId, filters);
+            return await ParticipantCheckinH.find(q)
+                .sort({ checkin_time: -1, updatedAt: -1 })
+                .skip(options.skip || 0)
+                .limit(Math.min(CHECKIN_HISTORY_LIMIT, Math.max(1, options.limit || 50)))
+                .lean();
+        } catch (e) {
+            console.log(CNAME, e.message);
+            return [];
+        }
+    }
+
+    /**
+     * Thống kê dashboard bước Check-in: tổng, đã/chưa/hủy, % đã check-in trên tổng, theo cự ly.
+     */
+    async getCheckinDashboardStats(eventId) {
+        try {
+            const baseMatch = this._eventIdQuery(eventId);
+            const pipeline = [
+                { $match: baseMatch },
+                {
+                    $facet: {
+                        overall: [
+                            {
+                                $group: {
+                                    _id: null,
+                                    total: { $sum: 1 },
+                                    checkedIn: {
+                                        $sum: { $cond: [{ $eq: ['$status', 'checked_in'] }, 1, 0] },
+                                    },
+                                    cancelled: {
+                                        $sum: { $cond: [{ $eq: ['$status', 'cancelled'] }, 1, 0] },
+                                    },
+                                    notCheckedIn: {
+                                        $sum: {
+                                            $cond: [
+                                                {
+                                                    $and: [
+                                                        { $ne: ['$status', 'checked_in'] },
+                                                        { $ne: ['$status', 'cancelled'] },
+                                                    ],
+                                                },
+                                                1,
+                                                0,
+                                            ],
+                                        },
+                                    },
+                                },
+                            },
+                        ],
+                        byDistance: [
+                            {
+                                $addFields: {
+                                    distKey: {
+                                        $cond: [
+                                            {
+                                                $or: [
+                                                    { $eq: ['$distance', null] },
+                                                    { $eq: ['$distance', ''] },
+                                                ],
+                                            },
+                                            '(Không rõ)',
+                                            '$distance',
+                                        ],
+                                    },
+                                },
+                            },
+                            {
+                                $group: {
+                                    _id: '$distKey',
+                                    total: { $sum: 1 },
+                                    checkedIn: {
+                                        $sum: { $cond: [{ $eq: ['$status', 'checked_in'] }, 1, 0] },
+                                    },
+                                    cancelled: {
+                                        $sum: { $cond: [{ $eq: ['$status', 'cancelled'] }, 1, 0] },
+                                    },
+                                    notCheckedIn: {
+                                        $sum: {
+                                            $cond: [
+                                                {
+                                                    $and: [
+                                                        { $ne: ['$status', 'checked_in'] },
+                                                        { $ne: ['$status', 'cancelled'] },
+                                                    ],
+                                                },
+                                                1,
+                                                0,
+                                            ],
+                                        },
+                                    },
+                                },
+                            },
+                            { $sort: { _id: 1 } },
+                        ],
+                    },
+                },
+            ];
+            const [row] = await ParticipantCheckinH.aggregate(pipeline);
+            const o = row?.overall?.[0] || {};
+            const total = o.total || 0;
+            const checkedIn = o.checkedIn || 0;
+            const cancelled = o.cancelled || 0;
+            const notCheckedIn = o.notCheckedIn || 0;
+            const pctCheckedIn = total > 0 ? Math.round((checkedIn / total) * 1000) / 10 : 0;
+            const byDistance = (row?.byDistance || []).map((d) => ({
+                distance: d._id,
+                total: d.total,
+                checkedIn: d.checkedIn,
+                notCheckedIn: d.notCheckedIn,
+                cancelled: d.cancelled,
+            }));
+            return {
+                total,
+                checkedIn,
+                notCheckedIn,
+                cancelled,
+                pctCheckedIn,
+                byDistance,
+            };
+        } catch (e) {
+            console.log(CNAME, e.message);
+            return {
+                total: 0,
+                checkedIn: 0,
+                notCheckedIn: 0,
+                cancelled: 0,
+                pctCheckedIn: 0,
+                byDistance: [],
+            };
+        }
+    }
+
+    /** Toàn bộ participant của sự kiện (xuất Excel), giới hạn bản ghi. */
+    async findAllByEventIdForExport(eventId, limit = EXPORT_PARTICIPANT_MAX) {
+        try {
+            const q = this._eventIdQuery(eventId);
+            const lim = Math.min(EXPORT_PARTICIPANT_MAX, Math.max(1, limit || EXPORT_PARTICIPANT_MAX));
+            return await ParticipantCheckinH.find(q).sort({ fullname: 1 }).limit(lim).lean();
+        } catch (e) {
+            console.log(CNAME, e.message);
+            return [];
         }
     }
 }

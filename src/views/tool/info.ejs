@@ -1,3 +1,10 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= typeof event !== 'undefined' && event && event.name ? event.name : 'Check-in' %> · Chi tiết VĐV</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 <script
@@ -26,61 +33,50 @@
         color: #065f46;
     }
 </style>
+</head>
 <body class="bg-gray-50">
     <div class="">
         <!-- Main Content -->
         <main class="m-auto mx-auto px-4 py-6 max-w-5xl">
+            <% var capMode = (typeof event !== 'undefined' && event && event.checkin_capture_mode) ? event.checkin_capture_mode : 'both'; %>
+            <% var showSig = (capMode === 'signature' || capMode === 'both'); %>
+            <% var showPhoto = (capMode === 'photo' || capMode === 'both'); %>
             <div class="flex flex-col gap-6">
                 <!-- Athlete Profile Card -->
                 <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
                     <!-- Header with gradient & status -->
-                    <div class="bg-gradient-to-r from-indigo-600 to-purple-600 p-6">
-                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                            <div>
-                                <h2 class="text-xl md:text-2xl font-bold text-white mb-3"><%= event.name %></h2>
-
-                                <% var _checkedIn = (pc.status === 'checked_in' || pc.checkin_status === true); %>
-                                <% if (_checkedIn) { %>
-                                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-                                    <!-- <span class="inline-flex items-center px-4 py-1.5 rounded-full bg-green-500/20 backdrop-blur-sm text-green-100 font-medium text-sm">
-                                        <i class="fas fa-check-circle mr-2 text-green-300"></i>
-                                    </span> -->
-                                    <div class="bg-white/15 backdrop-blur-md px-5 py-3 rounded-xl text-white text-sm">
-                                        <div class="flex justify-between">
-                                            <div>
-                                                <p class="">Zone: <span class="font-semibold"><%= pc.zone || '—' %></span></p>
-                                                <p class="text-lg font-bold mt-1">
-                                                    CODE: <span class="text-amber-200"><%= pc.bib %></span>
-                                                </p>
-                                            </div>
-                                            <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-green-500/20 backdrop-blur-sm text-green-100 font-medium text-sm">
-                                                <i class="fas fa-check-circle text-green-300"></i>
-                                                <!-- Checked In -->
-                                            </span>
-                                        </div>
-                                        
+                    <div class="bg-gradient-to-r from-indigo-600 to-purple-600 p-5 md:p-6">
+                        <% var _checkedIn = (pc.status === 'checked_in' || pc.checkin_status === true); %>
+                        <h2 class="text-xl md:text-2xl font-bold text-white mb-4 tracking-tight"><%= event.name %></h2>
+                        <div class="flex flex-col sm:flex-row sm:items-stretch gap-4 sm:gap-5">
+                            <div class="flex-1 min-w-0 rounded-2xl border border-white/25 bg-white/10 backdrop-blur-md px-4 py-3.5 md:px-5 md:py-4 shadow-inner shadow-black/10">
+                                <div class="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
+                                    <div class="flex items-baseline gap-2 flex-wrap">
+                                        <span class="text-[11px] font-semibold uppercase tracking-wider text-white/60">Category</span>
+                                        <span class="text-white text-lg font-semibold tabular-nums"><%= pc.zone || '—' %></span>
+                                    </div>
+                                    <div class="hidden sm:block h-9 w-px bg-white/25 shrink-0" aria-hidden="true"></div>
+                                    <div class="flex items-baseline gap-2 flex-wrap">
+                                        <span class="text-[11px] font-semibold uppercase tracking-wider text-white/60">Code</span>
+                                        <span class="text-amber-200 text-xl md:text-2xl font-bold tabular-nums tracking-tight"><%= pc.bib || '—' %></span>
                                     </div>
                                 </div>
-                                <% } else { %>
-                                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-                                    
-                                    <div class="bg-white/15 backdrop-blur-md px-5 py-3 rounded-xl text-white text-sm">
-                                        <div class="flex justify-between">
-                                            <div>
-                                                <p class="">Zone: <span class="font-semibold"><%= pc.zone || '—' %></span></p>
-                                                <p class="text-lg font-bold mt-1">
-                                                    CODE: <span class="text-amber-200"><%= pc.bib %></span>
-                                                </p>
-                                            </div>
-                                            <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-amber-500/30 backdrop-blur-sm text-amber-100 font-medium text-sm">
-                                                <i class="fas fa-exclamation-triangle text-amber-300"></i>
-                                                <!-- Not Checked In -->
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <% } %>
                             </div>
+                            <% if (_checkedIn) { %>
+                            <div class="shrink-0 inline-flex flex-row items-center justify-center gap-3 self-stretch rounded-2xl border border-emerald-300/35 bg-emerald-500/15 backdrop-blur-md px-4 py-3 text-white shadow-lg shadow-black/10 min-w-[168px]">
+                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-400/25 ring-1 ring-white/20">
+                                    <i class="fas fa-check-circle text-emerald-100 text-lg"></i>
+                                </span>
+                                <span class="font-semibold text-sm whitespace-nowrap">Đã check-in</span>
+                            </div>
+                            <% } else { %>
+                            <div class="shrink-0 inline-flex flex-row items-center justify-center gap-3 self-stretch rounded-2xl border border-amber-300/35 bg-amber-500/15 backdrop-blur-md px-4 py-3 text-white shadow-lg shadow-black/10 min-w-[168px]">
+                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-400/25 ring-1 ring-white/20">
+                                    <i class="fas fa-hourglass-half text-amber-100 text-lg"></i>
+                                </span>
+                                <span class="font-semibold text-sm whitespace-nowrap">Chưa check-in</span>
+                            </div>
+                            <% } %>
                         </div>
                     </div>
 
@@ -93,8 +89,13 @@
                                     <i class="fas fa-user-edit text-indigo-600 text-sm opacity-90"></i>
                                     Personal Information
                                 </h3>
-
                                 <input id="code_hidden" type="hidden" value="<%= pc.uid %>" />
+                                <% if (typeof returnTo !== 'undefined' && returnTo) { %>
+                                <input type="hidden" id="return_to" value="<%= returnTo %>" />
+                                <% } %>
+                                <% if (typeof checkinViaGroupId !== 'undefined' && checkinViaGroupId) { %>
+                                <input type="hidden" id="checkin_via_group_id" value="<%= checkinViaGroupId %>" />
+                                <% } %>
 
         <div class="grid grid-cols-2 gap-4">
             <!-- LEFT -->
@@ -110,19 +111,19 @@
 
                 <div class="space-y-1 mb-4">
                     <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                        Chip ID
+                        VẬT PHẨM / ITEM
                     </p>
                     <p class="text-sm font-semibold text-gray-900 leading-5">
-                        <%= pc.chip_id || 'N/A' %>
+                        <%= pc.item || 'N/A' %>
                     </p>
                 </div>
 
                 <div class="space-y-1 mb-4">
                     <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                        Quốc tịch / Nationality
+                        BIỆT DANH / NICKNAME
                     </p>
                     <p class="text-sm font-semibold text-gray-900 leading-5">
-                        <%= pc.nationality || 'N/A' %>
+                        <%= pc.bib_name || 'N/A' %>
                     </p>
                 </div>
             </div>
@@ -151,9 +152,9 @@
                     <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">
                         Ngày Sinh / DOB
                     </p>
-                    <% let dformat = new Date(pc.dob).toLocaleDateString('vi-VN') %>
+                    <% var dformat = pc.dob ? new Date(pc.dob).toLocaleDateString('vi-VN') : 'N/A' %>
                     <p class="text-sm font-semibold text-gray-900 leading-5">
-                        <%= dformat || 'N/A' %>
+                        <%= dformat %>
                     </p>
                 </div>
             </div>
@@ -167,57 +168,116 @@
                                     Contact Information
                                 </h3>
 
-                                <div class="space-y-6 grid grid-cols-2">
-                                    <div class="space-y-1 mb-4">
-                                                <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Phone</p>
-
-                                                <p class="text-sm font-medium text-gray-900 tracking-wider group-hover:text-indigo-700 transition-colors">
-                                                    <%= pc.phone || 'N/A' %>
-                                                </p>
-                                            </div>
-                                            <!--  -->
-                                            <div class="space-y-1 mb-4">
-                                                <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Email</p>
-
-                                                <p class="text-sm font-medium text-gray-900 tracking-wider group-hover:text-indigo-700 transition-colors">
-                                                    <%= pc.email || 'N/A' %>
-                                                </p>
-                                            </div>
-                                    
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 items-start">
+                                    <div class="flex flex-col gap-1.5 min-h-[4rem]">
+                                        <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Phone</p>
+                                        <p class="text-sm font-semibold text-gray-900 break-words leading-relaxed">
+                                            <%= pc.phone || 'N/A' %>
+                                        </p>
+                                    </div>
+                                    <div class="flex flex-col gap-1.5 min-h-[4rem]">
+                                        <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Email</p>
+                                        <p class="text-sm font-semibold text-gray-900 break-all leading-relaxed">
+                                            <%= pc.email || 'N/A' %>
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
-                            <!-- action INFORMATION -->
+                            <% if (_checkedIn && (pc.checkin_signature_path || pc.checkin_photo_path)) { %>
                             <div class="space-y-3">
                                 <h3 class="text-sm font-bold text-gray-800 pb-3 border-b-2 border-indigo-200/70 flex items-center gap-3">
-                                    <i class="fas fa-address-card text-purple-600 text-sm opacity-90"></i>
-                                    ACTION
+                                    <i class="fas fa-camera text-purple-600 text-sm opacity-90"></i>
+                                    Đã lưu khi check-in
                                 </h3>
-
-                                <div class="space-y-6 grid grid-cols-2">
-                                    <div class="space-y-1 mb-4">
-                                                <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Phone</p>
-
-                                                <p class="text-sm font-medium text-gray-900 tracking-wider group-hover:text-indigo-700 transition-colors">
-                                                    <%= pc.phone || 'N/A' %>
-                                                </p>
-                                            </div>
-                                            <!--  -->
-                                            <div class="space-y-1 mb-4">
-                                                <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Email</p>
-
-                                                <p class="text-sm font-medium text-gray-900 tracking-wider group-hover:text-indigo-700 transition-colors">
-                                                    <%= pc.email || 'N/A' %>
-                                                </p>
-                                            </div>
-                                    
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 items-stretch">
+                                    <% if (pc.checkin_signature_path) { %>
+                                    <div class="flex flex-col gap-2 min-h-0">
+                                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 leading-none h-5 flex items-end">Chữ ký</p>
+                                        <div class="flex flex-1 min-h-[200px] sm:min-h-[240px] items-center justify-center rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                                            <img
+                                                src="<%= pc.checkin_signature_path %>"
+                                                alt="Chữ ký đã lưu"
+                                                class="max-h-[220px] w-full max-w-full object-contain object-center"
+                                            />
+                                        </div>
+                                    </div>
+                                    <% } %>
+                                    <% if (pc.checkin_photo_path) { %>
+                                    <div class="flex flex-col gap-2 min-h-0">
+                                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 leading-none h-5 flex items-end">Ảnh chụp</p>
+                                        <div class="flex flex-1 min-h-[200px] sm:min-h-[240px] items-center justify-center rounded-xl border border-gray-200 bg-slate-100 p-2 shadow-sm overflow-hidden">
+                                            <img
+                                                src="<%= pc.checkin_photo_path %>"
+                                                alt="Ảnh check-in đã lưu"
+                                                class="max-h-[min(55vh,320px)] w-full h-auto object-contain object-center"
+                                                style="image-rendering: auto;"
+                                            />
+                                        </div>
+                                    </div>
+                                    <% } %>
                                 </div>
                             </div>
+                            <% } %>
+
+                            <% if (!_checkedIn) { %>
+                            <input type="hidden" id="capture_mode" value="<%= capMode %>" />
+                            <div class="space-y-3 mt-6">
+                                <h3 class="text-sm font-bold text-gray-800 pb-3 border-b-2 border-indigo-200/70 flex items-center gap-3">
+                                    <i class="fas fa-signature text-purple-600 text-sm opacity-90"></i>
+                                    Check-in
+                                </h3>
+                                <% if (capMode === 'none') { %>
+                                <p class="text-sm text-gray-600">Giải này chỉ cần xác nhận check-in (không thu chữ ký / ảnh). Nhấn <strong>Hoàn tất check-in</strong> bên dưới.</p>
+                                <% } else if (capMode === 'both') { %>
+                                <p class="text-sm text-gray-600">Ký bên trái, chụp ảnh bên phải, sau đó nhấn <strong>Hoàn tất check-in</strong>.</p>
+                                <% } else if (capMode === 'signature') { %>
+                                <p class="text-sm text-gray-600">Yêu cầu <strong>chữ ký</strong>, sau đó nhấn <strong>Hoàn tất check-in</strong>.</p>
+                                <% } else if (capMode === 'photo') { %>
+                                <p class="text-sm text-gray-600">Yêu cầu <strong>chụp ảnh</strong> người tham gia, sau đó nhấn <strong>Hoàn tất check-in</strong>.</p>
+                                <% } %>
+                                <% if (capMode !== 'none') { %>
+                                <div class="grid grid-cols-1 <%= showSig && showPhoto ? 'md:grid-cols-2' : '' %> gap-4 items-stretch">
+                                    <% if (showSig) { %>
+                                    <div class="flex flex-col min-w-0">
+                                        <p class="text-xs font-medium text-gray-500 mb-1">Chữ ký</p>
+                                        <div class="rounded-xl border border-gray-200 bg-white overflow-hidden h-[200px] w-full">
+                                            <canvas id="signature-pad" class="w-full h-full touch-none block cursor-crosshair"></canvas>
+                                        </div>
+                                        <button type="button" id="btn_clear_sig" class="mt-2 px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium hover:bg-gray-50 self-start">Xóa chữ ký</button>
+                                    </div>
+                                    <% } %>
+                                    <% if (showPhoto) { %>
+                                    <div class="flex flex-col min-w-0">
+                                        <p class="text-xs font-medium text-gray-500 mb-1">Ảnh người tham gia</p>
+                                        <div id="photo_preview_wrap" class="rounded-xl border border-dashed border-gray-300 bg-gray-50 h-[200px] w-full flex items-center justify-center overflow-hidden relative">
+                                            <span id="photo_placeholder" class="text-sm text-gray-400 text-center px-3">Nhấn <strong>Chụp ảnh</strong> bên dưới</span>
+                                            <img id="inline_photo_preview" class="hidden w-full h-full object-cover" alt="Ảnh đã chụp" />
+                                        </div>
+                                        <button type="button" id="btn_open_camera" class="mt-2 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 self-start">
+                                            <i class="fas fa-camera mr-1"></i> Chụp ảnh
+                                        </button>
+                                    </div>
+                                    <% } %>
+                                </div>
+                                <% } %>
+                                <p id="photo_status" class="text-sm text-green-600 hidden"><i class="fas fa-check-circle"></i> Đã có ảnh chụp.</p>
+                                <p id="checkin_err" class="text-sm text-red-600 hidden"></p>
+                            </div>
+                            <% } %>
                         </div>
                     </div>
                 </div>
 
                 <!-- Action Buttons -->
-                <div class="flex flex-col sm:flex-row gap-4 justify-center mt-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <% if (typeof returnTo !== 'undefined' && returnTo) { %>
+                    <a href="<%= returnTo %>" class="flex-1 max-w-xs">
+                        <button type="button" class="w-full bg-slate-600 hover:bg-slate-700 text-white font-medium py-3.5 px-6 rounded-xl transition flex items-center justify-center shadow-sm">
+                            <i class="fas fa-users mr-2"></i>
+                            Quay lại danh sách nhóm
+                        </button>
+                    </a>
+                    <% } %>
                     <a href="/tool-checkin" class="flex-1 max-w-xs">
                         <button class="w-full bg-gray-700 hover:bg-gray-800 text-white font-medium py-3.5 px-6 rounded-xl transition flex items-center justify-center shadow-sm">
                             <i class="fas fa-arrow-left mr-2"></i>
@@ -227,11 +287,12 @@
 
                     <% if (!_checkedIn) { %>
                     <button
-                        id="btn_cta_checkin"
+                        type="button"
+                        id="btn_submit_checkin"
                         class="flex-1 max-w-xs bg-green-600 hover:bg-green-700 text-white font-medium py-3.5 px-6 rounded-xl transition flex items-center justify-center shadow-md active:scale-95"
                     >
                         <i class="fas fa-check-circle mr-2"></i>
-                        Confirm Check-in
+                        Hoàn tất check-in
                     </button>
                     <% } %>
                 </div>
@@ -239,26 +300,26 @@
         </main>
     </div>
 
-    <!-- ==============MODAL=================== -->
-    <!-- Overlay -->
-    <div id="modal" class="fixed inset-0 bg-black/50 flex items-center justify-center hidden z-50">
+    <!-- ==============MODAL (chỉ khi giải yêu cầu ảnh) =============== -->
+    <% if (showPhoto) { %>
+    <div id="modal" class="fixed inset-0 bg-black/50 flex items-center justify-center hidden z-[100]">
         <!-- Modal box -->
         <div class="bg-white rounded-xl w-full max-w-md p-6 transform transition-all scale-95 opacity-0" id="modalBox">
             <!-- Header -->
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-lg font-semibold">Xác nhận Check-in</h2>
-                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">✕</button>
+                <h2 class="text-lg font-semibold">Chụp ảnh</h2>
+                <button type="button" id="modal_close_x" class="text-gray-400 hover:text-gray-600 text-xl leading-none px-1" aria-label="Đóng">✕</button>
             </div>
             <!-- Content -->
             <div class="py-6 flex flex-col items-center justify-center gap-10">
                 <!-- <p class="text-gray-600 mb-6">
         </p> -->
                 <!-- <button class="border border-gray-300 rounded-lg px-4 py-3" id="openCamera">Mở camera</button> -->
-                <div id="cameraBox">
-                    <video id="video" autoplay playsinline class="aspect-video border border-gray-300"></video>
+                <div id="cameraBox" class="w-full">
+                    <video id="video" autoplay playsinline muted class="w-full max-h-64 rounded-lg border border-gray-300 bg-black object-cover"></video>
                 </div>
-                <div id="previewBox" class="w-[80%] h-[auto]" style="display: none">
-                    <img id="preview" />
+                <div id="previewBox" class="w-full hidden">
+                    <img id="preview" class="w-full max-h-64 rounded-lg border border-gray-300 object-cover" alt="Xem trước" />
                     <!-- <br /> -->
                     <!-- <button id="retake">Chụp lại</button> -->
                     <!-- <button id="upload">Upload</button> -->
@@ -267,9 +328,9 @@
                 <!-- Thêm canvas ẩn để chụp ảnh -->
                 <canvas id="canvas" class="hidden"></canvas>
                 <!-- group actins -->
-                <div class="flex justify-between w-full">
-                    <button id="capture" class="border">chụp</button>
-                    <button id="recapture" class="border">chụp lại</button>
+                <div class="flex justify-between w-full gap-2">
+                    <button type="button" id="capture" class="flex-1 border border-gray-300 rounded-lg py-2 text-sm font-medium hover:bg-gray-50">Chụp</button>
+                    <button type="button" id="recapture" class="flex-1 border border-gray-300 rounded-lg py-2 text-sm font-medium hover:bg-gray-50">Chụp lại</button>
                 </div>
             </div>
 
@@ -283,129 +344,436 @@
             </div>
         </div>
     </div>
+    <% } %>
 
-    <!--  -->
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // global scope
+        document.addEventListener('DOMContentLoaded', function () {
             let stream;
-            let tempImage = null;
-            const btnCheckin = document.querySelector('#btn_cta_checkin');
+            let photoBlob = null;
+            var capModeEl = document.getElementById('capture_mode');
+            var capMode = capModeEl ? capModeEl.value : 'both';
             const modal = document.getElementById('modal');
             const modalBox = document.getElementById('modalBox');
             const video = document.querySelector('#video');
-            const canvas = document.querySelector('#canvas');
+            const capCanvas = document.querySelector('#canvas');
             const preview = document.querySelector('#preview');
-            const btnCloseCam = document.querySelector('#closeCamera');
             const btnCaptureCamera = document.querySelector('#capture');
             const btnRetake = document.querySelector('#recapture');
             const btnCaptureConfirm = document.querySelector('#capture_confirm');
+            const btnSubmit = document.querySelector('#btn_submit_checkin');
+            const sigCanvas = document.getElementById('signature-pad');
+            const btnClearSig = document.getElementById('btn_clear_sig');
+            const btnOpenCamera = document.getElementById('btn_open_camera');
+            const photoStatus = document.getElementById('photo_status');
+            const errEl = document.getElementById('checkin_err');
+            const inlinePhotoPreview = document.getElementById('inline_photo_preview');
+            const photoPlaceholder = document.getElementById('photo_placeholder');
+            const cameraBox = document.getElementById('cameraBox');
+            const previewBox = document.getElementById('previewBox');
+            const btnModalCloseX = document.getElementById('modal_close_x');
 
-            async function openCamera() {
-                const devices = await navigator.mediaDevices.enumerateDevices();
-                const videoDevices = devices.filter((x) => x.kind === 'videoinput');
-                console.log(videoDevices);
-                const selectDeviceId = videoDevices[1].deviceId || videoDevices[0].deviceId;
-                stream = await navigator.mediaDevices.getUserMedia({
-                    video: {
-                        // facingMode: 'environment',
-                        deviceId: { exact: selectDeviceId },
-                        width: { ideal: 640 },
-                        height: { ideal: 480 },
-                    },
-                });
-                video.srcObject = stream;
+            let signaturePad = null;
+            var inlinePhotoObjectUrl = null;
+
+            function dataURLToBlob(dataUrl) {
+                try {
+                    var parts = dataUrl.split(',');
+                    var mime = (parts[0].match(/:(.*?);/) || [null, 'image/png'])[1];
+                    var bstr = atob(parts[1] || '');
+                    var n = bstr.length;
+                    var u8 = new Uint8Array(n);
+                    while (n--) u8[n] = bstr.charCodeAt(n);
+                    return new Blob([u8], { type: mime });
+                } catch (e) {
+                    return null;
+                }
             }
-            // capture
-            btnCaptureCamera.addEventListener('click', () => {
-                console.log('runn');
-                // Kiểm tra video có đang stream không
-                if (!video.srcObject) {
-                    alert('Camera chưa được mở!');
+
+            /** Xuất PNG từ SignaturePad: toBlob trước, fallback toDataURL (Safari / canvas nhỏ). */
+            function getSignatureBlob(callback) {
+                if (!signaturePad) {
+                    callback(null);
                     return;
                 }
-                //
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(video, 0, 0);
-                tempImage = canvas.toDataURL('image/jpeg');
-                preview.src = tempImage;
-                // stopCamera(); //ko stop neu muon chup lai
-                document.getElementById('cameraBox').style.display = 'none';
-                document.getElementById('previewBox').style.display = 'block';
-            });
-
-
-            // stop
-            function stopCamera() {
-                stream?.getTracks().forEach((track) => track.stop());
-            }
-            // recape
-            // Chức năng retake (chụp lại)
-            btnRetake.addEventListener('click', async () => {
-                console.log('Retake button clicked');
-
-                // reset UI
-                document.getElementById('previewBox').style.display = 'none';
-                document.getElementById('cameraBox').style.display = 'block';
-
-                tempImage = null;
-
-                // nếu stream còn track chạy → resume
-                if (stream && stream.getTracks().some((t) => t.readyState === 'live')) {
-                    video.srcObject = stream;
-                    await video.play(); // 🔴 CỰC QUAN TRỌNG
-                } else {
-                    // nếu stream chết → mở lại camera
-                    await openCamera();
-                    await video.play();
+                try {
+                    signaturePad.toBlob(function (blob) {
+                        if (blob && blob.size > 0) {
+                            callback(blob);
+                            return;
+                        }
+                        var url = signaturePad.toDataURL('image/png');
+                        var b = dataURLToBlob(url);
+                        callback(b && b.size > 0 ? b : null);
+                    }, 'image/png');
+                } catch (e) {
+                    try {
+                        var url2 = signaturePad.toDataURL('image/png');
+                        var b2 = dataURLToBlob(url2);
+                        callback(b2 && b2.size > 0 ? b2 : null);
+                    } catch (e2) {
+                        callback(null);
+                    }
                 }
-            });
-            //
-            document.querySelector('#btn_close_modal').addEventListener('click', ()=>{
-                closeModal();
-            })
-            function openModal() {
+            }
+
+            if (sigCanvas && typeof SignaturePad !== 'undefined') {
+                signaturePad = new SignaturePad(sigCanvas, {
+                    backgroundColor: 'rgb(255, 255, 255)',
+                    penColor: 'rgb(0, 0, 0)',
+                });
+                function resizeSig() {
+                    if (!signaturePad) return;
+                    var ratio = Math.max(window.devicePixelRatio || 1, 1);
+                    var w = sigCanvas.offsetWidth;
+                    var h = sigCanvas.offsetHeight;
+                    if (!w || !h) return;
+                    sigCanvas.width = w * ratio;
+                    sigCanvas.height = h * ratio;
+                    sigCanvas.getContext('2d').scale(ratio, ratio);
+                    signaturePad.clear();
+                }
+                function scheduleResize() {
+                    resizeSig();
+                    requestAnimationFrame(function () {
+                        resizeSig();
+                    });
+                }
+                var resizeTimer;
+                window.addEventListener('resize', function () {
+                    clearTimeout(resizeTimer);
+                    resizeTimer = setTimeout(scheduleResize, 250);
+                });
+                scheduleResize();
+                [0, 50, 150, 400].forEach(function (ms) {
+                    setTimeout(scheduleResize, ms);
+                });
+                window.addEventListener('load', scheduleResize);
+            }
+            if (btnClearSig && signaturePad) {
+                btnClearSig.addEventListener('click', function () {
+                    signaturePad.clear();
+                });
+            }
+
+            function stopCamera() {
+                if (stream && stream.getTracks) {
+                    stream.getTracks().forEach(function (t) {
+                        t.stop();
+                    });
+                }
+                stream = null;
+                if (video) {
+                    video.srcObject = null;
+                }
+            }
+
+            async function openCamera() {
+                stopCamera();
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error('Trình duyệt không hỗ trợ camera (cần HTTPS hoặc localhost).');
+                }
+                var attempts = [
+                    { video: { facingMode: { ideal: 'environment' } }, audio: false },
+                    { video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
+                    { video: true, audio: false },
+                ];
+                var lastErr;
+                for (var i = 0; i < attempts.length; i++) {
+                    try {
+                        stream = await navigator.mediaDevices.getUserMedia(attempts[i]);
+                        video.srcObject = stream;
+                        await video.play();
+                        await waitVideoReady();
+                        return;
+                    } catch (e) {
+                        lastErr = e;
+                        stopCamera();
+                    }
+                }
+                throw lastErr || new Error('Không mở được camera. Kiểm tra quyền truy cập.');
+            }
+
+            function waitVideoReady() {
+                if (video.videoWidth > 0 && video.videoHeight > 0) {
+                    return Promise.resolve();
+                }
+                return new Promise(function (resolve, reject) {
+                    var to = setTimeout(function () {
+                        reject(new Error('Camera chưa hiển thị hình.'));
+                    }, 12000);
+                    video.addEventListener(
+                        'loadedmetadata',
+                        function () {
+                            clearTimeout(to);
+                            if (video.videoWidth > 0 && video.videoHeight > 0) resolve();
+                            else reject(new Error('Kích thước video = 0.'));
+                        },
+                        { once: true },
+                    );
+                });
+            }
+            function setInlinePhotoPreview(blob) {
+                if (inlinePhotoObjectUrl) {
+                    URL.revokeObjectURL(inlinePhotoObjectUrl);
+                    inlinePhotoObjectUrl = null;
+                }
+                if (!blob || !inlinePhotoPreview || !photoPlaceholder) return;
+                inlinePhotoObjectUrl = URL.createObjectURL(blob);
+                inlinePhotoPreview.src = inlinePhotoObjectUrl;
+                inlinePhotoPreview.classList.remove('hidden');
+                photoPlaceholder.classList.add('hidden');
+            }
+
+            function clearInlinePhotoPreview() {
+                if (inlinePhotoObjectUrl) {
+                    URL.revokeObjectURL(inlinePhotoObjectUrl);
+                    inlinePhotoObjectUrl = null;
+                }
+                if (inlinePhotoPreview) {
+                    inlinePhotoPreview.removeAttribute('src');
+                    inlinePhotoPreview.classList.add('hidden');
+                }
+                if (photoPlaceholder) photoPlaceholder.classList.remove('hidden');
+            }
+
+            if (btnCaptureCamera) {
+                btnCaptureCamera.addEventListener('click', async function () {
+                    try {
+                        if (!video.srcObject) {
+                            alert('Camera chưa được mở!');
+                            return;
+                        }
+                        await waitVideoReady();
+                        var vw = video.videoWidth;
+                        var vh = video.videoHeight;
+                        if (!vw || !vh) {
+                            await new Promise(function (r) {
+                                setTimeout(r, 200);
+                            });
+                            vw = video.videoWidth;
+                            vh = video.videoHeight;
+                        }
+                        if (!vw || !vh) {
+                            alert('Chưa lấy được khung hình từ camera. Thử lại sau vài giây.');
+                            return;
+                        }
+                        capCanvas.width = vw;
+                        capCanvas.height = vh;
+                        capCanvas.getContext('2d').drawImage(video, 0, 0, vw, vh);
+                        preview.src = capCanvas.toDataURL('image/jpeg', 0.92);
+                        if (cameraBox) cameraBox.classList.add('hidden');
+                        if (previewBox) previewBox.classList.remove('hidden');
+                    } catch (err) {
+                        alert(err.message || 'Lỗi chụp ảnh');
+                    }
+                });
+            }
+            if (btnRetake) {
+                btnRetake.addEventListener('click', async function () {
+                    if (previewBox) previewBox.classList.add('hidden');
+                    if (cameraBox) cameraBox.classList.remove('hidden');
+                    preview.removeAttribute('src');
+                    photoBlob = null;
+                    clearInlinePhotoPreview();
+                    if (photoStatus) photoStatus.classList.add('hidden');
+                    try {
+                        if (stream && stream.getTracks().some(function (t) {
+                            return t.readyState === 'live';
+                        })) {
+                            video.srcObject = stream;
+                            await video.play();
+                        } else {
+                            await openCamera();
+                        }
+                    } catch (e) {
+                        alert(e.message || 'Không mở lại được camera');
+                    }
+                });
+            }
+
+            var btnCloseModalFooter = document.querySelector('#btn_close_modal');
+            if (btnCloseModalFooter) {
+                btnCloseModalFooter.addEventListener('click', function () {
+                    closeModal();
+                });
+            }
+            if (btnModalCloseX) {
+                btnModalCloseX.addEventListener('click', function () {
+                    closeModal();
+                });
+            }
+
+            function openModalCam() {
+                if (!modal) return;
                 document.body.classList.add('overflow-hidden');
                 modal.classList.remove('hidden');
-                openCamera();
-
-                setTimeout(() => {
-                    modalBox.classList.remove('scale-95', 'opacity-0');
-                    modalBox.classList.add('scale-100', 'opacity-100');
-                }, 10);
+                if (cameraBox) cameraBox.classList.remove('hidden');
+                if (previewBox) previewBox.classList.add('hidden');
+                if (preview) preview.removeAttribute('src');
+                openCamera()
+                    .then(function () {
+                        setTimeout(function () {
+                            if (modalBox) {
+                                modalBox.classList.remove('scale-95', 'opacity-0');
+                                modalBox.classList.add('scale-100', 'opacity-100');
+                            }
+                        }, 10);
+                    })
+                    .catch(function (e) {
+                        alert(e.message || 'Không mở được camera');
+                        closeModal();
+                    });
             }
 
             function closeModal() {
+                if (!modal) return;
                 document.body.classList.remove('overflow-hidden');
-                modalBox.classList.add('scale-95', 'opacity-0');
-
-                setTimeout(() => {
+                if (modalBox) modalBox.classList.add('scale-95', 'opacity-0');
+                stopCamera();
+                setTimeout(function () {
                     modal.classList.add('hidden');
                 }, 200);
             }
-            // Xử lý sự kiện click cho các nút chính
-            btnCheckin.addEventListener('click', (ev) => {
-                const payload = {
-                    code: document.querySelector('#code_hidden').value.trim(),
-                };
-                // alert(payload)
-                $.ajax({
-                    url: `/tool-checkin/check-in`,
-                    method: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify(payload),
-                    success: (res) => {
-                        console.log(res);
-                        if (res.success) {
-                            document.location.reload();
+            if (btnOpenCamera && modal) {
+                btnOpenCamera.addEventListener('click', openModalCam);
+            }
+            if (btnCaptureConfirm && modal) {
+                btnCaptureConfirm.addEventListener('click', function () {
+                    if (!capCanvas.width || !capCanvas.height || !preview.src) {
+                        alert('Nhấn "Chụp" để lấy ảnh trước khi xác nhận.');
+                        return;
+                    }
+                    capCanvas.toBlob(function (blob) {
+                        if (!blob) {
+                            alert('Không tạo được file ảnh.');
+                            return;
                         }
-                    },
-                    error: (xhr, status, err) => console.log(xhr.responseJSON?.mess || 'Server error'),
+                        photoBlob = blob;
+                        setInlinePhotoPreview(blob);
+                        if (photoStatus) {
+                            photoStatus.classList.remove('hidden');
+                        }
+                        closeModal();
+                    }, 'image/jpeg', 0.92);
                 });
-            });
+            }
+
+            function showErr(msg) {
+                if (!errEl) return;
+                errEl.textContent = msg || '';
+                errEl.classList.toggle('hidden', !msg);
+            }
+
+            function appendGroupCheckinMeta(fd) {
+                var ga = document.getElementById('checkin_via_group_id');
+                if (ga && ga.value) {
+                    fd.append('checkin_via_group_id', ga.value);
+                }
+            }
+
+            function postCheckinForm(fd) {
+                if (!btnSubmit) return;
+                appendGroupCheckinMeta(fd);
+                btnSubmit.disabled = true;
+                fetch('/tool-checkin/check-in', {
+                    method: 'POST',
+                    body: fd,
+                    credentials: 'same-origin',
+                })
+                    .then(function (r) {
+                        return r.text().then(function (text) {
+                            var j = {};
+                            try {
+                                j = text ? JSON.parse(text) : {};
+                            } catch (e) {
+                                j = { mess: text || 'Lỗi ' + r.status, _raw: true };
+                            }
+                            return { ok: r.ok, body: j };
+                        });
+                    })
+                    .then(function (res) {
+                        if (res.ok && res.body && res.body.success) {
+                            var retEl = document.getElementById('return_to');
+                            if (retEl && retEl.value) {
+                                window.location.href = retEl.value;
+                                return;
+                            }
+                            window.location.reload();
+                        } else {
+                            showErr((res.body && res.body.mess) || 'Lỗi server');
+                        }
+                    })
+                    .catch(function () {
+                        showErr('Lỗi mạng hoặc server.');
+                    })
+                    .finally(function () {
+                        btnSubmit.disabled = false;
+                    });
+            }
+
+            if (btnSubmit) {
+                btnSubmit.addEventListener('click', function () {
+                    showErr('');
+                    capMode = (document.getElementById('capture_mode') || {}).value || 'both';
+                    var code = document.querySelector('#code_hidden').value.trim();
+                    if (!code) {
+                        showErr('Thiếu mã VĐV.');
+                        return;
+                    }
+                    if (capMode === 'none') {
+                        var fdNone = new FormData();
+                        fdNone.append('code', code);
+                        postCheckinForm(fdNone);
+                        return;
+                    }
+                    if ((capMode === 'signature' || capMode === 'both') && signaturePad) {
+                        if (signaturePad.isEmpty()) {
+                            showErr('Vui lòng ký tên.');
+                            return;
+                        }
+                    } else if ((capMode === 'signature' || capMode === 'both') && !signaturePad) {
+                        showErr('Thiếu vùng chữ ký.');
+                        return;
+                    }
+                    if ((capMode === 'photo' || capMode === 'both') && !photoBlob) {
+                        showErr('Vui lòng chụp ảnh người tham gia.');
+                        return;
+                    }
+                    if (capMode === 'signature') {
+                        getSignatureBlob(function (sigBlob) {
+                            if (!sigBlob) {
+                                showErr('Không xuất được chữ ký. Thử ký lại hoặc tải lại trang.');
+                                return;
+                            }
+                            var fd = new FormData();
+                            fd.append('code', code);
+                            fd.append('signature', sigBlob, 'signature.png');
+                            postCheckinForm(fd);
+                        });
+                        return;
+                    }
+                    if (capMode === 'photo') {
+                        var fdP = new FormData();
+                        fdP.append('code', code);
+                        fdP.append('photo', photoBlob, 'photo.jpg');
+                        postCheckinForm(fdP);
+                        return;
+                    }
+                    getSignatureBlob(function (sigBlob) {
+                        if (!sigBlob) {
+                            showErr('Không xuất được chữ ký. Thử ký lại.');
+                            return;
+                        }
+                        var fdB = new FormData();
+                        fdB.append('code', code);
+                        fdB.append('signature', sigBlob, 'signature.png');
+                        fdB.append('photo', photoBlob, 'photo.jpg');
+                        postCheckinForm(fdB);
+                    });
+                });
+            }
         });
     </script>
 </body>
+</html>

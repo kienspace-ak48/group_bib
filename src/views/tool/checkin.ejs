@@ -56,6 +56,19 @@
             margin-bottom: 28px;
             box-shadow: 0 12px 28px -8px rgba(79, 70, 229, 0.3);
             transition: transform 0.2s ease;
+            position: relative;
+        }
+        .event-card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+        .event-card-top .event-title {
+            flex: 1;
+            min-width: 0;
         }
         .event-title {
             font-family: 'Outfit', sans-serif;
@@ -63,11 +76,24 @@
             font-weight: 700;
             color: white;
             letter-spacing: -0.3px;
-            margin-bottom: 8px;
+            margin-bottom: 0;
             display: flex;
             align-items: center;
             gap: 12px;
             flex-wrap: wrap;
+        }
+        .event-card .btn-logout {
+            flex-shrink: 0;
+            margin-left: auto;
+            background: rgba(255, 255, 255, 0.18);
+            backdrop-filter: blur(6px);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.35);
+        }
+        .event-card .btn-logout:hover {
+            background: rgba(255, 255, 255, 0.28);
+            color: #fff;
+            border-color: rgba(255, 255, 255, 0.55);
         }
         .event-badge {
             background: rgba(255,255,255,0.2);
@@ -128,6 +154,31 @@
             transform: translateY(-2px);
             box-shadow: 0 12px 20px -8px rgba(79, 70, 229, 0.5);
             background: linear-gradient(105deg, #4338ca 0%, #4f46e5 100%);
+        }
+        .action-toolbar-right {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+        }
+        .btn-logout {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 18px;
+            border-radius: 48px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #64748b;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            text-decoration: none;
+            transition: background 0.2s, color 0.2s, border-color 0.2s;
+        }
+        .btn-logout:hover {
+            background: #fee2e2;
+            color: #b91c1c;
+            border-color: #fecaca;
         }
         .filter-chips {
             display: flex;
@@ -190,44 +241,53 @@
             border-bottom: 1px solid #f0f2f5;
             color: #1e293b;
         }
+        #participant_tbl tbody td:nth-child(3) {
+            white-space: nowrap;
+        }
         #participant_tbl tbody tr:hover {
             background-color: #fefce8;
             transition: 0.1s;
         }
-        /* name + code style */
+        /* name + bib — gọn, một dòng khi đủ chỗ */
         .athlete-name {
-            font-weight: 700;
+            font-weight: 600;
             color: #1e293b;
-            font-size: 0.95rem;
-            display: flex;
+            font-size: 0.92rem;
+            display: inline-flex;
             align-items: center;
+            flex-wrap: wrap;
             gap: 8px;
+            row-gap: 4px;
         }
         .athlete-bib {
-            font-size: 0.7rem;
+            font-size: 0.72rem;
             background: #eef2ff;
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 30px;
-            color: #4f46e5;
-            font-weight: 500;
-            margin-left: 6px;
+            padding: 3px 10px;
+            border-radius: 8px;
+            color: #4338ca;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            white-space: nowrap;
         }
         .contact-row {
             display: flex;
             flex-direction: column;
             gap: 4px;
-            font-size: 0.75rem;
+            font-size: 0.8rem;
             color: #475569;
+            line-height: 1.35;
         }
-        .contact-row i {
-            width: 18px;
-            color: #94a3b8;
+        .contact-row .contact-line {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 260px;
         }
-        /* status badges */
+        /* status badges — không xuống dòng */
         .status-badge {
             display: inline-flex;
             align-items: center;
+            white-space: nowrap;
             gap: 8px;
             background: #f1f5f9;
             padding: 5px 12px;
@@ -235,6 +295,7 @@
             font-weight: 600;
             font-size: 0.75rem;
             width: fit-content;
+            max-width: 100%;
         }
         .status-checkin {
             background: #dcfce7;
@@ -260,9 +321,7 @@
             font-weight: 700;
             color: #4f46e5;
             transition: all 0.15s;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
+            display: inline;
         }
         .clickable-name:hover {
             color: #6366f1;
@@ -410,6 +469,13 @@
             .event-title {
                 font-size: 1.4rem;
             }
+            .event-card-top {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .event-card .btn-logout {
+                align-self: flex-end;
+            }
             .scan-btn {
                 width: 100%;
                 justify-content: center;
@@ -423,16 +489,24 @@
 </head>
 <body>
 <div class="dashboard-container">
-    <!-- Event Header với thông tin động (demo) -->
+    <!-- Event Header -->
     <div class="event-card">
-        <div class="event-title">
-            <!-- <i class="fas fa-medal"></i>  -->
-            <span id="eventName" class="text-xl md:text-2xl">Giải Việt dã HSSV Trường ĐH Sư phạm TP.HCM lần IV - 2026</span>
+        <div class="event-card-top flex items-start justify-between">
+            <div class="event-title">
+                <span id="eventName" class="text-xl md:text-2xl"><%= event && event.name ? event.name : 'Sự kiện' %></span>
+            </div>
+            <a href="/auth/normal/admin/logout" class="btn-logout" title="Đăng xuất">
+                <i class="fas fa-right-from-bracket" aria-hidden="true"></i>
+                <span>Đăng xuất</span>
+            </a>
         </div>
         <div class="event-stats">
             <div class="stat-chip"><i class="fas fa-users"></i> <span id="totalParticipants">0</span> VĐV</div>
             <div class="stat-chip"><i class="fas fa-check-circle"></i> <span id="checkedInCount">0</span> Đã check-in</div>
-            <div class="stat-chip"><i class="fas fa-clock"></i> 08:00 - 17:00 · 22/03/2026</div>
+            <div class="stat-chip"><i class="fas fa-clock"></i>
+                <% if (event && event.start_date) { %><%= new Date(event.start_date).toLocaleString('vi-VN') %><% } else { %>—<% } %>
+                <% if (event && event.end_date) { %> · <%= new Date(event.end_date).toLocaleString('vi-VN') %><% } %>
+            </div>
         </div>
     </div>
 
@@ -444,16 +518,18 @@
                 <input type="text" id="custom-global-search" placeholder="Tìm theo tên, mã số, email, SĐT..." autocomplete="off">
             </div>
         </div>
-        <button id="openScan" class="scan-btn">
-            <i class="fas fa-qrcode"></i> Scan QR
-        </button>
+        <div class="action-toolbar-right">
+            <button id="openScan" type="button" class="scan-btn">
+                <i class="fas fa-qrcode"></i> Scan QR
+            </button>
+        </div>
     </div>
 
     <!-- Filter chips (nâng cao UX) -->
     <div class="filter-chips" style="margin-bottom: 18px;">
-        <div class="chip active" data-filter="all"><i class="fas fa-list-ul"></i> Tất cả</div>
-        <div class="chip" data-filter="true"><i class="fas fa-check-circle" style="color:#16a34a"></i> Đã check-in</div>
-        <div class="chip" data-filter="false"><i class="fas fa-hourglass-half"></i> Chưa check-in</div>
+        <div class="chip active" data-filter="all"><i class="fas fa-list-ul" aria-hidden="true"></i> Tất cả</div>
+        <div class="chip" data-filter="true"><i class="fas fa-check-circle" style="color:#16a34a" aria-hidden="true"></i> Đã check-in</div>
+        <div class="chip" data-filter="false"><i class="fas fa-hourglass-half" aria-hidden="true"></i> Chưa check-in</div>
     </div>
 
     <!-- Table wrapper -->
@@ -461,7 +537,7 @@
         <table id="participant_tbl" class="display" style="width:100%">
             <thead>
                 <tr>
-                    <th>Vận động viên <i class="fas fa-id-card"></i></th>
+                    <th>Vận động viên</th>
                     <th>Liên hệ</th>
                     <th>Trạng thái</th>
                 </tr>
@@ -513,10 +589,8 @@
                 url: '/tool-checkin/get-data',
                 type: 'GET',
                 data: function (d) {
-                    // Thêm filter status và search term tùy chỉnh
                     d.filter_status = currentFilter;
                     d.search_custom = customSearchTerm;
-                    // DataTables mặc định gửi d.search.value nếu dùng built-in search, nhưng ta disable nó
                     return d;
                 },
                 beforeSend: function() {
@@ -525,7 +599,7 @@
             },
             info: true,
             dom: 'rtip',
-            searching: true,        // tắt thanh search mặc định, dùng custom input
+            searching: false,
             ordering: false,
             pageLength: 10,
             lengthChange: false,
@@ -540,14 +614,16 @@
                 {
                     data: null,
                     render: function (data, type, row) {
-                        // row chứa fullname, bib
-                        let nameHtml = `<div class="athlete-name">
-                                            <span class="clickable-name" data-uid="${row.uid || row.code || ''}">
-                                                <i class="fas fa-user-circle"></i> ${escapeHtml(row.fullname || '---')}
-                                            </span>
-                                            <span class="athlete-bib">#${escapeHtml(row.bib || row.code || '')}</span>
-                                        </div>`;
-                        return nameHtml;
+                        const bibDisplay = row.bib != null && String(row.bib).trim() !== ''
+                            ? String(row.bib).trim()
+                            : (row.code || row.uid || '');
+                        const bibHtml = bibDisplay
+                            ? `<span class="athlete-bib" title="BIB">#${escapeHtml(bibDisplay)}</span>`
+                            : '';
+                        return `<div class="athlete-name">
+                            <span class="clickable-name" data-uid="${row.uid || row.code || ''}">${escapeHtml(row.fullname || '---')}</span>
+                            ${bibHtml}
+                        </div>`;
                     }
                 },
                 {
@@ -555,10 +631,16 @@
                     render: function (data, type, row) {
                         let phone = row.phone || '';
                         let email = row.email || '';
-                        return `<div class="contact-row">
-                                    <span><i class="fas fa-phone-alt"></i> ${escapeHtml(phone)}</span>
-                                    <span><i class="fas fa-envelope"></i> ${escapeHtml(email)}</span>
-                                </div>`;
+                        const phoneLine = phone
+                            ? `<span class="contact-line">${escapeHtml(phone)}</span>`
+                            : '';
+                        const emailLine = email
+                            ? `<span class="contact-line">${escapeHtml(email)}</span>`
+                            : '';
+                        if (!phoneLine && !emailLine) {
+                            return '<span class="contact-line" style="color:#94a3b8">—</span>';
+                        }
+                        return `<div class="contact-row">${phoneLine}${emailLine}</div>`;
                     }
                 },
                 {
@@ -567,7 +649,9 @@
                         let isChecked = (data === 'checked_in' || row.checkin_status === true || row.checkin_status === 'true');
                         let statusText = isChecked ? "Đã check-in" : "Chưa check-in";
                         let badgeClass = isChecked ? "status-checkin" : "status-pending";
-                        let icon = isChecked ? '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-hourglass-half"></i>';
+                        let icon = isChecked
+                            ? '<i class="fas fa-check-circle" aria-hidden="true"></i>'
+                            : '<i class="fas fa-hourglass-half" aria-hidden="true"></i>';
                         return `<div class="status-badge ${badgeClass}">${icon} ${statusText}</div>`;
                     }
                 }
@@ -597,9 +681,9 @@
             }
         });
         
-        // Refresh table khi filter thay đổi
+        // Reset về trang 1 khi đổi filter — nếu không, start cũ có thể > tổng số sau lọc → bảng trống
         function refreshTable() {
-            dataTable.ajax.reload(null, false);
+            dataTable.ajax.reload(null, true);
         }
         
         // Custom search input handler
@@ -608,14 +692,14 @@
         //     refreshTable();
         // });
         
-        // Filter chips
+        // Filter chips — dùng attr('data-filter') vì jQuery .data() có thể ép "true"/"false" thành boolean
         $('.chip').on('click', function() {
             $('.chip').removeClass('active');
             $(this).addClass('active');
-            let filterVal = $(this).data('filter');
-            if (filterVal === 'all') currentFilter = 'all';
-            else if (filterVal === 'true') currentFilter = 'true';
+            const filterVal = String($(this).attr('data-filter') || 'all').trim();
+            if (filterVal === 'true') currentFilter = 'true';
             else if (filterVal === 'false') currentFilter = 'false';
+            else currentFilter = 'all';
             refreshTable();
         });
     }
@@ -720,32 +804,25 @@
     
     // Khởi tạo DataTable
     initDataTable();
-    
-    // Cập nhật thống kê sự kiện sau khi check-in (có thể gọi lại mỗi 5s hoặc sau khi refresh)
-    // Mỗi lần reload table ta sẽ update count check-in (nếu có api riêng)
+
     function refreshStats() {
-        if (currentFilter === 'all') {
-            $.get('/tool-checkin/get-stats', function(stats) {
-                if(stats && typeof stats.checkedCount !== 'undefined') {
-                    $('#checkedInCount').text(stats.checkedCount);
-                }
-                if(stats && stats.totalParticipants) $('#totalParticipants').text(stats.totalParticipants);
-            }).fail(()=>{
-                // fallback: nếu không có endpoint, hiển thị từ tổng số bản ghi
-                if(dataTable && dataTable.page.info().recordsTotal) {
-                    $('#totalParticipants').text(dataTable.page.info().recordsTotal);
-                }
-            });
-        }
+        $.get('/tool-checkin/get-stats', function(stats) {
+            if (stats && typeof stats.checkedCount !== 'undefined') {
+                $('#checkedInCount').text(stats.checkedCount);
+            }
+            if (stats && typeof stats.totalParticipants !== 'undefined') {
+                $('#totalParticipants').text(stats.totalParticipants);
+            }
+        }).fail(function () {
+            if (dataTable && dataTable.page.info().recordsTotal) {
+                $('#totalParticipants').text(dataTable.page.info().recordsTotal);
+            }
+        });
     }
-    // Gọi refreshStats sau mỗi lần reload table
-    setInterval(() => {
-        if(dataTable) refreshStats();
+    refreshStats();
+    setInterval(function () {
+        if (dataTable) refreshStats();
     }, 5000);
-    
-    // Khi load xong, lấy thông tin tên sự kiện từ server (nếu có) - demo cứng
-    // Giữ lại tên event như yêu cầu
-    document.getElementById('eventName').innerHTML = '<%=event.name%>' || 'Giải Việt dã HSSV Trường ĐH Sư phạm TP.HCM lần IV - 2026';
     
     // Xử lý phím tắt ESC để đóng scanner
     document.addEventListener('keydown', function(e) {
@@ -758,14 +835,13 @@
 let searchTimer;
 $('#custom-global-search').on('keyup input', function() {
     clearTimeout(searchTimer);
-    
     const searchValue = this.value.trim();
-    console.log('log: ',searchValue)
-    searchTimer = setTimeout(() => {
-        dataTable
-            .search(searchValue)   // set giá trị tìm kiếm toàn cục
-            .draw();               // vẽ lại bảng → gửi request server nếu serverSide
-    }, 400);  // delay 400ms – rất mượt khi gõ nhanh
+    searchTimer = setTimeout(function() {
+        customSearchTerm = searchValue;
+        if (dataTable) {
+            dataTable.ajax.reload(null, true);
+        }
+    }, 400);
 });
 </script>
 </body>

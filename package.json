@@ -7,7 +7,8 @@
     "dev": "nodemon --inspect src/server.js",
     "tailwind": "npx @tailwindcss/cli -i src/main.css -o public/css/main.css --watch",
     "swagger": "node src/swagger.js",
-    "generate:athlete-template": "node scripts/generate-athlete-import-template.js"
+    "generate:athlete-template": "node scripts/generate-athlete-import-template.js",
+    "generate:checkin-test-100": "node scripts/generate-checkin-test-100.js"
   },
   "keywords": [],
   "author": "",

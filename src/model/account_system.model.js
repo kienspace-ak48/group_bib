@@ -27,6 +27,12 @@ const AccountSystemSchema = new mongoose.Schema(
         last_login_at: Date,
         /** Tăng khi đổi quyền để vô hiệu JWT cũ */
         token_version: { type: Number, default: 0 },
+        /** Khi role = account_checkin: sự kiện được phép check-in (FK event_checkin_h) */
+        checkin_event_id: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'event_checkin_h',
+            default: null,
+        },
     },
     { timestamps: true },
 );

@@ -19,14 +19,14 @@
 
   <nav class="nav-menu" id="navMenu">
     <li><a href="/" class="">Home</a></li>
-    <li><a href="/event">Events</a></li>
-    <li>
+    <li><a href="/events">event check-in</a></li>
+    <!-- <li>
       <a href="/tool-checkin">Check-in</a>
-    </li>
+    </li> -->
     <!-- <a href="/volunteer">E-Cert</a> -->
-    <li>
+    <!-- <li>
       <a href="/e-cert">E-Cert</a>
-    </li>
+    </li> -->
   </nav>
 
   <div class="header-icons">
@@ -42,7 +42,11 @@
   var currentPath = window.location.pathname;
 
   navLinks.forEach((link) => {
-    if (link.getAttribute("href") === currentPath) {
+    const href = link.getAttribute("href") || "";
+    const active =
+      href === currentPath ||
+      (href === "/events" && currentPath.startsWith("/events"));
+    if (active) {
       link.classList.add("active");
     } else {
       link.classList.remove("active");
