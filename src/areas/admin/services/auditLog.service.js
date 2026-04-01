@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const AuditLog = require('../../../model/audit_log.model');
 const { accountLabel } = require('../../../utils/accountDisplay.util');
+const { getClientIp } = require('../../../utils/clientIp.util');
 
 const CNAME = 'auditLog.service.js ';
 
@@ -18,7 +19,7 @@ class AuditLogService {
     async write(opts) {
         try {
             const { actorId, action, resource, documentId, summary, changes, req } = opts;
-            const ip = req?.ip || req?.headers?.['x-forwarded-for']?.split?.(',')?.[0]?.trim() || '';
+            const ip = getClientIp(req);
             await AuditLog.create({
                 actor_id: actorId || undefined,
                 action,

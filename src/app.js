@@ -1,5 +1,17 @@
 const express = require('express');
 const app = express();
+/** Sau nginx / reverse proxy: Express dùng X-Forwarded-For cho `req.ip`. Tắt: TRUST_PROXY=0 */
+(function configureTrustProxy() {
+    const tp = process.env.TRUST_PROXY;
+    if (tp === '0' || tp === 'false') {
+        app.set('trust proxy', false);
+    } else if (tp != null && String(tp).trim() !== '') {
+        const n = parseInt(tp, 10);
+        app.set('trust proxy', Number.isFinite(n) && n >= 0 ? n : true);
+    } else {
+        app.set('trust proxy', 1);
+    }
+})();
 const expressEjsLayouts = require('express-ejs-layouts');
 const swaggerUi = require('swagger-ui-express');
 const session = require('express-session');

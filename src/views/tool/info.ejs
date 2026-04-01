@@ -50,14 +50,23 @@
                         <h2 class="text-lg sm:text-xl md:text-2xl font-bold text-white mb-3 sm:mb-4 tracking-tight leading-snug"><%= event.name %></h2>
                         <div class="rounded-2xl border border-white/25 bg-white/10 backdrop-blur-md px-3 py-3 sm:px-4 sm:py-3.5 md:px-5 md:py-4 shadow-inner shadow-black/10">
                             <div class="flex flex-col gap-3 md:flex-row md:items-center md:gap-5 md:min-w-0">
-                                <!-- Category: full width, wrap — không truncate -->
+                                <!-- Category + Zone: full width, wrap — không truncate -->
                                 <div class="min-w-0 flex-1 md:min-w-[40%]">
-                                    <p class="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-white/60 mb-1">Category: <span class="text-white text-base sm:text-lg font-semibold leading-snug break-words [overflow-wrap:anywhere]"><%= pc.category || '—' %></span></p>
+                                    <p class="text-[12px] sm:text-[13px] font-semibold uppercase tracking-wider text-white/60 mb-1">Category: <span class="text-white text-[12px] sm:text-[13px] font-semibold leading-snug break-words [overflow-wrap:anywhere]"><%= pc.category || '—' %></span></p>
+                                    <% 
+                                      var _z = pc.zone != null && String(pc.zone).trim() !== '' ? String(pc.zone).trim() : '';
+                                      var _zLower = _z.toLowerCase();
+                                      var zoneLabel = '—';
+                                      if (_z) {
+                                        zoneLabel = (_zLower === 'earlybib' || _zLower === '1') ? 'Early BIB' : _z;
+                                      }
+                                    %>
+                                    <p class="text-[12px] sm:text-[13px] font-semibold uppercase tracking-wider text-white/60 mt-2 sm:mt-1.5">Zone: <span class="text-white text-[12px] sm:text-[13px] font-semibold leading-snug break-words [overflow-wrap:anywhere]"><%= zoneLabel %></span></p>
                                 </div>
                                 <!-- Code + trạng thái: cùng hàng (mobile), md+ dính nhóm bên phải -->
                                 <div class="flex flex-row flex-wrap items-center justify-between gap-3 sm:gap-4 md:flex-nowrap md:justify-end md:gap-4 md:shrink-0">
                                     <div class="flex min-w-0 items-baseline gap-2 border-t border-white/20 pt-2.5 md:border-t-0 md:border-l md:border-white/25 md:pt-0 md:pl-4">
-                                        <span class="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-white/60 shrink-0">Code</span>
+                                        <span class="text-[12px] sm:text-[13px] font-semibold uppercase tracking-wider text-white/60 shrink-0">Code</span>
                                         <span class="text-amber-200 text-lg sm:text-xl md:text-2xl font-bold tabular-nums tracking-tight"><%= pc.bib || '—' %></span>
                                     </div>
                                     <% if (_checkedIn) { %>

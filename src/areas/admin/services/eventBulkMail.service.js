@@ -137,9 +137,9 @@ function buildZoneIndicatorHtml(zoneVal) {
         zoneVal === 1 ||
         zoneVal === true;
     if (isEarlyBib) {
-        return '<span style="display:inline-block;border:2px solid #2e7d32;border-radius:4px;background:#e8f5e9;color:#2e7d32;font-size:18px;line-height:1;padding:4px 10px;font-weight:bold;">&#10003;</span>';
+        return '<span style="display:inline-block;border:2px solid #2e7d32;border-radius:4px;background:#e8f5e9;color:#2e7d32;font-size:15px;line-height:1;padding:3px 8px;font-weight:bold;">&#10003;</span>';
     }
-    return '<span style="display:inline-block;border:2px solid #c62828;border-radius:4px;background:#ffebee;color:#c62828;font-size:18px;line-height:1;padding:4px 10px;font-weight:bold;">&#10007;</span>';
+    return '<span style="display:inline-block;border:2px solid #c62828;border-radius:4px;background:#ffebee;color:#c62828;font-size:15px;line-height:1;padding:3px 8px;font-weight:bold;">&#10007;</span>';
 }
 
 function formatGenderLabel(g) {
@@ -176,9 +176,9 @@ function buildBannerHtml(showBanner, bannerText) {
                             <img
                                 src="cid:banner"
                                 alt="Banner"
-                                width="600"
+                                width="680"
                                 style="display: block; 
-                                    max-width: 600px; 
+                                    max-width: 680px; 
                                     width: 100%; 
                                     height: auto;
                                     -ms-interpolation-mode: bicubic;"  
@@ -188,8 +188,8 @@ function buildBannerHtml(showBanner, bannerText) {
     } else {
         const t = escapeHtml(bannerText || '');
         bannerOrTextSection = `<tr>
-                        <td align="left" style="padding: 0 20px; font-family: Arial, sans-serif; font-size: 14px; color: #333333">
-                            <h1>${t}</h1>
+                        <td align="left" style="padding: 0 16px; font-family: Arial, sans-serif; font-size: 12px; color: #333333">
+                            <h1 style="margin:0;font-size:18px;line-height:1.25;font-weight:bold">${t}</h1>
                         </td>
                      </tr>`;
     }
@@ -214,7 +214,7 @@ function buildTemplateVars(event, mailConfig, r) {
         email: r.email && String(r.email).trim() ? escapeHtml(String(r.email).trim()) : '—',
         phone: r.phone && String(r.phone).trim() ? escapeHtml(String(r.phone).trim()) : '—',
         pickup_range: escapeHtml(resolvePickupRangeDisplay(r.pickup_time_range)),
-        zone_cell: buildZoneIndicatorHtml(r.zone != null ? r.zone : r.line),
+        zone_cell: escapeHtml(r.zone != null ? String(r.zone) : r.line),
         content_1: mc.content_1 == null ? '' : String(mc.content_1),
         content_2: mc.content_2 == null ? '' : String(mc.content_2),
         code: escapeHtml(r.bib != null ? String(r.bib) : ''),

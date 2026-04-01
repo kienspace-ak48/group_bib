@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const LoginHistory = require('../../../model/login_history.model');
 const { accountLabel } = require('../../../utils/accountDisplay.util');
+const { getClientIp } = require('../../../utils/clientIp.util');
 
 const CNAME = 'loginHistory.service.js ';
 
@@ -28,7 +29,7 @@ class LoginHistoryService {
                 success: false,
                 failure_reason: reason,
                 method: 'password',
-                ip: req?.ip || '',
+                ip: getClientIp(req),
                 user_agent: req?.headers?.['user-agent'] || '',
             };
             if (accountId && mongoose.Types.ObjectId.isValid(accountId)) row.account_id = accountId;
