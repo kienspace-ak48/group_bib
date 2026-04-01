@@ -281,7 +281,7 @@ class ParticipantCheckinHService {
     }
 
     /**
-     * Thống kê dashboard bước Check-in: tổng, đã/chưa/hủy, % đã check-in trên tổng, theo cự ly.
+     * Thống kê dashboard bước Check-in: tổng, đã/chưa/hủy, % đã check-in trên tổng, theo hạng mục (category).
      */
     async getCheckinDashboardStats(eventId) {
         try {
@@ -318,26 +318,28 @@ class ParticipantCheckinHService {
                                 },
                             },
                         ],
-                        byDistance: [
+                        byCategory: [
                             {
                                 $addFields: {
-                                    distKey: {
+                                    catVal: { $ifNull: ['$category', ''] },
+                                },
+                            },
+                            {
+                                $addFields: {
+                                    catKey: {
                                         $cond: [
                                             {
-                                                $or: [
-                                                    { $eq: ['$distance', null] },
-                                                    { $eq: ['$distance', ''] },
-                                                ],
+                                                $or: [{ $eq: ['$catVal', null] }, { $eq: ['$catVal', ''] }],
                                             },
                                             '(Không rõ)',
-                                            '$distance',
+                                            '$catVal',
                                         ],
                                     },
                                 },
                             },
                             {
                                 $group: {
-                                    _id: '$distKey',
+                                    _id: '$catKey',
                                     total: { $sum: 1 },
                                     checkedIn: {
                                         $sum: { $cond: [{ $eq: ['$status', 'checked_in'] }, 1, 0] },
@@ -373,8 +375,8 @@ class ParticipantCheckinHService {
             const cancelled = o.cancelled || 0;
             const notCheckedIn = o.notCheckedIn || 0;
             const pctCheckedIn = total > 0 ? Math.round((checkedIn / total) * 1000) / 10 : 0;
-            const byDistance = (row?.byDistance || []).map((d) => ({
-                distance: d._id,
+            const byCategory = (row?.byCategory || []).map((d) => ({
+                category: d._id,
                 total: d.total,
                 checkedIn: d.checkedIn,
                 notCheckedIn: d.notCheckedIn,
@@ -386,7 +388,7 @@ class ParticipantCheckinHService {
                 notCheckedIn,
                 cancelled,
                 pctCheckedIn,
-                byDistance,
+                byCategory,
             };
         } catch (e) {
             console.log(CNAME, e.message);
@@ -396,7 +398,7 @@ class ParticipantCheckinHService {
                 notCheckedIn: 0,
                 cancelled: 0,
                 pctCheckedIn: 0,
-                byDistance: [],
+                byCategory: [],
             };
         }
     }
@@ -410,6 +412,39 @@ class ParticipantCheckinHService {
         } catch (e) {
             console.log(CNAME, e.message);
             return [];
+        }
+    }
+
+    /**
+     * Batch kế tiếp có email hợp lệ, sort `_id` tăng (cursor cho job gửi mail hàng loạt).
+     * @param {string|import('mongoose').Types.ObjectId} eventId
+     * @param {string|import('mongoose').Types.ObjectId|null} afterId — `_id` lớn nhất batch trước; null = từ đầu
+     */
+    async findNextBatchWithValidEmail(eventId, afterId, limit) {
+        try {
+            const q = { $and: [this._eventIdQuery(eventId), this._emailQuery()] };
+            if (afterId != null && mongoose.Types.ObjectId.isValid(String(afterId))) {
+                q.$and.push({ _id: { $gt: new mongoose.Types.ObjectId(String(afterId)) } });
+            }
+            const lim = Math.min(200, Math.max(1, limit || 50));
+            return await ParticipantCheckinH.find(q).sort({ _id: 1 }).limit(lim).lean();
+        } catch (e) {
+            console.log(CNAME, e.message);
+            return [];
+        }
+    }
+
+    /** Cập nhật `qr_mail_sent_at` một lần (updateOne), dùng worker gửi mail hàng loạt */
+    async updateQrMailSentAtById(participantId, eventId, at) {
+        try {
+            if (!mongoose.Types.ObjectId.isValid(String(participantId))) return false;
+            const q = { $and: [{ _id: participantId }, this._eventIdQuery(eventId)] };
+            const t = at instanceof Date ? at : new Date();
+            const r = await ParticipantCheckinH.updateOne(q, { $set: { qr_mail_sent_at: t } });
+            return r.modifiedCount > 0 || r.matchedCount > 0;
+        } catch (e) {
+            console.log(CNAME, e.message);
+            return false;
         }
     }
 }

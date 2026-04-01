@@ -121,7 +121,7 @@
             <div class="col-12">
               <label class="form-label small">Danh sách BIB <span class="text-danger">*</span></label>
               <textarea name="bib_list" class="form-control font-monospace" rows="4" required placeholder="Ví dụ: 3412, 5625, 1001 (phân cách bằng dấu phẩy hoặc xuống dòng)"></textarea>
-              <div class="form-text">Chỉ BIB đã tồn tại trong sự kiện này.</div>
+              <div class="form-text">Chỉ BIB đã tồn tại trong sự kiện này. Mỗi VĐV chỉ thuộc một nhóm: nếu BIB đã nằm trong nhóm khác, hệ thống từ chối và báo lỗi kèm danh sách BIB xung đột.</div>
             </div>
           </div>
         </div>
@@ -164,6 +164,7 @@
             <div class="col-12">
               <label class="form-label small">Danh sách BIB <span class="text-danger">*</span></label>
               <textarea name="bib_list" id="gaEditBibList" class="form-control font-monospace" rows="4" required></textarea>
+              <div class="form-text">BIB đã thuộc nhóm khác sẽ bị từ chối; xem thông báo lỗi trên trang nếu có xung đột.</div>
             </div>
           </div>
         </div>

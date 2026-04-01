@@ -60,7 +60,7 @@
             <tr class="text-left text-slate-500 border-b border-slate-100">
               <th class="p-3">BIB</th>
               <th class="p-3">Họ tên</th>
-              <th class="p-3">Cự ly</th>
+              <th class="p-3">Hạng mục</th>
               <th class="p-3">Trạng thái</th>
               <th class="p-3 text-right">Thao tác</th>
             </tr>
@@ -75,7 +75,7 @@
             <tr class="border-b border-slate-50 last:border-0">
               <td class="p-3 font-mono font-semibold text-red-600"><%= p.bib || '—' %></td>
               <td class="p-3"><%= p.fullname || '—' %></td>
-              <td class="p-3"><%= p.distance || '—' %></td>
+              <td class="p-3"><%= p.category != null && String(p.category).trim() !== '' ? p.category : '—' %></td>
               <td class="p-3">
                 <% if (checked) { %>
                 <span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-emerald-800 text-xs font-medium">

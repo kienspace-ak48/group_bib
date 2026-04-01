@@ -16,8 +16,8 @@
           <input type="text" name="bib_name" class="form-control form-control-sm <%= p %>-bib_name" maxlength="120" />
         </div>
         <div class="col-md-3">
-          <label class="form-label small">Cự ly / distance</label>
-          <input type="text" name="distance" class="form-control form-control-sm <%= p %>-distance" maxlength="120" />
+          <label class="form-label small">Hạng mục (category)</label>
+          <input type="text" name="category" class="form-control form-control-sm <%= p %>-category" maxlength="120" />
         </div>
         <div class="col-md-3">
           <label class="form-label small">Item / vật phẩm</label>
@@ -51,7 +51,7 @@
             <option value="F">Nữ</option>
           </select>
         </div>
-        <div class="col-md-3">
+        <!-- <div class="col-md-3">
           <label class="form-label small">checkin_method</label>
           <select name="checkin_method" class="form-select form-select-sm <%= p %>-checkin_method">
             <option value="import">import</option>
@@ -60,9 +60,9 @@
             <option value="kiosk">kiosk</option>
             <option value="app">app</option>
           </select>
-        </div>
+        </div> -->
         <div class="col-md-3">
-          <label class="form-label small">status</label>
+          <label class="form-label small">Status</label>
           <select name="status" class="form-select form-select-sm <%= p %>-status">
             <option value="registered">registered</option>
             <option value="pending">pending</option>
@@ -70,14 +70,14 @@
             <option value="cancelled">cancelled</option>
           </select>
         </div>
-        <div class="col-md-3">
+        <!-- <div class="col-md-3">
           <label class="form-label small">checkin_by</label>
           <input type="text" name="checkin_by" class="form-control form-control-sm <%= p %>-checkin_by" maxlength="120" />
-        </div>
-        <div class="col-md-3">
+        </div> -->
+        <!-- <div class="col-md-3">
           <label class="form-label small">checkin_time</label>
           <input type="datetime-local" name="checkin_time" class="form-control form-control-sm <%= p %>-checkin_time" />
-        </div>
+        </div> -->
         <div class="col-md-6">
           <label class="form-label small">Khung giờ nhận (pickup_time_range)</label>
           <input type="text" name="pickup_time_range" maxlength="120" class="form-control form-control-sm <%= p %>-pickup_time_range" placeholder="vd: 08:00 - 10:00" autocomplete="off" />

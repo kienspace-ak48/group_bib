@@ -48,7 +48,8 @@
           <% } else { %>
           <% events.forEach(function (ev) { %>
           <tr>
-            <td class="fw-semibold"><%= ev.name || '—' %></td>
+            <td class="small" style="max-width: 300px;white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                <%= ev.name || '—' %></td>
             <td><code class="small"><%= ev.slug || '—' %></code></td>
             <td class="text-center">
               <span class="badge text-bg-secondary"><%= ev.workflow_step != null ? ev.workflow_step : 0 %></span>

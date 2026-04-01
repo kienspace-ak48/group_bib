@@ -36,6 +36,7 @@ class EventMailConfigService {
             copy('banner_img');
             copy('end_mail_img');
             copy('banner_option', (v) => !!v);
+            copy('footer_body');
             copy('footer_email');
             copy('footer_hotline');
             copy('footer_company_vi');

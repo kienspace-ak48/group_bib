@@ -51,9 +51,10 @@ const ParticipantCheckinSchema = new mongoose.Schema(
         checkin_time: Date,
         bib: String,
         bib_name: String,
-        distance: String,
+        /** Hạng mục / cự ly (import Excel: cột category) */
+        category: String,
         item: String,
-        /** Khung giờ nhận (vd "08:00 - 10:00") — một chuỗi, thay cho pickup_start / pickup_end */
+        /** Khung giờ nhận (vd "08:00 - 10:00") — một chuỗi */
         pickup_time_range: { type: String, default: '', maxlength: 120 },
         /** Lần gửi mail QR gần nhất (thủ công hoặc hàng loạt) */
         qr_mail_sent_at: Date,

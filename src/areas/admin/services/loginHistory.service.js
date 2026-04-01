@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const LoginHistory = require('../../../model/login_history.model');
+const { accountLabel } = require('../../../utils/accountDisplay.util');
 
 const CNAME = 'loginHistory.service.js ';
 
@@ -44,10 +45,19 @@ class LoginHistoryService {
         if (accountId && mongoose.Types.ObjectId.isValid(accountId)) {
             q.account_id = accountId;
         }
-        const [items, total] = await Promise.all([
-            LoginHistory.find(q).sort({ at: -1 }).skip(skip).limit(limit).lean(),
+        const [rawItems, total] = await Promise.all([
+            LoginHistory.find(q)
+                .sort({ at: -1 })
+                .skip(skip)
+                .limit(limit)
+                .populate({ path: 'account_id', select: 'name username' })
+                .lean(),
             LoginHistory.countDocuments(q),
         ]);
+        const items = rawItems.map((row) => ({
+            ...row,
+            account_display: accountLabel(row.account_id),
+        }));
         return { items, total, page, limit, pages: Math.ceil(total / limit) || 1 };
     }
 }

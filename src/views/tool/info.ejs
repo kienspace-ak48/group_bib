@@ -52,8 +52,7 @@
                             <div class="flex flex-col gap-3 md:flex-row md:items-center md:gap-5 md:min-w-0">
                                 <!-- Category: full width, wrap — không truncate -->
                                 <div class="min-w-0 flex-1 md:min-w-[40%]">
-                                    <p class="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-white/60 mb-1">Category</p>
-                                    <p class="text-white text-base sm:text-lg font-semibold leading-snug break-words [overflow-wrap:anywhere]"><%= pc.zone || '—' %></p>
+                                    <p class="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-white/60 mb-1">Category: <span class="text-white text-base sm:text-lg font-semibold leading-snug break-words [overflow-wrap:anywhere]"><%= pc.category || '—' %></span></p>
                                 </div>
                                 <!-- Code + trạng thái: cùng hàng (mobile), md+ dính nhóm bên phải -->
                                 <div class="flex flex-row flex-wrap items-center justify-between gap-3 sm:gap-4 md:flex-nowrap md:justify-end md:gap-4 md:shrink-0">
@@ -121,7 +120,7 @@
 
                 <div class="space-y-1 mb-4">
                     <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                        BIỆT DANH / NICKNAME
+                        NICKNAME
                     </p>
                     <p class="text-sm font-semibold text-gray-900 leading-5">
                         <%= pc.bib_name || 'N/A' %>
@@ -271,7 +270,7 @@
                 </div>
 
                 <!-- Action Buttons -->
-                 <div class="w-full flex justify-between items-center">
+                 <div class="w-full mx-auto">
                     <div class="grid grid-cols-2 gap-4">
                         <% if (typeof returnTo !== 'undefined' && returnTo) { %>
                         <!-- <a href="<%#= returnTo %>" class="flex-1 max-w-xs">
@@ -336,8 +335,8 @@
                 <canvas id="canvas" class="hidden"></canvas>
                 <!-- group actins -->
                 <div class="flex justify-between w-full gap-2">
-                    <button type="button" id="capture" class="flex-1 border border-gray-300 rounded-lg py-2 text-sm font-medium hover:bg-gray-50">Chụp</button>
                     <button type="button" id="recapture" class="flex-1 border border-gray-300 rounded-lg py-2 text-sm font-medium hover:bg-gray-50">Chụp lại</button>
+                    <button type="button" id="capture" class="flex-1 border border-gray-300 rounded-lg py-2 text-sm font-medium hover:bg-gray-50">Chụp</button>
                 </div>
             </div>
 

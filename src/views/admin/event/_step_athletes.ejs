@@ -37,24 +37,12 @@
     }
     return '<span class="badge rounded-pill bg-light text-secondary border" title="Chưa rõ">—</span>';
   }
-  function formatMailSentAt(d) {
+  /** Ngày giờ check-in hiển thị dưới cột QR */
+  function formatCheckinDisplay(d) {
     if (!d) return '';
     var x = new Date(d);
     if (Number.isNaN(x.getTime())) return '';
-    return x.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-  }
-  /** Cột trạng thái gửi mail QR */
-  function mailQrStatusHtml(p) {
-    var hasEmail = p.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(p.email).trim());
-    if (!hasEmail) {
-      return '<span class="text-body-tertiary small" title="Không có email">—</span>';
-    }
-    if (!p.qr_mail_sent_at) {
-      return '<span class="badge text-bg-light border text-warning-emphasis" title="Chưa gửi mail QR">Chưa gửi</span>';
-    }
-    var t = formatMailSentAt(p.qr_mail_sent_at);
-    var safe = String(t).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
-    return '<span class="text-success small" title="Đã gửi mail QR lúc ' + safe + '"><span class="me-1">&#10003;</span>' + t + '</span>';
+    return x.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   }
   var ev = typeof event !== 'undefined' ? event : {};
   var sgOk = typeof sendgridConfigured !== 'undefined' ? sendgridConfigured : false;
@@ -82,7 +70,7 @@
       phone: p.phone || '',
       bib: p.bib || '',
       bib_name: p.bib_name || '',
-      distance: p.distance || '',
+      category: p.category || '',
       item: p.item || '',
       zone: p.zone || '',
       qr_code: (p.qr_code != null && String(p.qr_code) !== '') ? String(p.qr_code) : '',
@@ -122,14 +110,14 @@
   <div class="card-body border-bottom">
     <p class="small text-body-secondary mb-3">
       Import Excel (sheet đầu): cột gợi ý <code>fullname</code>, <code>cccd</code>, <code>email</code>, <code>phone</code>,
-      <code>dob</code> / <code>dob(mm/dd/yyyy)</code>, <code>gender</code>, <code>zone</code>, <code>bib</code>, <code>bib_name</code>, <code>distance</code>, <code>item</code>,
+      <code>dob</code> / <code>dob(mm/dd/yyyy)</code>, <code>gender</code>, <code>zone</code>, <code>bib</code>, <code>bib_name</code>, <code>category</code>, <code>item</code>,
       <code>qr_code</code> (tùy; nếu trống sẽ dùng mã <code>uid</code> sinh tự động), <code>status</code>, <code>checkin_method</code>,
-      <code>pickup_time_range</code> — chuỗi tự do (vd <code>08:00 - 10:00</code>); hoặc cột cũ <code>pickup_start</code> / <code>pickup_end</code> (giờ Excel Time / <code>HH:mm</code>) sẽ được ghép khi import. …
+      <code>pickup_time_range</code> — chuỗi khung giờ nhận (vd <code>08:00 - 10:00</code>). …
       Mỗi dòng sau import sẽ có <code>uid</code> duy nhất (prefix theo sự kiện, giống logic cũ <code>generateUID</code>).
       Có thể import nhiều dòng trùng họ tên / SĐT / CCCD — mỗi dòng là một bản ghi riêng (mã <code>uid</code> khác nhau).
       Chế độ <strong>Thêm mới</strong> giữ danh sách hiện có; <strong>Xóa danh sách cũ rồi import</strong> xóa toàn bộ người tham dự của sự kiện trước khi nạp file.
       <% if (sgOk) { %>
-      Cột thao tác: <strong>Gửi mail QR</strong> gửi lại email QR cho một người (cần đã cấu hình mail ở bước 3).
+      Cột <strong>QR</strong>: xem mã, gửi mail QR (cần đã cấu hình mail ở bước 3).
       <% } else { %>
       <span class="text-warning">SendGrid chưa cấu hình env — không gửi mail thủ công từ đây.</span>
       <% } %>
@@ -222,35 +210,35 @@
           <col class="athlete-col-name" />
           <col class="athlete-col-cccd" />
           <col class="athlete-col-status" />
-          <col class="athlete-col-mailqr" />
           <col class="athlete-col-qr" />
           <col class="athlete-col-actions" />
         </colgroup>
         <thead class="table-light">
           <tr class="text-center small">
-            <th class="text-start">BIB / Cự ly</th>
+            <th class="text-start">BIB / Category</th>
             <th>Zone</th>
             <th class="text-start">Họ tên</th>
             <th class="text-start">CCCD</th>
             <th class="athlete-th-status" title="Trạng thái ghi danh / check-in: chờ, đã ghi danh, đã check-in, đã hủy">Trạng thái</th>
-            <th>Mail QR</th>
             <th>QR</th>
-            <th class="text-end">Thao tác</th>
+            <th class="text-center">Thao tác</th>
           </tr>
         </thead>
         <tbody>
           <% if (!participants || !participants.length) { %>
           <tr>
-            <td colspan="8" class="text-center text-body-secondary py-4">Chưa có người tham dự hoặc không khớp bộ lọc. Dùng import Excel hoặc Thêm thủ công.</td>
+            <td colspan="7" class="text-center text-body-secondary py-4">Chưa có người tham dự hoặc không khớp bộ lọc. Dùng import Excel hoặc Thêm thủ công.</td>
           </tr>
           <% } else { %>
           <% participants.forEach(function (p) { %>
           <% var emailOk = p.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(p.email).trim()); %>
           <% var qrPayload = (p.qr_code != null && String(p.qr_code) !== '') ? String(p.qr_code) : String(p.uid || ''); %>
+          <% var isCheckedIn = p.status === 'checked_in' || p.checkin_status === true; %>
+          <% var checkinLine = (isCheckedIn && p.checkin_time) ? formatCheckinDisplay(p.checkin_time) : ''; %>
           <tr class="participant-row" data-participant="<%= participantRowJson(p) %>">
             <td class="text-start text-nowrap">
               <div><span class="fw-bold text-danger"><%= dash(p.bib) %></span></div>
-              <div class="small text-body-secondary"><%= dash(p.distance) %></div>
+              <div class="small text-body-secondary"><%= dash(p.category) %></div>
             </td>
             <td class="text-center small"><%= dash(p.zone) %></td>
             <td class="text-start js-open-edit participant-name-col" role="button" tabindex="0" title="Click để sửa">
@@ -267,28 +255,40 @@
             </td>
             <td class="text-start small"><%= dash(p.cccd) %></td>
             <td class="text-center small"><%- statusIconHtml(p.status, p.checkin_status) %></td>
-            <td class="text-center small text-nowrap"><%- mailQrStatusHtml(p) %></td>
-            <td class="text-center">
+            <td class="text-center small">
+              <div class="d-inline-flex align-items-center justify-content-center gap-1 flex-wrap">
               <button
                 type="button"
                 class="btn btn-sm btn-outline-secondary py-0 px-2 js-qr-share"
                 title="Xem mã QR"
+                aria-label="Xem mã QR"
                 data-qr="<%= encodeURIComponent(qrPayload) %>"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="align-text-bottom me-1" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 1a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM11 2.5a2.5 2.5 0 1 1 .603 1.628l-6.718 3.12a2.5 2.5 0 0 1 0 1.504l6.718 3.12a2.5 2.5 0 1 1-.488.876l-6.718-3.12a2.5 2.5 0 1 1 0-3.256l6.718-3.12A2.5 2.5 0 0 1 11 2.5zm-6.5 6a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm11 5.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/></svg>
-                QR
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 1a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM11 2.5a2.5 2.5 0 1 1 .603 1.628l-6.718 3.12a2.5 2.5 0 0 1 0 1.504l6.718 3.12a2.5 2.5 0 1 1-.488.876l-6.718-3.12a2.5 2.5 0 1 1 0-3.256l6.718-3.12A2.5 2.5 0 0 1 11 2.5zm-6.5 6a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm11 5.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/></svg>
               </button>
-            </td>
-            <td class="text-end text-nowrap">
               <button
                 type="button"
-                class="btn btn-link btn-sm text-primary p-0 me-2 js-send-participant-mail"
+                class="btn btn-sm btn-outline-secondary py-0 px-2  p-0 js-send-participant-mail"
                 title="<%= emailOk && sgOk ? 'Gửi / gửi lại mail QR' : (!sgOk ? 'Chưa cấu hình SendGrid' : 'Thiếu email hợp lệ') %>"
                 aria-label="Gửi mail QR"
                 data-participant-id="<%= p._id %>"
                 <%= (!sgOk || !emailOk) ? 'disabled' : '' %>
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.05 3.555A2 2 0 0 1 2 2h12a2 2 0 0 1 1.95 1.555L8 8.414.05 3.555zM0 4.697v7.104l5.803-3.558L0 4.697zM6.761 8.83l-6.57 4.027A2 2 0 0 0 2 14h12a2 2 0 0 0 1.808-1.144l-6.57-4.027L8 9.586l-1.239-.757zm3.436-.586L16 11.801V4.697l-5.803 3.546z"/></svg>
+              </button>
+              </div>
+              <% if (checkinLine) { %>
+              <div class="text-body-secondary mt-1 lh-sm" title="Thời điểm check-in"><%= checkinLine %></div>
+              <% } %>
+            </td>
+            <td class="text-center text-nowrap">
+              <button
+                type="button"
+                class="btn btn-link btn-sm text-primary p-0 me-2 js-open-edit"
+                title="Sửa"
+                aria-label="Sửa"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/></svg>
               </button>
               <form method="POST" action="/admin/event/<%= ev._id %>/participants/<%= p._id %>/delete" class="d-inline js-participant-delete" onsubmit="return confirm('Xóa người này khỏi sự kiện?');">
                 <input type="hidden" name="ret_q_name" value="<%= pf.q_name %>" />
@@ -426,14 +426,13 @@
     padding-left: 0.4rem;
     padding-right: 0.4rem;
   }
-  .athlete-col-bib { width: 6.25rem; }
-  .athlete-col-zone { width: 2.5rem; }
-  .athlete-col-name { width: 26%; min-width: 9.5rem; }
-  .athlete-col-cccd { width: 9.5rem; }
+  .athlete-col-bib { width: 5.25rem; }
+  .athlete-col-zone { width: 3rem; }
+  .athlete-col-name { width: 20%; min-width: 7.5rem; }
+  .athlete-col-cccd { width: 6.5rem; }
   .athlete-col-status { width: 2.75rem; }
-  .athlete-col-mailqr { width: 6.25rem; }
-  .athlete-col-qr { width: 4.25rem; }
-  .athlete-col-actions { width: 5rem; }
+  .athlete-col-qr { width: 6rem; }
+  .athlete-col-actions { width: 6.5rem; }
   .athlete-th-status { cursor: help; }
   .participant-name-col {
     cursor: pointer;
@@ -521,7 +520,7 @@
     set('.edit-cccd', data.cccd);
     set('.edit-bib', data.bib);
     set('.edit-bib_name', data.bib_name);
-    set('.edit-distance', data.distance);
+    set('.edit-category', data.category);
     set('.edit-item', data.item);
     set('.edit-zone', data.zone);
     set('.edit-qr_code', data.qr_code);

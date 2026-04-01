@@ -8,8 +8,7 @@ const { normalizePickupTimeRange } = require('./pickupTimeRange.util');
  *
  * Ngày (dob, checkin_time): ô Date/DateTime Excel (serial ≥ 1 hoặc có ngày) hoặc chuỗi parse được.
  *
- * pickup_time_range: chuỗi tự do (vd "08:00 - 10:00"). Cột cũ pickup_start / pickup_end vẫn đọc được:
- * giờ 24h chuẩn Excel (Time serial [0,1), HH:mm, …) và ghép thành một chuỗi.
+ * pickup_time_range: chuỗi tự do (vd "08:00 - 10:00").
  */
 function parseDobCell(dobExcel) {
     if (dobExcel == null || dobExcel === '') return null;
@@ -51,34 +50,6 @@ function parseOptionalDate(row, ...keys) {
     return Number.isNaN(d.getTime()) ? undefined : d;
 }
 
-/** Giá trị ô gốc (không ép String) — cần để đọc số serial Time trong Excel */
-function firstRawCell(row, ...keys) {
-    for (const k of keys) {
-        if (row[k] != null && row[k] !== '') return row[k];
-    }
-    return undefined;
-}
-
-/** Serial [0,1) = phần của ngày 24h → Date cố định 2000-01-01 (giờ local) để lưu và hiển thị giờ */
-function fractionOfDayToLocalDateTime(serial) {
-    const ms = serial * 86400000;
-    const totalSec = Math.round(ms / 1000);
-    const h = Math.floor(totalSec / 3600) % 24;
-    const m = Math.floor((totalSec % 3600) / 60);
-    const s = totalSec % 60;
-    return new Date(2000, 0, 1, h, m, s);
-}
-
-function formatHHmmFromPickupDate(d) {
-    if (!d) return '';
-    const x = d instanceof Date ? d : new Date(d);
-    if (Number.isNaN(x.getTime())) return '';
-    const h = x.getHours();
-    const m = x.getMinutes();
-    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-}
-
-/** Ưu tiên cột pickup_time_range; không có thì ghép từ pickup_start / pickup_end (legacy). */
 function parsePickupTimeRangeForRow(row) {
     const direct = firstCell(
         row,
@@ -92,66 +63,7 @@ function parsePickupTimeRangeForRow(row) {
         const n = normalizePickupTimeRange(direct);
         return n || undefined;
     }
-    const ps = parsePickupTimeCell(row, 'pickup_start', 'pickupStart', 'Pickup start');
-    const pe = parsePickupTimeCell(row, 'pickup_end', 'pickupEnd', 'Pickup end');
-    if (ps && pe) {
-        const a = formatHHmmFromPickupDate(ps);
-        const b = formatHHmmFromPickupDate(pe);
-        if (a && b) return normalizePickupTimeRange(`${a} - ${b}`) || undefined;
-    }
-    if (ps) {
-        const a = formatHHmmFromPickupDate(ps);
-        return a ? normalizePickupTimeRange(a) || undefined : undefined;
-    }
-    if (pe) {
-        const b = formatHHmmFromPickupDate(pe);
-        return b ? normalizePickupTimeRange(b) || undefined : undefined;
-    }
     return undefined;
-}
-
-/**
- * pickup_start / pickup_end (legacy): ưu tiên Time Excel (serial 0–1) hoặc chuỗi HH:mm(:ss).
- */
-function parsePickupTimeCell(row, ...keys) {
-    const raw = firstRawCell(row, ...keys);
-    if (raw == null || raw === '') return undefined;
-
-    if (typeof raw === 'number' && !Number.isNaN(raw)) {
-        if (raw >= 0 && raw < 1) return fractionOfDayToLocalDateTime(raw);
-        if (raw >= 1) {
-            const d = excelDateToJSDate(raw);
-            return d && !Number.isNaN(d.getTime()) ? d : undefined;
-        }
-        return undefined;
-    }
-
-    const str = String(raw).trim();
-    const num = Number(str);
-    if (str !== '' && !Number.isNaN(num) && /^-?\d+(\.\d+)?([eE][+-]?\d+)?$/.test(str)) {
-        if (num >= 0 && num < 1) return fractionOfDayToLocalDateTime(num);
-        if (num >= 1) {
-            const d = excelDateToJSDate(num);
-            return d && !Number.isNaN(d.getTime()) ? d : undefined;
-        }
-        return undefined;
-    }
-
-    const m = str.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
-    if (m) {
-        let hh = parseInt(m[1], 10);
-        const mm = parseInt(m[2], 10);
-        const ss = m[3] ? parseInt(m[3], 10) : 0;
-        if (mm < 0 || mm > 59 || ss < 0 || ss > 59) return undefined;
-        if (hh === 24) {
-            if (mm !== 0 || ss !== 0) return undefined;
-            hh = 0;
-        } else if (hh < 0 || hh > 23) return undefined;
-        return new Date(2000, 0, 1, hh, mm, ss);
-    }
-
-    const d = new Date(str);
-    return Number.isNaN(d.getTime()) ? undefined : d;
 }
 
 function convertRowCheckinH(row, eventId) {
@@ -197,7 +109,7 @@ function convertRowCheckinH(row, eventId) {
         checkin_time: parseOptionalDate(row, 'checkin_time', 'checkinTime', 'Checkin time'),
         bib: firstCell(row, 'bib', 'BIB') || (row.bib != null ? String(row.bib).trim() : undefined),
         bib_name: firstCell(row, 'bib_name', 'bibName', 'BIB name', 'Ten BIB'),
-        distance: firstCell(row, 'distance', 'cu_ly', 'Cự ly'),
+        category: firstCell(row, 'category', 'cu_ly', 'Cự ly'),
         item: firstCell(row, 'item', 'vat_pham', 'Item'),
         pickup_time_range,
     };

@@ -7,15 +7,16 @@ function normalizePickupTimeRange(s) {
 }
 
 /**
- * Hiển thị mail / fallback: ưu tiên chuỗi đã lưu; nếu không có thì ghép từ ngày legacy (Mongo cũ).
+ * Hiển thị mail: ưu tiên `pickup_time_range`. Tham số start/end chỉ dùng cho dữ liệu rất cũ (controller legacy).
  * @param {string|undefined} range
- * @param {Date|undefined} start
- * @param {Date|undefined} end
+ * @param {Date|undefined} [start]
+ * @param {Date|undefined} [end]
  */
 function resolvePickupRangeDisplay(range, start, end) {
     const t = normalizePickupTimeRange(range);
     if (t) return t;
-    return buildPickupRangeFromLegacyDates(start, end);
+    if (start != null || end != null) return buildPickupRangeFromLegacyDates(start, end);
+    return '';
 }
 
 function formatTime24hVi(d) {

@@ -268,7 +268,7 @@ const toolCheckinController = () => {
             const participants = await Participant.find({
                 $and: [eventIdMatch(eid), { _id: { $in: pids } }],
             })
-                .select('uid qr_code fullname bib distance status group_authorization_id')
+                .select('uid qr_code fullname bib category status group_authorization_id')
                 .sort({ bib: 1 })
                 .lean();
             const event = await EventCheckin.findById(eid).lean();

@@ -163,19 +163,25 @@ class GroupAuthorizationHService {
         const found = await ParticipantCheckinH.find({
             $and: [this._eventIdQuery(eventId), { _id: { $in: oids } }],
         })
-            .select('_id group_authorization_id')
+            .select('_id group_authorization_id bib')
             .lean();
         if (found.length !== oids.length) {
             return { ok: false, message: 'Một số VĐV không thuộc sự kiện này.', ids: [] };
         }
         const ex = excludeGroupId ? String(excludeGroupId) : '';
+        const conflictBibs = [];
         for (const p of found) {
             const gid = p.group_authorization_id ? String(p.group_authorization_id) : '';
             if (!gid) continue;
             if (ex && gid === ex) continue;
+            const b = p.bib != null && String(p.bib).trim() !== '' ? String(p.bib).trim() : null;
+            conflictBibs.push(b || `id:${String(p._id).slice(-8)}`);
+        }
+        if (conflictBibs.length) {
+            const list = [...new Set(conflictBibs)].join(', ');
             return {
                 ok: false,
-                message: 'Một hoặc nhiều VĐV đã thuộc nhóm ủy quyền khác. Gỡ VĐV khỏi nhóm cũ trước.',
+                message: `Không thêm được: các BIB sau đã gán cho nhóm ủy quyền khác — ${list}. Mở nhóm đó để gỡ BIB hoặc sửa nhóm hiện có. Không thể nhập cùng một VĐV vào hai nhóm.`,
                 ids: [],
             };
         }

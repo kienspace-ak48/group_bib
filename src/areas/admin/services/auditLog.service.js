@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const AuditLog = require('../../../model/audit_log.model');
+const { accountLabel } = require('../../../utils/accountDisplay.util');
 
 const CNAME = 'auditLog.service.js ';
 
@@ -39,10 +40,19 @@ class AuditLogService {
         const q = {};
         if (resource) q.resource = resource;
         if (actorId && mongoose.Types.ObjectId.isValid(actorId)) q.actor_id = actorId;
-        const [items, total] = await Promise.all([
-            AuditLog.find(q).sort({ created_at: -1 }).skip(skip).limit(limit).lean(),
+        const [rawItems, total] = await Promise.all([
+            AuditLog.find(q)
+                .sort({ created_at: -1 })
+                .skip(skip)
+                .limit(limit)
+                .populate({ path: 'actor_id', select: 'name username' })
+                .lean(),
             AuditLog.countDocuments(q),
         ]);
+        const items = rawItems.map((row) => ({
+            ...row,
+            actor_display: accountLabel(row.actor_id),
+        }));
         return { items, total, page, limit, pages: Math.ceil(total / limit) || 1 };
     }
 }

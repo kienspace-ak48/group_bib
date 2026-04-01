@@ -20,7 +20,7 @@ const headers = [
     'zone',
     'bib',
     'bib_name',
-    'distance',
+    'category',
     'item',
     'qr_code',
     'status',
@@ -30,7 +30,7 @@ const headers = [
     'pickup_time_range',
 ];
 
-const distances = ['5km', '10km', '21km', '42km', 'Fun run'];
+const categories = ['5km', '10km', '21km', '42km', 'Fun run'];
 const zones = ['Khu A', 'Khu B', 'Khu VIP'];
 
 const rows = [];
@@ -53,7 +53,7 @@ for (let i = 1; i <= 100; i++) {
         zones[i % zones.length],
         String(2000 + i),
         `BIB-${pad}`,
-        distances[i % distances.length],
+        categories[i % categories.length],
         i % 3 === 0 ? 'Áo M' : 'Áo L',
         '',
         'registered',

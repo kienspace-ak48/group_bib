@@ -136,7 +136,8 @@
         @apply mx-auto max-w-[1400px] px-5 pb-10 pt-6;
     }
     .checkin-page .action-toolbar {
-        @apply mb-6 flex flex-wrap items-center justify-between gap-4 rounded-3xl bg-white p-4 shadow-sm sm:px-6;
+        /* flex-nowrap + min-w-0 ở ô search để ô tìm + Scan QR luôn cùng một hàng khi đủ rộng (tablet / điện thoại ngang) */
+        @apply mb-6 flex flex-nowrap items-center justify-between gap-2 rounded-3xl bg-white p-4 shadow-sm sm:gap-4 sm:px-6;
         box-shadow:
             0 4px 12px rgba(0, 0, 0, 0.03),
             0 1px 2px rgba(0, 0, 0, 0.05);
@@ -152,7 +153,7 @@
         box-shadow: 0 12px 20px -8px rgba(79, 70, 229, 0.5);
     }
     .checkin-page .action-toolbar-right {
-        @apply flex flex-wrap items-center gap-3;
+        @apply flex shrink-0 flex-wrap items-center gap-2 sm:gap-3;
     }
 
     .checkin-page .filter-chips {
@@ -247,7 +248,7 @@
     }
 
     .checkin-page .search-area {
-        @apply min-w-[240px] flex-[2];
+        @apply min-w-0 flex-1;
     }
     .checkin-page .search-input-group {
         @apply relative;
@@ -349,24 +350,13 @@
         @apply hidden;
     }
 
+    /* Điện thoại hẹp: toolbar xếp cột + nút Scan dạng FAB (chỉ dưới ~480px) — từ 481px trở lên giữ ô tìm + Scan cùng hàng */
     @media (max-width: 640px) {
         .checkin-page .dashboard-container {
-            padding: 12px 12px calc(88px + env(safe-area-inset-bottom));
+            @apply px-3 pb-10 pt-3;
         }
         .checkin-page .dataTables_wrapper {
             @apply max-w-full overflow-x-hidden;
-        }
-        .checkin-page .scan-btn {
-            @apply min-h-[52px] w-full justify-center rounded-2xl text-[1.05rem];
-        }
-        .checkin-page .action-toolbar {
-            @apply mb-3.5 flex-col gap-3 rounded-2xl p-4;
-        }
-        .checkin-page .search-area {
-            @apply w-full min-w-0;
-        }
-        .checkin-page .action-toolbar-right {
-            @apply w-full;
         }
         .checkin-page .filter-chips {
             @apply mb-3;
@@ -445,16 +435,6 @@
             font-size: 0.5rem;
         }
 
-        .checkin-page .mobile-scan-fab {
-            @apply pointer-events-none fixed bottom-[calc(12px+env(safe-area-inset-bottom))] left-3 right-3 z-[100] flex justify-center;
-        }
-        .checkin-page .mobile-scan-fab .scan-btn {
-            @apply pointer-events-auto max-w-md shadow-xl;
-            box-shadow: 0 8px 24px rgba(79, 70, 229, 0.45);
-        }
-        .checkin-page .action-toolbar-right .scan-btn {
-            @apply hidden;
-        }
         .checkin-page .scanner-container {
             @apply m-0 max-h-none min-h-dvh w-full max-w-none rounded-none;
         }
@@ -466,6 +446,40 @@
         }
         .checkin-page .close-scanner {
             @apply mb-[calc(20px+env(safe-area-inset-bottom))] min-h-12 px-7 py-3;
+        }
+    }
+
+    @media (min-width: 481px) and (max-width: 640px) {
+        .checkin-page .scan-btn {
+            @apply whitespace-nowrap px-4 py-2.5 text-sm;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .checkin-page .dashboard-container {
+            padding: 12px 12px calc(88px + env(safe-area-inset-bottom));
+        }
+        .checkin-page .scan-btn {
+            @apply min-h-[52px] w-full justify-center rounded-2xl text-[1.05rem];
+        }
+        .checkin-page .action-toolbar {
+            @apply mb-3.5 flex-col gap-3 rounded-2xl p-4;
+        }
+        .checkin-page .search-area {
+            @apply w-full min-w-0;
+        }
+        .checkin-page .action-toolbar-right {
+            @apply w-full;
+        }
+        .checkin-page .mobile-scan-fab {
+            @apply pointer-events-none fixed bottom-[calc(12px+env(safe-area-inset-bottom))] left-3 right-3 z-[100] flex justify-center;
+        }
+        .checkin-page .mobile-scan-fab .scan-btn {
+            @apply pointer-events-auto max-w-md shadow-xl;
+            box-shadow: 0 8px 24px rgba(79, 70, 229, 0.45);
+        }
+        .checkin-page .action-toolbar-right .scan-btn {
+            @apply hidden;
         }
     }
 }

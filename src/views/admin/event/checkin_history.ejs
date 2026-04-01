@@ -91,7 +91,7 @@
             <th>TNV</th>
             <th>VĐV</th>
             <th>BIB</th>
-            <th>Cự ly</th>
+            <th>Hạng mục</th>
             <th class="text-center" style="width: 96px">Hình ảnh</th>
           </tr>
         </thead>
@@ -107,7 +107,7 @@
             <td class="small"><%= row.checkin_by || '—' %></td>
             <td><%= row.fullname || '—' %></td>
             <td><code class="small"><%= row.bib || '—' %></code></td>
-            <td class="small"><%= row.distance || '—' %></td>
+            <td class="small"><%= row.category != null && String(row.category).trim() !== '' ? row.category : '—' %></td>
             <td class="text-center">
               <% if (row.checkin_photo_path) { %>
               <a href="<%= row.checkin_photo_path %>" target="_blank" rel="noopener noreferrer" class="d-inline-block">

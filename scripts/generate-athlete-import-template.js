@@ -18,7 +18,7 @@ const headers = [
     'zone',
     'bib',
     'bib_name',
-    'distance',
+    'category',
     'item',
     'qr_code',
     'status',
@@ -83,10 +83,10 @@ const guideAoA = [
     [
         'pickup_time_range',
         'Khong',
-        'Chuoi khung gio nhan (vd 08:00 - 10:00). Co the dung cot cu pickup_start + pickup_end (gio Excel Time / HH:mm) — se duoc ghep khi import.',
+        'Chuoi khung gio nhan (vd 08:00 - 10:00).',
     ],
     ['checkin_time', 'Khong', 'Ngay gio day du: o Excel Date/DateTime hoac chuoi parse duoc.'],
-    ['Cac cot khac', 'Khong', 'email, phone, zone, bib, bib_name, distance, item, checkin_by...'],
+    ['Cac cot khac', 'Khong', 'email, phone, zone, bib, bib_name, category, item, checkin_by...'],
 ];
 const wsGuide = xlsx.utils.aoa_to_sheet(guideAoA);
 wsGuide['!cols'] = [{ wch: 28 }, { wch: 12 }, { wch: 55 }];

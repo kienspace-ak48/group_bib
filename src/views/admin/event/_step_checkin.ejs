@@ -7,12 +7,12 @@
   var notCheckedIn = st ? (st.notCheckedIn || 0) : 0;
   var cancelled = st ? (st.cancelled || 0) : 0;
   var pct = st ? (st.pctCheckedIn != null ? st.pctCheckedIn : 0) : 0;
-  var byDist = st && Array.isArray(st.byDistance) ? st.byDistance : [];
+  var byCat = st && Array.isArray(st.byCategory) ? st.byCategory : [];
   var chartJson = JSON.stringify({
     doughnut: [checkedIn, notCheckedIn, cancelled],
-    byDistance: byDist.map(function (d) {
+    byCategory: byCat.map(function (d) {
       return {
-        distance: d.distance,
+        category: d.category,
         checkedIn: d.checkedIn,
         notCheckedIn: d.notCheckedIn,
         cancelled: d.cancelled,
@@ -109,14 +109,14 @@
       </div>
       <div class="col-lg-7">
         <div class="card border-0 shadow-sm h-100">
-          <div class="card-header bg-body-tertiary py-2"><strong>Theo cự ly</strong> (đã / chưa / hủy)</div>
+          <div class="card-header bg-body-tertiary py-2"><strong>Theo hạng mục (category)</strong> (đã / chưa / hủy)</div>
           <div class="card-body pt-3" style="min-height: 280px;">
-            <% if (byDist.length) { %>
+            <% if (byCat.length) { %>
             <div class="position-relative h-100" style="min-height: 240px;">
-              <canvas id="checkinChartBar" aria-label="Biểu đồ theo cự ly"></canvas>
+              <canvas id="checkinChartBar" aria-label="Biểu đồ theo hạng mục"></canvas>
             </div>
             <% } else { %>
-            <p class="text-body-secondary small mb-0 d-flex align-items-center justify-content-center h-100" style="min-height: 220px;">Chưa có người tham dự hoặc chưa có dữ liệu cự ly để nhóm.</p>
+            <p class="text-body-secondary small mb-0 d-flex align-items-center justify-content-center h-100" style="min-height: 220px;">Chưa có người tham dự hoặc chưa có dữ liệu hạng mục để nhóm.</p>
             <% } %>
           </div>
         </div>
@@ -126,11 +126,11 @@
     <div class="row g-4 mt-1">
       <div class="col-12">
         <div class="card border-0 shadow-sm">
-          <div class="card-header bg-body-tertiary py-2"><strong>Tỷ lệ đã check-in theo cự ly</strong> (% trên từng cự ly)</div>
+          <div class="card-header bg-body-tertiary py-2"><strong>Tỷ lệ đã check-in theo hạng mục</strong> (% trên từng nhóm)</div>
           <div class="card-body pt-3" style="min-height: 220px;">
-            <% if (byDist.length) { %>
+            <% if (byCat.length) { %>
             <div class="position-relative h-100" style="min-height: 200px;">
-              <canvas id="checkinChartBarPct" aria-label="Tỷ lệ theo cự ly"></canvas>
+              <canvas id="checkinChartBarPct" aria-label="Tỷ lệ theo hạng mục"></canvas>
             </div>
             <% } else { %>
             <p class="text-body-secondary small mb-0">—</p>
@@ -189,8 +189,8 @@
     }
 
     var barEl = document.getElementById('checkinChartBar');
-    if (barEl && raw.byDistance && raw.byDistance.length) {
-      var labels = raw.byDistance.map(function (d) { return d.distance || '—'; });
+    if (barEl && raw.byCategory && raw.byCategory.length) {
+      var labels = raw.byCategory.map(function (d) { return d.category || '—'; });
       new Chart(barEl.getContext('2d'), {
         type: 'bar',
         data: {
@@ -198,17 +198,17 @@
           datasets: [
             {
               label: 'Đã check-in',
-              data: raw.byDistance.map(function (d) { return d.checkedIn; }),
+              data: raw.byCategory.map(function (d) { return d.checkedIn; }),
               backgroundColor: '#2eb85c',
             },
             {
               label: 'Chưa check-in',
-              data: raw.byDistance.map(function (d) { return d.notCheckedIn; }),
+              data: raw.byCategory.map(function (d) { return d.notCheckedIn; }),
               backgroundColor: '#f9b115',
             },
             {
               label: 'Đã hủy',
-              data: raw.byDistance.map(function (d) { return d.cancelled; }),
+              data: raw.byCategory.map(function (d) { return d.cancelled; }),
               backgroundColor: '#e55353',
             },
           ],
@@ -229,9 +229,9 @@
     }
 
     var barPctEl = document.getElementById('checkinChartBarPct');
-    if (barPctEl && raw.byDistance && raw.byDistance.length) {
-      var labelsP = raw.byDistance.map(function (d) { return d.distance || '—'; });
-      var pctData = raw.byDistance.map(function (d) {
+    if (barPctEl && raw.byCategory && raw.byCategory.length) {
+      var labelsP = raw.byCategory.map(function (d) { return d.category || '—'; });
+      var pctData = raw.byCategory.map(function (d) {
         var t = (d.checkedIn || 0) + (d.notCheckedIn || 0) + (d.cancelled || 0);
         if (!t) return 0;
         return Math.round(((d.checkedIn || 0) / t) * 1000) / 10;

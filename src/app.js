@@ -18,7 +18,9 @@ const store = new MongoDBStore({
 //
 const myPathConfig = require('./config/mypath.config');
 const authConfig = require('./config/auth.config');
+const mongoose = require('mongoose');
 const dbConnection = require('./config/dbConnection');
+const { formatDateTimeVn } = require('./utils/formatDateTimeVn.util');
 const routes = require('./routes/index');
 const swaggerFile = require('./swagger/swagger-output.json');
 
@@ -36,6 +38,18 @@ app.use(expressEjsLayouts);
 app.set('layout', 'layouts/main');
 app.locals.ADMIN_LOGIN_URL = authConfig.ADMIN_LOGIN_URL;
 app.locals.ADMIN_LOGOUT_URL = authConfig.ADMIN_LOGOUT_URL;
+/** Dùng trong EJS (audit, login history, …) — giờ VN, không phụ thuộc TZ server */
+app.locals.formatDateTimeVn = formatDateTimeVn;
+/** Cookie session: trước đây 20*1000 = 20 giây → phiên mất rất nhanh (kể cả AUDIT_UNLOCK_TTL). */
+const sessionMaxAgeMs = (() => {
+    const raw = process.env.SESSION_MAX_AGE_MS;
+    if (raw != null && String(raw).trim() !== '') {
+        const n = parseInt(raw, 10);
+        if (Number.isFinite(n) && n >= 60000) return n;
+    }
+    return 24 * 60 * 60 * 1000;
+})();
+
 //session
 app.use(
     session({
@@ -43,7 +57,8 @@ app.use(
         resave: false,
         store: store,
         saveUninitialized: false,
-        cookie: { maxAge: 20 * 1000, httpOnly: true, secure: false, sameSite: 'lax' },
+        rolling: true,
+        cookie: { maxAge: sessionMaxAgeMs, httpOnly: true, secure: false, sameSite: 'lax' },
     }),
 );
 app.use(passport.initialize());
@@ -51,6 +66,19 @@ app.use(passport.session());
 
 // connect DB
 dbConnection();
+function startMailBulkWorkerSafe() {
+    try {
+        const { startMailBulkWorker } = require('./workers/mailBulk.worker');
+        startMailBulkWorker();
+    } catch (e) {
+        console.error('Mail bulk worker failed to start', e);
+    }
+}
+if (mongoose.connection.readyState === 1) {
+    startMailBulkWorkerSafe();
+} else {
+    mongoose.connection.once('connected', startMailBulkWorkerSafe);
+}
 // --- Cấu hình Swagger ---
 // const swaggerDocument= JSON.parse(fs.readFileSync('./src/swagger.json', 'utf-8'));
 // app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));

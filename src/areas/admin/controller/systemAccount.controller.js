@@ -22,8 +22,15 @@ function parseCheckinEventId(body) {
 }
 const loginHistoryService = require('../services/loginHistory.service');
 const auditLogService = require('../services/auditLog.service');
+const {
+    getSecret,
+    safeReturnTo,
+    codesEqual,
+} = require('../../../middleware/sensitiveLogsUnlock.middleware');
 
 const PAGE_SIZE = 30;
+const MAX_SENSITIVE_LOG_UNLOCK_FAILS = 8;
+const SENSITIVE_LOG_LOCKOUT_MS = 15 * 60 * 1000;
 
 const systemAccountController = () => {
     return {
@@ -288,6 +295,72 @@ const systemAccountController = () => {
                 console.log(CNAME, e.message);
                 req.session.flash = { type: 'danger', message: 'Lỗi xóa.' };
                 return res.redirect('/admin/system/accounts');
+            }
+        },
+
+        sensitiveLogsUnlockForm: async (req, res) => {
+            try {
+                const returnTo = safeReturnTo(req.query.returnTo);
+                const flash = req.session.flash;
+                delete req.session.flash;
+                const missingSecret = process.env.NODE_ENV === 'production' && !getSecret();
+                const lockedUntil = req.session.sensitiveLogsUnlockLockedUntil || 0;
+                return res.render(VNAME + '/logs_unlock', {
+                    layout: VLAYOUT,
+                    returnTo,
+                    flash: flash || null,
+                    missingSecret,
+                    lockedUntil,
+                });
+            } catch (e) {
+                console.log(CNAME, e.message);
+                return res.redirect('/admin');
+            }
+        },
+
+        sensitiveLogsUnlockPost: async (req, res) => {
+            try {
+                const returnTo = safeReturnTo(req.body.returnTo);
+                const redirectToForm = () => res.redirect(`/admin/system/logs/unlock?returnTo=${encodeURIComponent(returnTo)}`);
+
+                if (process.env.NODE_ENV === 'production' && !getSecret()) {
+                    req.session.flash = { type: 'danger', message: 'Chưa cấu hình AUDIT_VIEW_SECRET trên server.' };
+                    return redirectToForm();
+                }
+                if (!getSecret()) {
+                    req.session.sensitiveLogsUnlockedAt = Date.now();
+                    delete req.session.sensitiveLogsUnlockFails;
+                    delete req.session.sensitiveLogsUnlockLockedUntil;
+                    return res.redirect(returnTo);
+                }
+                const lockedUntil = req.session.sensitiveLogsUnlockLockedUntil || 0;
+                if (Date.now() < lockedUntil) {
+                    req.session.flash = { type: 'warning', message: 'Vui lòng đợi trước khi thử lại.' };
+                    return redirectToForm();
+                }
+                const code = (req.body.code || '').trim();
+                if (!code) {
+                    req.session.flash = { type: 'danger', message: 'Nhập mã.' };
+                    return redirectToForm();
+                }
+                if (!codesEqual(code, getSecret())) {
+                    req.session.sensitiveLogsUnlockFails = (req.session.sensitiveLogsUnlockFails || 0) + 1;
+                    if (req.session.sensitiveLogsUnlockFails >= MAX_SENSITIVE_LOG_UNLOCK_FAILS) {
+                        req.session.sensitiveLogsUnlockLockedUntil = Date.now() + SENSITIVE_LOG_LOCKOUT_MS;
+                        req.session.sensitiveLogsUnlockFails = 0;
+                        req.session.flash = { type: 'danger', message: 'Thử quá nhiều lần. Khóa tạm 15 phút.' };
+                    } else {
+                        req.session.flash = { type: 'danger', message: 'Mã không đúng.' };
+                    }
+                    return redirectToForm();
+                }
+                req.session.sensitiveLogsUnlockedAt = Date.now();
+                delete req.session.sensitiveLogsUnlockFails;
+                delete req.session.sensitiveLogsUnlockLockedUntil;
+                return res.redirect(returnTo);
+            } catch (e) {
+                console.log(CNAME, e.message);
+                return res.redirect('/admin');
             }
         },
 

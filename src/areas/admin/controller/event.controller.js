@@ -15,6 +15,7 @@ const groupAuthorizationHService = require('../services/groupAuthorizationH.serv
 const auditLogService = require('../services/auditLog.service');
 const eventMailConfigService = require('../services/eventMailConfig.service');
 const eventBulkMailService = require('../services/eventBulkMail.service');
+const mailBulkJobService = require('../services/mailBulkJob.service');
 const { convertRowCheckinH, generateUID } = require('../../../utils/participantCheckinExcelRow.util');
 const { normalizePickupTimeRange } = require('../../../utils/pickupTimeRange.util');
 
@@ -255,12 +256,15 @@ const adminEventController = () => {
                 let mailConfig = null;
                 let mailEligibleCount = 0;
                 let sendgridConfigured = false;
+                let mailBulkJobLatest = null;
                 if (n === 1 || n === 2) {
                     sendgridConfigured = eventBulkMailService.isSendGridConfigured();
                 }
                 if (n === 2) {
                     mailConfig = await eventMailConfigService.findByEventId(refreshed._id);
                     mailEligibleCount = await participantCheckinHService.countWithValidEmailByEventId(refreshed._id);
+                    const latestJob = await mailBulkJobService.findLatestJobForEvent(refreshed._id);
+                    mailBulkJobLatest = latestJob ? eventBulkMailService.serializeBulkJobForApi(latestJob) : null;
                 }
 
                 let checkinStats = null;
@@ -310,6 +314,7 @@ const adminEventController = () => {
                     participantFilters,
                     mailConfig,
                     mailEligibleCount,
+                    mailBulkJobLatest,
                     sendgridConfigured,
                     checkinStats,
                     groupAuthorizations,
@@ -603,7 +608,7 @@ const adminEventController = () => {
                         zone: p.zone || '',
                         bib: p.bib || '',
                         bib_name: p.bib_name || '',
-                        distance: p.distance || '',
+                        category: p.category != null && String(p.category) !== '' ? String(p.category) : '',
                         item: p.item || '',
                         qr_code: p.qr_code || '',
                         status: p.status || '',
@@ -787,7 +792,7 @@ const adminEventController = () => {
                     qr_code: qrManual || uidVal,
                     bib: str('bib'),
                     bib_name: str('bib_name'),
-                    distance: str('distance'),
+                    category: str('category'),
                     item: str('item'),
                     checkin_method: methods.includes(m) ? m : 'import',
                     status: statuses.includes(s) ? s : 'registered',
@@ -865,7 +870,7 @@ const adminEventController = () => {
                     qr_code: qrManual || uidKeep,
                     bib: str('bib'),
                     bib_name: str('bib_name'),
-                    distance: str('distance'),
+                    category: str('category'),
                     item: str('item'),
                     checkin_method: methods.includes(m) ? m : 'import',
                     status: statuses.includes(s) ? s : 'registered',
@@ -932,16 +937,11 @@ const adminEventController = () => {
                     content_2: d('content_2', ''),
                     banner_text: d('banner_text', ''),
                     banner_img: body.banner_img !== undefined ? String(body.banner_img || '') : existing?.banner_img,
-                    end_mail_img: body.end_mail_img !== undefined ? String(body.end_mail_img || '') : existing?.end_mail_img,
+                    end_mail_img: '',
                     banner_option: body.banner_option !== undefined ? !!body.banner_option : !!existing?.banner_option,
-                    footer_email: d('footer_email', ''),
-                    footer_hotline: d('footer_hotline', ''),
-                    footer_company_vi: d('footer_company_vi', ''),
-                    footer_company_en: d('footer_company_en', ''),
+                    footer_body: d('footer_body', ''),
                     footer_bg_color: d('footer_bg_color', '#f8f8f8'),
                     footer_text_color: d('footer_text_color', '#666666'),
-                    footer_link_color: d('footer_link_color', '#0066cc'),
-                    footer_border_color: d('footer_border_color', '#e0e0e0'),
                 };
                 const doc = await eventMailConfigService.upsert(event._id, payload);
                 if (!doc) {
@@ -959,6 +959,57 @@ const adminEventController = () => {
             } catch (error) {
                 console.log(CNAME, error.message);
                 return res.status(500).json({ success: false, message: error.message || 'Lỗi server.' });
+            }
+        },
+
+        /** Xem trước mail QR trong tab mới (cấu hình đã lưu + dữ liệu VĐV mẫu) */
+        previewQrMail: async (req, res) => {
+            const { id } = req.params;
+            try {
+                const event = await eventCheckinHService.getById(id);
+                if (!event) {
+                    return res
+                        .status(404)
+                        .type('html')
+                        .send(
+                            '<!DOCTYPE html><html lang="vi"><head><meta charset="utf-8"><title>Lỗi</title></head><body><p>Không tìm thấy sự kiện.</p></body></html>',
+                        );
+                }
+                const mailConfig = await eventMailConfigService.findByEventId(event._id);
+                if (!mailConfig || !String(mailConfig.title || '').trim()) {
+                    return res
+                        .status(400)
+                        .type('html')
+                        .send(
+                            '<!DOCTYPE html><html lang="vi"><head><meta charset="utf-8"><title>Chưa cấu hình</title></head><body><p>Chưa có cấu hình mail đã lưu (cần có tiêu đề). Hãy bấm <strong>Lưu cấu hình</strong> ở bước 3 rồi mở lại preview.</p></body></html>',
+                        );
+                }
+                const bodyHtml = await eventBulkMailService.buildQrMailPreviewHtml(event, mailConfig);
+                const titleSafe = String(mailConfig.title || '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;');
+                const withBanner = bodyHtml.replace(
+                    /<body([^>]*)>/,
+                    '<body$1><div style="background:#fff8e1;border-bottom:1px solid #e6c200;padding:10px 16px;font-size:13px;font-family:Arial,sans-serif;line-height:1.4;">Xem trước email QR — dữ liệu VĐV <strong>mẫu</strong> (theo cấu hình <strong>đã lưu</strong> trên server). Tiêu đề khi gửi: <strong>' +
+                        titleSafe +
+                        '</strong></div>',
+                );
+                const full =
+                    '<!DOCTYPE html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Xem trước — mail QR</title></head>' +
+                    withBanner +
+                    '</html>';
+                res.set('Content-Type', 'text/html; charset=utf-8');
+                res.send(full);
+            } catch (error) {
+                console.log(CNAME, error.message);
+                return res
+                    .status(500)
+                    .type('html')
+                    .send(
+                        '<!DOCTYPE html><html lang="vi"><head><meta charset="utf-8"><title>Lỗi</title></head><body><p>Không tạo được preview. Thử lại sau.</p></body></html>',
+                    );
             }
         },
 
@@ -1008,52 +1059,6 @@ const adminEventController = () => {
             }
         },
 
-        /** Upload ảnh cuối email (multipart, lưu /email_img/...) */
-        uploadMailEndImage: async (req, res) => {
-            const { id } = req.params;
-            try {
-                const event = await eventCheckinHService.getById(id);
-                if (!event) {
-                    return res.status(404).json({ success: false, message: 'Không tìm thấy sự kiện.' });
-                }
-                const file = req.file;
-                if (!file || !file.buffer) {
-                    return res.status(400).json({ success: false, message: 'Vui lòng chọn file ảnh.' });
-                }
-
-                const existing = await eventMailConfigService.findByEventId(event._id);
-                if (existing && existing.end_mail_img) {
-                    const rel = String(existing.end_mail_img).replace(/^\//, '');
-                    const oldAbs = path.join(myPathConfig.root, 'public', rel);
-                    if (fs.existsSync(oldAbs)) {
-                        try {
-                            fs.unlinkSync(oldAbs);
-                        } catch (e) {
-                            console.log(CNAME, 'unlink end_mail_img', e.message);
-                        }
-                    }
-                }
-
-                const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
-                const unique = `end-${Date.now()}-${Math.round(Math.random() * 1e9)}-${safeName}`;
-                const absDir = path.join(myPathConfig.root, 'public', 'email_img');
-                if (!fs.existsSync(absDir)) {
-                    fs.mkdirSync(absDir, { recursive: true });
-                }
-                const absFile = path.join(absDir, unique);
-                fs.writeFileSync(absFile, file.buffer);
-                const pathDB = '/email_img/' + unique;
-                const doc = await eventMailConfigService.setEndMailImg(event._id, pathDB);
-                if (!doc) {
-                    return res.status(500).json({ success: false, message: 'Không lưu được đường dẫn ảnh cuối mail.' });
-                }
-                return res.json({ success: true, end_mail_img: pathDB });
-            } catch (error) {
-                console.log(CNAME, error.message);
-                return res.status(500).json({ success: false, message: error.message || 'Lỗi upload.' });
-            }
-        },
-
         /** Gửi mail QR cho một người (thủ công / gửi lại) */
         sendParticipantQrMail: async (req, res) => {
             const { id, participantId } = req.params;
@@ -1092,7 +1097,7 @@ const adminEventController = () => {
             }
         },
 
-        /** Gửi mail QR hàng loạt (SendGrid) */
+        /** Gửi mail QR hàng loạt — tạo job nền (202 + jobId) */
         sendBulkQrMail: async (req, res) => {
             const { id } = req.params;
             try {
@@ -1107,33 +1112,60 @@ const adminEventController = () => {
                             'Chưa cấu hình SendGrid: cần API key (SENDGRID_API_KEY hoặc SENDGRID_API_KEY_DOMAIN) và địa chỉ From đã verify (SENDGRID_FROM_EMAIL hoặc SENDGRID_FROM_DOMAIN hoặc SENDGRID_FROM).',
                     });
                 }
-                const result = await eventBulkMailService.sendBulkQrMail(event);
-                const anySent = result.sent > 0;
-                const noneToSend = result.totalRecipients === 0;
-                const allFailed = !noneToSend && !anySent;
-                await auditLogService.write({
-                    actorId: req.user?._id,
-                    action: 'create',
-                    resource: 'mail_bulk',
-                    documentId: event._id,
-                    summary: `Gửi mail QR hàng loạt: ${result.sent}/${result.totalRecipients} gửi, lỗi ${result.errors.length}`,
-                    req,
-                });
-                return res.json({
-                    success: anySent || noneToSend,
-                    sent: result.sent,
+                const result = await eventBulkMailService.enqueueBulkQrMailJob(event, req.user?._id);
+                if (!result.ok) {
+                    return res.status(400).json({ success: false, message: result.message });
+                }
+                return res.status(202).json({
+                    success: true,
+                    jobId: result.jobId,
                     totalRecipients: result.totalRecipients,
-                    errors: result.errors,
-                    message:
-                        allFailed && result.errors.length
-                            ? result.errors[0]
-                            : !anySent && noneToSend && result.errors[0]
-                              ? result.errors[0]
-                              : undefined,
+                    message: 'Đã đưa vào hàng đợi gửi mail. Tiến độ cập nhật bên dưới.',
                 });
             } catch (error) {
                 console.log(CNAME, error.message);
                 return res.status(500).json({ success: false, message: error.message || 'Lỗi gửi mail.' });
+            }
+        },
+
+        /** Trạng thái job gửi mail hàng loạt (poll) */
+        getBulkMailJobStatus: async (req, res) => {
+            const { id, jobId } = req.params;
+            try {
+                const event = await eventCheckinHService.getById(id);
+                if (!event) {
+                    return res.status(404).json({ success: false, message: 'Không tìm thấy sự kiện.' });
+                }
+                const job = await mailBulkJobService.findJobByIdForEvent(jobId, id);
+                if (!job) {
+                    return res.status(404).json({ success: false, message: 'Không tìm thấy job.' });
+                }
+                return res.json({
+                    success: true,
+                    job: eventBulkMailService.serializeBulkJobForApi(job),
+                });
+            } catch (error) {
+                console.log(CNAME, error.message);
+                return res.status(500).json({ success: false, message: error.message || 'Lỗi.' });
+            }
+        },
+
+        /** Job gửi mail mới nhất của sự kiện (poll / tải trang) */
+        getLatestBulkMailJob: async (req, res) => {
+            const { id } = req.params;
+            try {
+                const event = await eventCheckinHService.getById(id);
+                if (!event) {
+                    return res.status(404).json({ success: false, message: 'Không tìm thấy sự kiện.' });
+                }
+                const job = await mailBulkJobService.findLatestJobForEvent(id);
+                return res.json({
+                    success: true,
+                    job: job ? eventBulkMailService.serializeBulkJobForApi(job) : null,
+                });
+            } catch (error) {
+                console.log(CNAME, error.message);
+                return res.status(500).json({ success: false, message: error.message || 'Lỗi.' });
             }
         },
 

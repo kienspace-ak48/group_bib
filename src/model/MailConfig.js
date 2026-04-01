@@ -10,11 +10,11 @@ const MailConfigSchema = new mongoose.Schema(
         content_2: String,
         banner_text: String,
         banner_img: String,
-        /** Ảnh hiển thị phía trên footer (cuối nội dung chính), đường dẫn public e.g. /email_img/... */
+        /** @deprecated Không còn dùng trong template mới */
         end_mail_img: String,
         banner_option: { type: Boolean, default: false },
-        //new
-         // Thêm các trường cho footer
+        /** Nội dung chân email (HTML-safe: xuống dòng → &lt;br&gt;) */
+        footer_body: { type: String, default: '' },
         footer_email: { type: String },
         footer_hotline: { type: String },
         footer_company_vi: { type: String },

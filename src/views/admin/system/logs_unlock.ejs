@@ -1,0 +1,49 @@
+<div class="row justify-content-center">
+  <div class="col-md-6 col-lg-5">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-4">
+        <h4 class="mb-2">Xác thực bổ sung</h4>
+        <p class="text-body-secondary small mb-4">
+          <!-- Nhập mã xem nhật ký (biến môi trường <code>AUDIT_VIEW_SECRET</code>). Chỉ <code>super_admin</code> sau khi đăng nhập. -->
+        </p>
+        <% if (flash && flash.message) { %>
+        <div class="alert alert-<%= flash.type === 'success' ? 'success' : flash.type === 'warning' ? 'warning' : 'danger' %> alert-dismissible fade show" role="alert">
+          <%= flash.message %>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <% } %>
+        <% if (typeof lockedUntil === 'number' && lockedUntil > Date.now()) { %>
+        <div class="alert alert-warning small mb-3">
+          Thử quá nhiều lần. Thử lại sau <strong><%= formatDateTimeVn(new Date(lockedUntil)) %></strong>.
+        </div>
+        <% } %>
+        <% if (missingSecret) { %>
+        <div class="alert alert-danger small mb-3">
+          Production cần cấu hình <code>AUDIT_VIEW_SECRET</code> trên server.
+        </div>
+        <% } %>
+        <form method="POST" action="/admin/system/logs/unlock" class="needs-validation" novalidate>
+          <input type="hidden" name="returnTo" value="<%= String(typeof returnTo === 'string' ? returnTo : '/admin/system/logs/audit').replace(/&/g, '&amp;') %>" />
+          <div class="mb-3">
+            <label for="auditCode" class="form-label">Mã xem log</label>
+            <input
+              type="password"
+              name="code"
+              id="auditCode"
+              class="form-control"
+              autocomplete="off"
+              required
+              <%= (typeof lockedUntil === 'number' && lockedUntil > Date.now()) || missingSecret ? 'disabled' : '' %>
+            />
+          </div>
+          <button type="submit" class="btn btn-primary w-100" <%= (typeof lockedUntil === 'number' && lockedUntil > Date.now()) || missingSecret ? 'disabled' : '' %>>
+            Tiếp tục
+          </button>
+        </form>
+      </div>
+    </div>
+    <p class="text-center small text-body-secondary mt-3 mb-0">
+      <a href="/admin">Về trang chủ quản trị</a>
+    </p>
+  </div>
+</div>

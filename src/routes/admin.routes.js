@@ -60,8 +60,10 @@ router.post('/event/:id/group-authorizations', evPerm, adminEventController.crea
 router.post('/event/:id/update', evPerm, adminEventController.updateEvent);
 router.post('/event/:id/mail-config', evPerm, adminEventController.saveMailConfig);
 router.post('/event/:id/mail/banner', evPerm, handleMailBannerUpload, adminEventController.uploadMailBanner);
-router.post('/event/:id/mail/end-image', evPerm, handleMailBannerUpload, adminEventController.uploadMailEndImage);
 router.post('/event/:id/mail/send-bulk', evPerm, adminEventController.sendBulkQrMail);
+router.get('/event/:id/mail/bulk-job/latest', evPerm, adminEventController.getLatestBulkMailJob);
+router.get('/event/:id/mail/bulk-job/:jobId', evPerm, adminEventController.getBulkMailJobStatus);
+router.get('/event/:id/mail/preview', evPerm, adminEventController.previewQrMail);
 router.post('/event/:id/step/confirm', evPerm, adminEventController.confirmStep);
 /** Lịch sử check-in chung (chọn sự kiện bằng ?event=); phải đứng trước /event/:id để không bị nuốt bởi :id */
 router.get('/event/checkin-history', evPerm, adminEventController.checkinHistory);
@@ -75,13 +77,16 @@ router.get('/event/:id/step/:step', evPerm, adminEventController.workspaceStep);
 router.get('/event/:id', evPerm, adminEventController.workspace);
 
 const superOnly = requireRole('super_admin');
+const requireSensitiveLogsUnlock = require('../middleware/sensitiveLogsUnlock.middleware');
 router.get('/system/accounts', superOnly, systemAccountController.listAccounts);
 router.get('/system/accounts/new', superOnly, systemAccountController.newAccountForm);
 router.post('/system/accounts', superOnly, systemAccountController.createAccount);
 router.get('/system/accounts/:id/edit', superOnly, systemAccountController.editAccountForm);
 router.post('/system/accounts/:id', superOnly, systemAccountController.updateAccount);
 router.post('/system/accounts/:id/delete', superOnly, systemAccountController.deleteAccount);
-router.get('/system/logs/login', superOnly, systemAccountController.loginLogs);
-router.get('/system/logs/audit', superOnly, systemAccountController.auditLogs);
+router.get('/system/logs/unlock', superOnly, systemAccountController.sensitiveLogsUnlockForm);
+router.post('/system/logs/unlock', superOnly, systemAccountController.sensitiveLogsUnlockPost);
+router.get('/system/logs/login', superOnly, requireSensitiveLogsUnlock, systemAccountController.loginLogs);
+router.get('/system/logs/audit', superOnly, requireSensitiveLogsUnlock, systemAccountController.auditLogs);
 
 module.exports = router;

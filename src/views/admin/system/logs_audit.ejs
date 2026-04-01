@@ -29,8 +29,8 @@
           <% } else { %>
           <% items.forEach(function (row) { %>
           <tr>
-            <td><%= row.created_at ? new Date(row.created_at).toLocaleString('vi-VN') : '—' %></td>
-            <td><code class="small"><%= row.actor_id ? String(row.actor_id) : '—' %></code></td>
+            <td><%= row.created_at ? formatDateTimeVn(row.created_at) : '—' %></td>
+            <td><%= row.actor_display != null && row.actor_display !== '' ? row.actor_display : '—' %></td>
             <td><span class="badge text-bg-secondary"><%= row.action || '—' %></span></td>
             <td><%= row.resource || '—' %></td>
             <td class="text-break" style="max-width:100px;"><code class="small"><%= row.document_id || '—' %></code></td>

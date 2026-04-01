@@ -28,8 +28,8 @@
           <% } else { %>
           <% items.forEach(function (row) { %>
           <tr>
-            <td><%= row.at ? new Date(row.at).toLocaleString('vi-VN') : '—' %></td>
-            <td><code class="small"><%= row.account_id ? String(row.account_id) : '—' %></code></td>
+            <td><%= row.at ? formatDateTimeVn(row.at) : '—' %></td>
+            <td><%= row.account_display != null && row.account_display !== '' ? row.account_display : '—' %></td>
             <td><%= row.success ? '✓' : '✗' %></td>
             <td><%= row.failure_reason || '—' %></td>
             <td class="text-break" style="max-width:120px;"><%= row.ip || '—' %></td>
