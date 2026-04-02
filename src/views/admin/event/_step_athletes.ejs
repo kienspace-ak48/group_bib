@@ -49,7 +49,11 @@
   var pf = typeof participantFilters !== 'undefined' && participantFilters ? participantFilters : { q_name: '', q_bib: '', q_phone: '', q_cccd: '' };
   var pp = typeof participantPagination !== 'undefined' && participantPagination ? participantPagination : null;
   var defaultPerPage = 20;
-  var atTab = typeof athletesTab !== 'undefined' && athletesTab === 'group' ? 'group' : 'athletes';
+  var atTab = 'athletes';
+  if (typeof athletesTab !== 'undefined') {
+    if (athletesTab === 'group') atTab = 'group';
+    else if (athletesTab === 'single') atTab = 'single';
+  }
   function step1Query(pageNum) {
     var parts = [];
     if (pf.q_name) parts.push('q_name=' + encodeURIComponent(pf.q_name));
@@ -59,7 +63,13 @@
     parts.push('page=' + encodeURIComponent(String(pageNum)));
     if (pp && pp.perPage && pp.perPage !== defaultPerPage) parts.push('perPage=' + encodeURIComponent(String(pp.perPage)));
     if (atTab === 'group') parts.push('tab=group');
+    else if (atTab === 'single') parts.push('tab=single');
     return '?' + parts.join('&');
+  }
+  function tabQueryForClear() {
+    if (atTab === 'group') return '?tab=group';
+    if (atTab === 'single') return '?tab=single';
+    return '';
   }
   function participantRowJson(p) {
     var o = {
@@ -77,7 +87,23 @@
       checkin_method: p.checkin_method || 'import',
       status: p.status || 'registered',
       checkin_by: p.checkin_by || '',
-      gender: p.gender
+      gender: p.gender,
+      group_authorization_id: p.group_authorization_id ? String(p.group_authorization_id) : '',
+      group_auth_creation_source: p.group_auth_creation_source ? String(p.group_auth_creation_source) : '',
+      delegation_enabled: !!(p.delegation_enabled === true),
+      delegate_fullname: p.delegate_fullname != null ? String(p.delegate_fullname) : '',
+      delegate_email: p.delegate_email != null ? String(p.delegate_email) : '',
+      delegate_phone: p.delegate_phone != null ? String(p.delegate_phone) : '',
+      delegate_cccd: p.delegate_cccd != null ? String(p.delegate_cccd) : '',
+      delegate_group_tool_url: p.delegate_group_tool_url != null ? String(p.delegate_group_tool_url) : '',
+      delegation_logs: (p.delegation_logs || []).map(function (lg) {
+        return {
+          createdAt: lg.createdAt,
+          summary: lg.summary != null ? String(lg.summary) : '',
+          actor: lg.actor != null ? String(lg.actor) : '',
+          action: lg.action != null ? String(lg.action) : ''
+        };
+      })
     };
     if (p.dob) o.dob_iso = new Date(p.dob).toISOString();
     if (p.checkin_time) o.checkin_time_iso = new Date(p.checkin_time).toISOString();
@@ -101,7 +127,10 @@
         <button class="nav-link <%= atTab === 'athletes' ? 'active' : '' %>" id="tab-athletes" data-coreui-toggle="tab" data-coreui-target="#paneAthletes" type="button" role="tab" aria-controls="paneAthletes" aria-selected="<%= atTab === 'athletes' ? 'true' : 'false' %>">VĐV</button>
       </li>
       <li class="nav-item" role="presentation">
-        <button class="nav-link <%= atTab === 'group' ? 'active' : '' %>" id="tab-group" data-coreui-toggle="tab" data-coreui-target="#paneGroup" type="button" role="tab" aria-controls="paneGroup" aria-selected="<%= atTab === 'group' ? 'true' : 'false' %>">Uỷ quyền nhóm</button>
+        <button class="nav-link <%= atTab === 'single' ? 'active' : '' %>" id="tab-single" data-coreui-toggle="tab" data-coreui-target="#paneSingle" type="button" role="tab" aria-controls="paneSingle" aria-selected="<%= atTab === 'single' ? 'true' : 'false' %>">Ủy quyền đơn</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link <%= atTab === 'group' ? 'active' : '' %>" id="tab-group" data-coreui-toggle="tab" data-coreui-target="#paneGroup" type="button" role="tab" aria-controls="paneGroup" aria-selected="<%= atTab === 'group' ? 'true' : 'false' %>">Nhóm</button>
       </li>
     </ul>
   </div>
@@ -110,7 +139,8 @@
   <div class="card-body border-bottom">
     <p class="small text-body-secondary mb-3">
       Import Excel (sheet đầu): cột gợi ý <code>fullname</code>, <code>cccd</code>, <code>email</code>, <code>phone</code>,
-      <code>dob</code> / <code>dob(mm/dd/yyyy)</code>, <code>gender</code>, <code>zone</code>, <code>bib</code>, <code>bib_name</code>, <code>category</code>, <code>item</code>,
+      <code>dob</code> / <code>dob(yyyy-mm-dd)</code> — ngày sinh chỉ nhận <strong>chuỗi ISO</strong> <code>yyyy-mm-dd</code> (vd <code>1990-03-15</code>) hoặc ô <strong>kiểu ngày</strong> / serial trong Excel; không parse <code>dd/mm/yyyy</code> dạng text.
+      <code>gender</code>, <code>zone</code>, <code>bib</code>, <code>bib_name</code>, <code>category</code>, <code>item</code>,
       <code>qr_code</code> (tùy; nếu trống sẽ dùng mã <code>uid</code> sinh tự động), <code>status</code>, <code>checkin_method</code>,
       <code>pickup_time_range</code> — chuỗi khung giờ nhận (vd <code>08:00 - 10:00</code>). …
       Mỗi dòng sau import sẽ có <code>uid</code> duy nhất (prefix theo sự kiện, giống logic cũ <code>generateUID</code>).
@@ -159,6 +189,7 @@
     <form method="get" action="/admin/event/<%= ev._id %>/step/1" class="row g-2 align-items-end">
       <input type="hidden" name="page" value="1" />
       <% if (atTab === 'group') { %><input type="hidden" name="tab" value="group" /><% } %>
+      <% if (atTab === 'single') { %><input type="hidden" name="tab" value="single" /><% } %>
       <div class="col-md-3 col-lg-2">
         <label class="form-label small mb-0">Họ tên</label>
         <input type="search" name="q_name" class="form-control form-control-sm" value="<%= pf.q_name %>" placeholder="Tên" autocomplete="off" />
@@ -187,7 +218,7 @@
       </div>
       <div class="col-md-12 col-lg-2 d-flex gap-2">
         <button type="submit" class="btn btn-sm btn-outline-primary">Tìm kiếm</button>
-        <a href="/admin/event/<%= ev._id %>/step/1<%= atTab === 'group' ? '?tab=group' : '' %>" class="btn btn-sm btn-outline-secondary">Xóa lọc</a>
+        <a href="/admin/event/<%= ev._id %>/step/1<%= tabQueryForClear() %>" class="btn btn-sm btn-outline-secondary">Xóa lọc</a>
       </div>
     </form>
     <% if (pp) { %>
@@ -232,10 +263,12 @@
           <% } else { %>
           <% participants.forEach(function (p) { %>
           <% var emailOk = p.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(p.email).trim()); %>
+          <% var delEmailOk = p.delegation_enabled && p.delegate_email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(p.delegate_email).trim()); %>
+          <% var emailOkForMail = delEmailOk || (!p.delegation_enabled && emailOk) || (p.delegation_enabled && !delEmailOk && emailOk); %>
           <% var qrPayload = (p.qr_code != null && String(p.qr_code) !== '') ? String(p.qr_code) : String(p.uid || ''); %>
           <% var isCheckedIn = p.status === 'checked_in' || p.checkin_status === true; %>
           <% var checkinLine = (isCheckedIn && p.checkin_time) ? formatCheckinDisplay(p.checkin_time) : ''; %>
-          <tr class="participant-row" data-participant="<%= participantRowJson(p) %>">
+          <tr class="participant-row" data-participant-id="<%= p._id %>" data-participant="<%= participantRowJson(p) %>">
             <td class="text-start text-nowrap">
               <div><span class="fw-bold text-danger"><%= dash(p.bib) %></span></div>
               <div class="small text-body-secondary"><%= dash(p.category) %></div>
@@ -269,10 +302,10 @@
               <button
                 type="button"
                 class="btn btn-sm btn-outline-secondary py-0 px-2  p-0 js-send-participant-mail"
-                title="<%= emailOk && sgOk ? 'Gửi / gửi lại mail QR' : (!sgOk ? 'Chưa cấu hình SendGrid' : 'Thiếu email hợp lệ') %>"
+                title="<%= emailOkForMail && sgOk ? 'Gửi / gửi lại mail QR' : (!sgOk ? 'Chưa cấu hình SendGrid' : 'Thiếu email hợp lệ (VĐV hoặc người được ủy quyền)') %>"
                 aria-label="Gửi mail QR"
                 data-participant-id="<%= p._id %>"
-                <%= (!sgOk || !emailOk) ? 'disabled' : '' %>
+                <%= (!sgOk || !emailOkForMail) ? 'disabled' : '' %>
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.05 3.555A2 2 0 0 1 2 2h12a2 2 0 0 1 1.95 1.555L8 8.414.05 3.555zM0 4.697v7.104l5.803-3.558L0 4.697zM6.761 8.83l-6.57 4.027A2 2 0 0 0 2 14h12a2 2 0 0 0 1.808-1.144l-6.57-4.027L8 9.586l-1.239-.757zm3.436-.586L16 11.801V4.697l-5.803 3.546z"/></svg>
               </button>
@@ -328,10 +361,19 @@
     <% } %>
   </div>
   </div>
+  <div class="tab-pane fade <%= atTab === 'single' ? 'show active' : '' %>" id="paneSingle" role="tabpanel" aria-labelledby="tab-single">
+    <%- include('./_step_single_delegation', {
+      event: ev,
+      delegationLogs: typeof delegationLogs !== 'undefined' ? delegationLogs : [],
+      singleDelegationParticipants: typeof singleDelegationParticipants !== 'undefined' ? singleDelegationParticipants : [],
+      participantDelegationLogs: typeof participantDelegationLogs !== 'undefined' ? participantDelegationLogs : [],
+    }) %>
+  </div>
   <div class="tab-pane fade <%= atTab === 'group' ? 'show active' : '' %>" id="paneGroup" role="tabpanel" aria-labelledby="tab-group">
     <%- include('./_step_group_auth', {
       event: ev,
       groupAuthorizations: typeof groupAuthorizations !== 'undefined' ? groupAuthorizations : [],
+      delegationLogs: typeof delegationLogs !== 'undefined' ? delegationLogs : [],
     }) %>
   </div>
   </div>
@@ -366,36 +408,90 @@
 </div>
 
 <div class="modal fade" id="editParticipantModal" tabindex="-1" aria-labelledby="editParticipantModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-fullscreen-md-down edit-participant-modal-dialog">
+    <div class="modal-content d-flex flex-column">
+      <div class="modal-header flex-shrink-0 py-2 py-md-3">
         <h5 class="modal-title" id="editParticipantModalLabel">Sửa người tham dự</h5>
         <button type="button" class="btn-close" data-coreui-dismiss="modal" aria-label="Đóng"></button>
       </div>
-      <form method="POST" action="" class="js-edit-participant-form">
-        <input type="hidden" name="ret_q_name" value="<%= pf.q_name %>" />
-        <input type="hidden" name="ret_q_bib" value="<%= pf.q_bib %>" />
-        <input type="hidden" name="ret_q_phone" value="<%= pf.q_phone %>" />
-        <input type="hidden" name="ret_q_cccd" value="<%= pf.q_cccd %>" />
-        <input type="hidden" name="ret_page" value="<%= pp ? pp.page : 1 %>" />
-        <input type="hidden" name="ret_perPage" value="<%= pp ? pp.perPage : defaultPerPage %>" />
-        <div class="modal-body">
-          <div class="row g-2">
-            <%- include('./_athlete_form_fields', { prefix: 'edit' }) %>
-          </div>
+      <div class="modal-body p-0 flex-grow-1 d-flex flex-column">
+        <div class="edit-participant-modal-scroll flex-grow-1 p-3 border-bottom">
+          <form method="POST" action="" id="editParticipantForm" class="js-edit-participant-form">
+            <input type="hidden" name="ret_q_name" value="<%= pf.q_name %>" />
+            <input type="hidden" name="ret_q_bib" value="<%= pf.q_bib %>" />
+            <input type="hidden" name="ret_q_phone" value="<%= pf.q_phone %>" />
+            <input type="hidden" name="ret_q_cccd" value="<%= pf.q_cccd %>" />
+            <input type="hidden" name="ret_page" value="<%= pp ? pp.page : 1 %>" />
+            <input type="hidden" name="ret_perPage" value="<%= pp ? pp.perPage : defaultPerPage %>" />
+            <% if (atTab === 'single') { %><input type="hidden" name="ret_tab" value="single" /><% } %>
+            <% if (atTab === 'group') { %><input type="hidden" name="ret_tab" value="group" /><% } %>
+            <div class="row g-2">
+              <%- include('./_athlete_form_fields', { prefix: 'edit' }) %>
+            </div>
+            <hr class="my-3" />
+            <input type="hidden" name="delegation_fields_present" value="1" />
+            <div class="rounded border bg-white p-3 mb-2">
+              <div class="fw-semibold small mb-1">Ủy quyền đơn (nhận BIB hộ)</div>
+              <p class="small text-body-secondary mb-2 mb-md-3">
+                Bật khi có người nhận hộ thay VĐV; Xem thêm tab
+                <a href="/admin/event/<%= ev._id %>/step/1?tab=single">Ủy quyền đơn</a>.
+              </p>
+              <div class="form-check mb-0">
+                <input class="form-check-input" type="checkbox" name="delegation_enabled" value="true" id="editDelegationEnabled" />
+                <label class="form-check-label" for="editDelegationEnabled">Uỷ quyền nhận BIB</label>
+              </div>
+              <div id="editDelegationFieldsWrap" class="mt-3 js-delegation-fields-wrap d-none">
+                <div class="row g-2">
+                  <div class="col-12 col-sm-6">
+                    <label class="form-label small mb-0">Người được ủy quyền <span class="text-danger">*</span></label>
+                    <input type="text" name="delegate_fullname" class="form-control form-control-sm edit-deleg-fullname js-delegation-input" maxlength="200" autocomplete="name" />
+                  </div>
+                  <div class="col-12 col-sm-6">
+                    <label class="form-label small mb-0">Email</label>
+                    <input type="email" name="delegate_email" class="form-control form-control-sm edit-deleg-email js-delegation-input" maxlength="200" autocomplete="email" />
+                  </div>
+                  <div class="col-12 col-sm-6">
+                    <label class="form-label small mb-0">SĐT</label>
+                    <input type="text" name="delegate_phone" class="form-control form-control-sm edit-deleg-phone js-delegation-input" maxlength="30" autocomplete="tel" />
+                  </div>
+                  <div class="col-12 col-sm-6">
+                    <label class="form-label small mb-0">CCCD / Passport</label>
+                    <input type="text" name="delegate_cccd" class="form-control form-control-sm edit-deleg-cccd js-delegation-input" maxlength="20" />
+                  </div>
+                </div>
+              </div>
+              <div class="mt-3 pt-2 border-top">
+                <div class="fw-semibold small mb-2">Lịch sử uỷ quyền</div>
+                <div id="editDelegationHistory" class="edit-delegation-history text-body-secondary small"></div>
+              </div>
+            </div>
+          </form>
         </div>
-        <div class="modal-footer flex-wrap gap-2">
-          <button type="button" class="btn btn-secondary" data-coreui-dismiss="modal" data-bs-dismiss="modal">Đóng</button>
-          <button type="button" class="btn btn-outline-primary" id="btnEditSendMail" disabled>Gửi mail QR</button>
-          <button type="submit" class="btn btn-primary ms-auto">Lưu thay đổi</button>
+      </div>
+      <div class="modal-footer d-flex justify-content-between align-items-center flex-wrap gap-2 border-top">
+  
+        <!-- Left buttons -->
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-secondary" data-coreui-dismiss="modal" data-bs-dismiss="modal">
+            Đóng
+          </button>
+          <button type="button" class="btn btn-outline-primary" id="btnEditSendMail" disabled>
+            Gửi mail QR
+          </button>
         </div>
-      </form>
+      
+        <!-- Right button -->
+        <button type="submit" form="editParticipantForm" class="btn btn-primary">
+          Lưu thay đổi
+        </button>
+      
+      </div>
     </div>
   </div>
 </div>
 
 <div class="modal fade" id="participantQrModal" tabindex="-1" aria-labelledby="participantQrModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable modal-fullscreen-md-down">
     <div class="modal-content">
       <div class="modal-header py-2">
         <h5 class="modal-title" id="participantQrModalLabel">Mã QR</h5>
@@ -467,6 +563,33 @@
     padding: 0.15em 0.5em;
     border: 1px solid rgba(173, 20, 87, 0.25);
   }
+  .edit-participant-modal-dialog {
+    margin-left: auto;
+    margin-right: auto;
+  }
+  @media (min-width: 768px) {
+    .edit-participant-modal-dialog {
+      width: min(96vw, 1040px);
+      max-width: 100%;
+    }
+  }
+  /* Fullscreen md↓: body cuộn, footer cố định */
+  .edit-participant-modal-scroll {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    min-height: 0;
+    max-height: min(78vh, 720px);
+  }
+  @media (max-width: 767.98px) {
+    /* Một vùng cuộn (modal-body); tránh scroll lồng nhau */
+    .edit-participant-modal-scroll {
+      max-height: none;
+      overflow-y: visible;
+    }
+  }
+  #editParticipantModal .modal-body.flex-grow-1 {
+    min-height: 0;
+  }
 </style>
 <script>
 (function () {
@@ -505,9 +628,17 @@
   }
 
   var editModalEl = document.getElementById('editParticipantModal');
-  var editForm = document.querySelector('.js-edit-participant-form');
+  var editForm = document.getElementById('editParticipantForm') || document.querySelector('.js-edit-participant-form');
   var eventId = '<%= ev._id %>';
   var sgOk = <%= sgOk ? 'true' : 'false' %>;
+
+  function escapeHtml(s) {
+    return String(s || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
 
   function fillEditForm(data) {
     if (!editForm) return;
@@ -535,25 +666,115 @@
     set('.edit-checkin_by', data.checkin_by);
     set('.edit-checkin_time', toDatetimeLocal(data.checkin_time_iso));
     set('.edit-pickup_time_range', data.pickup_time_range != null ? String(data.pickup_time_range) : '');
-    var btnEdit = document.getElementById('btnEditSendMail');
-    if (btnEdit) {
-      btnEdit.dataset.participantId = data._id || '';
-      var emOk = data.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(data.email).trim());
-      btnEdit.disabled = !sgOk || !emOk;
+    var deChk = editForm.querySelector('#editDelegationEnabled');
+    if (deChk) deChk.checked = !!(data.delegation_enabled === true || data.delegation_enabled === 'true');
+    set('.edit-deleg-fullname', data.delegate_fullname || '');
+    set('.edit-deleg-email', data.delegate_email || '');
+    set('.edit-deleg-phone', data.delegate_phone || '');
+    set('.edit-deleg-cccd', data.delegate_cccd || '');
+    var hist = document.getElementById('editDelegationHistory');
+    if (hist) {
+      var logs = data.delegation_logs || [];
+      if (!logs.length) {
+        hist.innerHTML = '<p class="small text-body-secondary mb-0">Chưa có lịch sử.</p>';
+      } else {
+        hist.innerHTML = logs.map(function (lg) {
+          var t = lg.createdAt ? new Date(lg.createdAt).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '';
+          return '<div class="rounded border bg-body-tertiary px-2 py-2 mb-2"><div class="text-body-secondary small">' + escapeHtml(t) + '</div><div class="text-body">' + escapeHtml(lg.summary || '') + '</div></div>';
+        }).join('');
+      }
     }
+    var btnEdit = document.getElementById('btnEditSendMail');
+    if (btnEdit) btnEdit.dataset.participantId = data._id || '';
+    syncEditDelegationPanel();
+  }
+
+  function refreshEditSendMailState() {
+    var btnEdit = document.getElementById('btnEditSendMail');
+    if (!btnEdit || !editForm) return;
+    var rx = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    var chk = editForm.querySelector('#editDelegationEnabled');
+    var delOn = chk && chk.checked;
+    var delEl = editForm.querySelector('.edit-deleg-email');
+    var athEl = editForm.querySelector('.edit-email');
+    var d = delEl && delEl.value && rx.test(String(delEl.value).trim());
+    var a = athEl && athEl.value && rx.test(String(athEl.value).trim());
+    var hasMail = false;
+    if (delOn && d) hasMail = true;
+    else if (delOn && !d && a) hasMail = true;
+    else if (!delOn && a) hasMail = true;
+    btnEdit.disabled = !sgOk || !hasMail;
+  }
+
+  function syncEditDelegationPanel() {
+    var chk = editForm && editForm.querySelector('#editDelegationEnabled');
+    var wrap = document.getElementById('editDelegationFieldsWrap');
+    if (!chk || !wrap) return;
+    var on = chk.checked;
+    wrap.classList.toggle('d-none', !on);
+    wrap.querySelectorAll('.js-delegation-input').forEach(function (el) {
+      el.disabled = !on;
+    });
+    refreshEditSendMailState();
+  }
+
+  var deChkEl = document.getElementById('editDelegationEnabled');
+  if (deChkEl) {
+    deChkEl.addEventListener('change', syncEditDelegationPanel);
+  }
+  if (editForm) {
+    editForm.addEventListener('input', function () { refreshEditSendMailState(); });
   }
 
   function openEditFromRow(tr) {
-    var raw = tr.getAttribute('data-participant');
-    if (!raw) return;
-    try {
-      var data = JSON.parse(decodeURIComponent(raw));
-      fillEditForm(data);
-      var ModalCtor = getModalCtor();
-      if (ModalCtor && editModalEl) {
-        ModalCtor.getOrCreateInstance(editModalEl).show();
-      }
-    } catch (e) { console.error(e); }
+    if (!tr || !editModalEl || !editForm) return;
+    var pid = tr.getAttribute('data-participant-id');
+    if (!pid) {
+      try {
+        var rawFallback = tr.getAttribute('data-participant');
+        if (rawFallback) {
+          var parsed = JSON.parse(decodeURIComponent(rawFallback));
+          pid = parsed && parsed._id ? String(parsed._id) : '';
+        }
+      } catch (err) { /* ignore */ }
+    }
+    if (!pid) return;
+    var ModalCtor = getModalCtor();
+    fetch('/admin/event/' + encodeURIComponent(eventId) + '/participants/' + encodeURIComponent(pid) + '/json', {
+      method: 'GET',
+      credentials: 'same-origin',
+      headers: { Accept: 'application/json' },
+    })
+      .then(function (r) {
+        return r.json().then(function (j) {
+          return { ok: r.ok, j: j };
+        });
+      })
+      .then(function (ref) {
+        if (!ref.ok || !ref.j || !ref.j.ok || !ref.j.participant) {
+          throw new Error((ref.j && ref.j.message) || 'fetch');
+        }
+        fillEditForm(ref.j.participant);
+        if (ModalCtor && editModalEl) {
+          ModalCtor.getOrCreateInstance(editModalEl).show();
+        }
+      })
+      .catch(function (e) {
+        console.error(e);
+        var M = getModalCtor();
+        try {
+          var raw = tr.getAttribute('data-participant');
+          if (raw) {
+            var data = JSON.parse(decodeURIComponent(raw));
+            fillEditForm(data);
+            if (M && editModalEl) {
+              M.getOrCreateInstance(editModalEl).show();
+            }
+            return;
+          }
+        } catch (err) { /* fallthrough */ }
+        alert('Không tải được dữ liệu mới nhất. Thử làm mới trang (F5).');
+      });
   }
 
   document.querySelectorAll('.js-open-edit').forEach(function (cell) {
@@ -631,11 +852,32 @@
       qrText.textContent = text;
       qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(text);
       qrImg.alt = 'QR: ' + text;
+      var titleEl = document.getElementById('participantQrModalLabel');
+      if (titleEl) titleEl.textContent = 'Mã QR';
       var ModalCtor = getModalCtor();
       if (ModalCtor && qrModalEl) {
         ModalCtor.getOrCreateInstance(qrModalEl).show();
       }
     });
   });
+
+  var btnSingleDelegGroupQr = document.getElementById('btnSingleDelegGroupQr');
+  if (btnSingleDelegGroupQr && qrModalEl && qrImg && qrText) {
+    btnSingleDelegGroupQr.addEventListener('click', function (e) {
+      e.preventDefault();
+      var url = btnSingleDelegGroupQr.getAttribute('data-qr-url');
+      if (!url || !String(url).trim()) {
+        alert('Chưa có URL trang nhóm (kiểm tra PUBLIC_BASE_URL trong .env).');
+        return;
+      }
+      qrText.textContent = url;
+      qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(url);
+      qrImg.alt = 'QR trang nhóm';
+      var titleEl = document.getElementById('participantQrModalLabel');
+      if (titleEl) titleEl.textContent = 'Mã QR trang nhóm (ủy quyền)';
+      var ModalCtor = getModalCtor();
+      if (ModalCtor) ModalCtor.getOrCreateInstance(qrModalEl).show();
+    });
+  }
 })();
 </script>

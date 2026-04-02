@@ -85,6 +85,18 @@
         </div>
       </div>
       <div class="col-12">
+        <label class="form-label d-block mb-2">Ủy quyền đơn (link trong mail QR)</label>
+        <div class="text-body-secondary small mb-2">
+          Khi bật, mail gửi QR (hàng loạt / thủ công) có thêm nút dẫn tới trang công khai để người nhận hộ điền thông tin (một VĐV — một link bí mật).”.
+        </div>
+        <% var _sd = ev.single_delegation_enabled !== false; %>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="single_delegation_enabled" id="single_delegation_enabled" value="true" <%= _sd ? 'checked' : '' %> />
+          <label class="form-check-label" for="single_delegation_enabled">Cho phép ủy quyền đơn qua link trong mail</label>
+          <div class="form-text">Mặc định bật. Tắt nếu sự kiện chỉ dùng ủy quyền nhóm do BTC nhập.</div>
+        </div>
+      </div>
+      <div class="col-12">
         <button type="submit" class="btn btn-primary">Lưu thông tin</button>
       </div>
     </form>

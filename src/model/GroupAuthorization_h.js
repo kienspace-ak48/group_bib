@@ -30,6 +30,11 @@ const GroupAuthorizationSchema = new mongoose.Schema(
         ],
         /** Token không đoán được — tra cứu trong tool check-in cùng sự kiện */
         token: { type: String, unique: true, sparse: true, index: true },
+        /** Cách tạo nhóm: link mail (ủy quyền đơn) vs admin */
+        creation_source: {
+            type: String,
+            enum: ['email_single_link', 'admin_group_tab', 'admin_participant_modal'],
+        },
     },
     { timestamps: true },
 );

@@ -6,6 +6,7 @@ const authRoute = require('./auth.route');
 const apiRoute = require('./api.routes.js');
 const authMiddleware = require('../middleware/auth.middleware');
 const toolCheckinRoute = require('./toolCheckin.routes');
+const delegatePublicRoutes = require('./delegatePublic.routes');
 
 function route(app){
     // login
@@ -13,6 +14,7 @@ function route(app){
     // 
     app.use(apiRoute);
     app.use('/admin', authMiddleware, adminRoute);
+    app.use(delegatePublicRoutes);
     app.use('/tool-checkin', authMiddleware, toolCheckinRoute);
     app.use('/test', testRoute)
     app.use('/', clientRoute);

@@ -1,0 +1,218 @@
+<% var p = participant || {}; %>
+<% var locked = typeof delegationLocked !== 'undefined' && delegationLocked; %>
+<% var savedFlash = typeof justSaved !== 'undefined' && justSaved; %>
+<% function esc(v) { return (v != null && String(v).trim() !== '') ? String(v) : '—'; } %>
+<style>
+  .delegate-tool-wrap {
+    max-width: 28rem;
+    margin-left: auto;
+    margin-right: auto;
+    padding-bottom: 2rem;
+  }
+  .delegate-tool-hero {
+    border-radius: 12px;
+    background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 55%, #3b82f6 100%);
+    color: #fff;
+    padding: 1.25rem 1.35rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 8px 24px rgba(37, 99, 235, 0.22);
+  }
+  .delegate-tool-hero h1 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 0 0 0.35rem 0;
+    letter-spacing: -0.02em;
+    line-height: 1.3;
+  }
+  .delegate-tool-hero .sub {
+    font-size: 0.8rem;
+    opacity: 0.92;
+    margin: 0;
+    line-height: 1.45;
+  }
+  .delegate-tool-en {
+    font-size: 0.78rem;
+    font-weight: 500;
+    opacity: 0.88;
+    margin-top: 0.25rem;
+    line-height: 1.4;
+  }
+  .delegate-tool-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.1rem 1.2rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  }
+  .delegate-tool-card .label-muted {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #64748b;
+    margin-bottom: 0.35rem;
+  }
+  .delegate-tool-card .athlete-name {
+    font-weight: 600;
+    font-size: 1.05rem;
+    color: #0f172a;
+  }
+  .delegate-tool-bib {
+    font-weight: 700;
+    color: #c2410c;
+    font-size: 1rem;
+  }
+  .delegate-tool-alert {
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    font-size: 0.875rem;
+    line-height: 1.45;
+    margin-bottom: 1rem;
+  }
+  .delegate-tool-alert.ok {
+    border: 1px solid #bae6fd;
+    background: #f0f9ff;
+    color: #0c4a6e;
+  }
+  .delegate-tool-alert.err {
+    border: 1px solid #fecaca;
+    background: #fef2f2;
+    color: #991b1b;
+  }
+  .delegate-tool-alert.done {
+    border: 1px solid #a7f3d0;
+    background: #ecfdf5;
+    color: #065f46;
+  }
+  .delegate-tool-form label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 0.35rem;
+  }
+  .delegate-tool-form .req {
+    color: #dc2626;
+  }
+  .delegate-tool-form input[type="text"],
+  .delegate-tool-form input[type="email"] {
+    width: 100%;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 0.55rem 0.75rem;
+    font-size: 0.9rem;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .delegate-tool-form input:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  }
+  .delegate-tool-form .field {
+    margin-bottom: 0.85rem;
+  }
+  .delegate-tool-submit {
+    width: 100%;
+    border: none;
+    border-radius: 10px;
+    padding: 0.65rem 1rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #fff;
+    background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+  }
+  .delegate-tool-submit:hover {
+    filter: brightness(1.05);
+  }
+  .delegate-tool-hint {
+    font-size: 0.8rem;
+    color: #64748b;
+    line-height: 1.5;
+    margin: 0 0 1rem 0;
+  }
+  .delegate-tool-name-highlight {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1e3a8a;
+  }
+</style>
+<div class="delegate-tool-wrap p-4">
+  <div class="delegate-tool-hero">
+    <h1><%= locked ? 'Đã ủy quyền nhận hộ' : 'Ủy quyền nhận hộ' %></h1>
+    <p class="delegate-tool-en"><%= locked ? 'Pickup authorization completed' : 'Pickup authorization — declare who will collect on your behalf' %></p>
+    <p class="sub"><%= event && event.name ? event.name : '' %></p>
+  </div>
+
+  <% if (!locked) { %>
+  <p class="delegate-tool-hint">
+    Chỉ <strong>người nhận email QR</strong> (người tham gia) mở trang này. Không gửi link cho người được nhờ nhận hộ.<br />
+    <span class="delegate-tool-en" style="display:block;margin-top:0.35rem;color:#475569;">Only the <strong>participant</strong> who received this email should open this page. Do not forward the link to your representative.</span>
+  </p>
+  <% } %>
+
+  <div class="delegate-tool-card">
+    <div class="label-muted">Người tham gia / Participant</div>
+    <div class="athlete-name"><%= p.fullname || '—' %></div>
+    <div class="mt-2" style="font-size: 0.9rem; color: #334155">
+      Mã (BIB/code): <span class="delegate-tool-bib"><%= p.bib != null && String(p.bib).trim() !== '' ? p.bib : '—' %></span>
+    </div>
+    <% if (p.category) { %><div class="mt-1" style="font-size: 0.875rem; color: #64748b">Hạng mục / Category: <%= p.category %></div><% } %>
+  </div>
+
+  <% if (locked) { %>
+  <div class="delegate-tool-alert done">
+    <% if (savedFlash) { %>
+    <strong>Đã ghi nhận thành công.</strong>
+     Làm mới trang (F5) chỉ hiển thị lại thông tin — không gửi lại biểu mẫu.<br />
+    <span style="font-size:0.82rem;color:#047857;">Saved. Refreshing only reloads this page and does not resubmit the form.</span>
+    <% } else { %>
+    <strong>Đã thực hiện ủy quyền (một lần).</strong><br />
+    <span style="font-size:0.82rem;color:#047857;">Authorization is complete (one-time).</span>
+    <% } %>
+    <p style="margin: 0.65rem 0 0 0; font-size: 0.85rem; line-height: 1.45; color: #065f46;">
+      Muốn thay đổi thông tin người nhận hộ, vui lòng liên hệ <strong>BTC</strong>.<br />
+      <span style="font-size:0.8rem;opacity:0.95;">To change the representative’s details, contact the <strong>event organizer</strong>.</span>
+    </p>
+  </div>
+  <div class="delegate-tool-card">
+    <div class="label-muted">Người được ủy quyền · Authorized representative</div>
+    <p class="delegate-tool-name-highlight"><%= esc(p.delegate_fullname) %></p>
+  </div>
+  <% } else { %>
+
+  <% if (typeof errQuery !== 'undefined' && errQuery) { %>
+  <div class="delegate-tool-alert err">
+    Vui lòng nhập họ tên người nhận hộ. / Please enter the representative’s full name.
+  </div>
+  <% } %>
+  <form method="POST" action="/tool-checkin/delegate/<%= encodeURIComponent(token) %>" class="delegate-tool-card delegate-tool-form">
+    <p class="delegate-tool-hint" style="margin-top: 0">
+      Chỉ khai báo <strong>một lần</strong>. Sau khi gửi, không thể sửa tại đây — cần liên hệ BTC nếu cần đổi.<br />
+      <span class="delegate-tool-en" style="display:block;margin-top:0.35rem;color:#475569;">Submit <strong>once</strong>. After saving, changes here are disabled — contact the organizer if you need to update.</span>
+    </p>
+    <p class="delegate-tool-hint" style="margin-top: 0">
+      Người sẽ <strong>nhận đồ / làm check-in hộ</strong> cho người tham gia trên.<br />
+      <span class="delegate-tool-en" style="display:block;margin-top:0.35rem;color:#475569;">The person who will <strong>pick up materials or check in</strong> on behalf of the participant above.</span>
+    </p>
+    <div class="field">
+      <label>Họ tên <span class="req">*</span> <span class="delegate-tool-en" style="font-weight:500;color:#64748b;">Full name</span></label>
+      <input type="text" name="fullname" required maxlength="200" autocomplete="name" value="" />
+    </div>
+    <div class="field">
+      <label>Email <span class="delegate-tool-en" style="font-weight:500;color:#64748b;">(để nhận mã QR / for QR)</span></label>
+      <input type="email" name="email" maxlength="200" autocomplete="email" value="" placeholder="" />
+    </div>
+    <div class="field">
+      <label>Số điện thoại / Phone</label>
+      <input type="text" name="phone" maxlength="30" autocomplete="tel" value="" />
+    </div>
+    <div class="field">
+      <label>CCCD / Passport / ID</label>
+      <input type="text" name="cccd" maxlength="20" value="" />
+    </div>
+    <button type="submit" class="delegate-tool-submit">Gửi thông tin · Submit</button>
+  </form>
+  <% } %>
+</div>

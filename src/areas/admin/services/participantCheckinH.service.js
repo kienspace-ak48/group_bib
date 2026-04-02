@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const mongoose = require('mongoose');
 const ParticipantCheckinH = require('../../../model/ParticipantCheckin_h');
 
@@ -23,6 +24,26 @@ class ParticipantCheckinHService {
         addRegex('phone', filters.phone);
         addRegex('cccd', filters.cccd);
         return { $and: andParts };
+    }
+
+    /** VĐV đang bật ủy quyền (theo participant, không gộp nhóm). */
+    async findByEventIdWithDelegationEnabled(eventId, limit = 500) {
+        try {
+            const lim = Math.min(500, Math.max(1, Number(limit) || 500));
+            return await ParticipantCheckinH.find({
+                $and: [
+                    this._eventIdQuery(eventId),
+                    { delegation_enabled: true },
+                    { delegate_fullname: { $nin: [null, ''] } },
+                ],
+            })
+                .sort({ updatedAt: -1 })
+                .limit(lim)
+                .lean();
+        } catch (e) {
+            console.log(CNAME, e.message);
+            return [];
+        }
     }
 
     async findByEventIdWithFilters(eventId, filters = {}, options = {}) {
@@ -54,9 +75,46 @@ class ParticipantCheckinHService {
         return { email: { $regex: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, $options: 'i' } };
     }
 
+    /**
+     * Người nhận mail QR: nếu bật ủy quyền và có email đại diện hợp lệ → đại diện; không thì email VĐV.
+     * Nếu bật ủy quyền nhưng thiếu email đại diện hợp lệ → fallback email VĐV.
+     */
+    _qrMailRecipientQuery() {
+        const rx = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
+        return {
+            $or: [
+                { $and: [{ delegation_enabled: true }, { delegate_email: rx }] },
+                {
+                    $and: [
+                        {
+                            $or: [
+                                { delegation_enabled: { $ne: true } },
+                                { delegation_enabled: { $exists: false } },
+                            ],
+                        },
+                        { email: rx },
+                    ],
+                },
+                {
+                    $and: [
+                        { delegation_enabled: true },
+                        {
+                            $or: [
+                                { delegate_email: { $exists: false } },
+                                { delegate_email: '' },
+                                { delegate_email: { $not: rx } },
+                            ],
+                        },
+                        { email: rx },
+                    ],
+                },
+            ],
+        };
+    }
+
     async countWithValidEmailByEventId(eventId) {
         try {
-            const q = { $and: [this._eventIdQuery(eventId), this._emailQuery()] };
+            const q = { $and: [this._eventIdQuery(eventId), this._qrMailRecipientQuery()] };
             return await ParticipantCheckinH.countDocuments(q);
         } catch (e) {
             console.log(CNAME, e.message);
@@ -66,7 +124,7 @@ class ParticipantCheckinHService {
 
     async findByEventIdWithValidEmail(eventId) {
         try {
-            const q = { $and: [this._eventIdQuery(eventId), this._emailQuery()] };
+            const q = { $and: [this._eventIdQuery(eventId), this._qrMailRecipientQuery()] };
             return await ParticipantCheckinH.find(q).lean();
         } catch (e) {
             console.log(CNAME, e.message);
@@ -422,7 +480,7 @@ class ParticipantCheckinHService {
      */
     async findNextBatchWithValidEmail(eventId, afterId, limit) {
         try {
-            const q = { $and: [this._eventIdQuery(eventId), this._emailQuery()] };
+            const q = { $and: [this._eventIdQuery(eventId), this._qrMailRecipientQuery()] };
             if (afterId != null && mongoose.Types.ObjectId.isValid(String(afterId))) {
                 q.$and.push({ _id: { $gt: new mongoose.Types.ObjectId(String(afterId)) } });
             }
@@ -445,6 +503,45 @@ class ParticipantCheckinHService {
         } catch (e) {
             console.log(CNAME, e.message);
             return false;
+        }
+    }
+
+    /** Sinh `delegation_token` một lần cho mail ủy quyền đơn (lazy). */
+    async ensureDelegationToken(participantId) {
+        try {
+            if (!mongoose.Types.ObjectId.isValid(String(participantId))) return null;
+            const id = new mongoose.Types.ObjectId(String(participantId));
+            const cur = await ParticipantCheckinH.findById(id).select('delegation_token').lean();
+            if (!cur) return null;
+            if (cur.delegation_token) return cur.delegation_token;
+            const token = crypto.randomBytes(24).toString('hex');
+            await ParticipantCheckinH.updateOne(
+                {
+                    _id: id,
+                    $or: [
+                        { delegation_token: { $exists: false } },
+                        { delegation_token: null },
+                        { delegation_token: '' },
+                    ],
+                },
+                { $set: { delegation_token: token } },
+            );
+            const again = await ParticipantCheckinH.findById(id).select('delegation_token').lean();
+            return again && again.delegation_token ? again.delegation_token : token;
+        } catch (e) {
+            console.log(CNAME, e.message);
+            return null;
+        }
+    }
+
+    async findByDelegationToken(token) {
+        try {
+            const t = String(token || '').trim();
+            if (!t) return null;
+            return await ParticipantCheckinH.findOne({ delegation_token: t }).lean();
+        } catch (e) {
+            console.log(CNAME, e.message);
+            return null;
         }
     }
 }

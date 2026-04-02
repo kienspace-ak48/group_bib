@@ -1,0 +1,176 @@
+<% 
+  var ev = typeof event !== 'undefined' ? event : {};
+  var evId = ev._id ? String(ev._id) : '';
+  var logs = typeof delegationLogs !== 'undefined' && delegationLogs ? delegationLogs : [];
+  var logsSingle = logs.filter(function (log) { return (log.source || '') === 'email_single_link'; });
+  var sdParts = typeof singleDelegationParticipants !== 'undefined' && singleDelegationParticipants ? singleDelegationParticipants : [];
+  var pdLogs = typeof participantDelegationLogs !== 'undefined' && participantDelegationLogs ? participantDelegationLogs : [];
+  function formatLogAt(d) {
+    if (!d) return '—';
+    var x = new Date(d);
+    if (Number.isNaN(x.getTime())) return '—';
+    return x.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
+%>
+<div class="card-body border-bottom bg-body-tertiary">
+  <p class="small text-body-secondary mb-0">
+    <strong>Ủy quyền nhận BIB</strong> VĐV mở link trong mail QR để khai báo, hoặc BTC sửa trong popup “Sửa” VĐV.
+    Nhiều VĐV có thể cùng trỏ một người nhận. Mail QR gửi tới email người được ủy quyền khi bật ủy quyền và có email hợp lệ; không thì gửi cho VĐV.
+  </p>
+</div>
+<% if (evId) { %>
+<div class="card-body border-bottom bg-white">
+  <div class="fw-semibold small mb-2">Tùy chỉnh (admin)</div>
+  <ul class="small text-body-secondary mb-0 ps-3">
+    <li class="mb-1">
+      <a href="/admin/event/<%= evId %>/step/0">Bước 1 — Thông tin sự kiện</a>:
+      bật checkbox <em>Cho phép ủy quyền đơn qua link trong mail</em>.
+    </li>
+    <li>
+      <a href="/admin/event/<%= evId %>/step/2">Bước 3 — Cấu hình mail</a>:
+      nội dung mail QR và khối CTA “Khai báo người nhận hộ thay”.
+    </li>
+  </ul>
+</div>
+<% } %>
+
+<div class="card-header bg-body-tertiary bg-opacity-50 py-2 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+  <span class="small fw-semibold">Đang bật ủy quyền (theo participant)</span>
+</div>
+<div class="card-body p-0 border-bottom">
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr class="small">
+          <th>VĐV (BIB)</th>
+          <th>Người được ủy quyền</th>
+          <th class="text-end">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (!sdParts.length) { %>
+        <tr>
+          <td colspan="3" class="text-center text-body-secondary py-4 small">Chưa có VĐV nào bật ủy quyền với họ tên người nhận.</td>
+        </tr>
+        <% } else { %>
+        <% sdParts.forEach(function (row) { %>
+        <% var pid = String(row._id); %>
+        <tr class="small">
+          <td>
+            <span class="fw-medium"><%= row.bib != null && String(row.bib).trim() !== '' ? row.bib : '—' %></span>
+            <% if (row.fullname) { %><div class="text-body-secondary text-break"><%= row.fullname %></div><% } %>
+          </td>
+          <td>
+            <form method="POST" action="/admin/event/<%= evId %>/participants/<%= pid %>/delegation" class="row g-1 align-items-end">
+              <input type="hidden" name="ret_tab" value="single" />
+              <div class="col-12 col-md-3">
+                <label class="form-label mb-0 text-body-secondary" style="font-size: 0.7rem">Bật</label>
+                <div class="form-check mb-0">
+                  <input class="form-check-input" type="checkbox" name="delegation_enabled" value="true" <%= row.delegation_enabled ? 'checked' : '' %> id="sd-en-<%= pid %>" />
+                  <label class="form-check-label" for="sd-en-<%= pid %>">Uỷ quyền</label>
+                </div>
+              </div>
+              <div class="col-12 col-md-3">
+                <label class="form-label mb-0 text-body-secondary" style="font-size: 0.7rem">Họ tên *</label>
+                <input type="text" name="delegate_fullname" class="form-control form-control-sm" maxlength="200" value="<%= row.delegate_fullname != null ? String(row.delegate_fullname) : '' %>" />
+              </div>
+              <div class="col-12 col-md-2">
+                <label class="form-label mb-0 text-body-secondary" style="font-size: 0.7rem">Email</label>
+                <input type="email" name="delegate_email" class="form-control form-control-sm" maxlength="200" value="<%= row.delegate_email != null ? String(row.delegate_email) : '' %>" />
+              </div>
+              <div class="col-12 col-md-2">
+                <label class="form-label mb-0 text-body-secondary" style="font-size: 0.7rem">SĐT</label>
+                <input type="text" name="delegate_phone" class="form-control form-control-sm" maxlength="30" value="<%= row.delegate_phone != null ? String(row.delegate_phone) : '' %>" />
+              </div>
+              <div class="col-12 col-md-2">
+                <label class="form-label mb-0 text-body-secondary" style="font-size: 0.7rem">CCCD</label>
+                <input type="text" name="delegate_cccd" class="form-control form-control-sm" maxlength="20" value="<%= row.delegate_cccd != null ? String(row.delegate_cccd) : '' %>" />
+              </div>
+              <div class="col-12 d-flex flex-wrap gap-1 pt-1">
+                <button type="submit" class="btn btn-sm btn-primary">Lưu</button>
+              </div>
+            </form>
+          </td>
+          <td class="text-end text-nowrap small text-body-secondary">
+            —
+          </td>
+        </tr>
+        <% }); %>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card-header bg-body-tertiary bg-opacity-50 py-2 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+  <span class="small fw-semibold">Lịch sử ủy quyền (theo VĐV)</span>
+</div>
+<div class="card-body p-0 border-bottom">
+  <div class="table-responsive">
+    <table class="table table-sm table-striped align-middle mb-0">
+      <thead class="table-light">
+        <tr class="small">
+          <th>Thời điểm</th>
+          <th>Diễn giải</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (!pdLogs.length) { %>
+        <tr>
+          <td colspan="2" class="text-center text-body-secondary py-4 small">Chưa có lịch sử (model mới).</td>
+        </tr>
+        <% } else { %>
+        <% pdLogs.forEach(function (log) { %>
+        <tr class="small">
+          <td class="text-nowrap"><%= formatLogAt(log.createdAt) %></td>
+          <td class="text-break"><%= log.summary != null ? String(log.summary) : '—' %></td>
+        </tr>
+        <% }); %>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card-header bg-body-tertiary bg-opacity-50 py-2 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+  <span class="small fw-semibold">Lịch sử cũ (nhóm / link mail — tham khảo)</span>
+</div>
+<div class="card-body p-0">
+  <div class="table-responsive">
+    <table class="table table-sm table-striped align-middle mb-0">
+      <thead class="table-light">
+        <tr class="small">
+          <th>Thời điểm</th>
+          <th>Loại</th>
+          <th>VĐV (BIB)</th>
+          <th>Đại diện</th>
+          <th>Nguồn</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (!logsSingle.length) { %>
+        <tr>
+          <td colspan="5" class="text-center text-body-secondary py-4 small">Không có bản ghi nguồn email_single_link.</td>
+        </tr>
+        <% } else { %>
+        <% logsSingle.forEach(function (log) { %>
+        <% var rep = log.representative || {}; %>
+        <tr class="small">
+          <td class="text-nowrap"><%= formatLogAt(log.createdAt) %></td>
+          <td><%= log.kind != null ? String(log.kind) : '—' %></td>
+          <td>
+            <span class="fw-medium"><%= log.participant_bib != null && String(log.participant_bib).trim() !== '' ? log.participant_bib : '—' %></span>
+            <% if (log.participant_fullname) { %><div class="text-body-secondary text-break"><%= log.participant_fullname %></div><% } %>
+          </td>
+          <td>
+            <div class="text-break"><%= rep.fullname || '—' %></div>
+            <% if (rep.email) { %><div class="text-body-secondary text-break"><%= rep.email %></div><% } %>
+          </td>
+          <td><%= log.source != null ? String(log.source) : '—' %></td>
+        </tr>
+        <% }); %>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>

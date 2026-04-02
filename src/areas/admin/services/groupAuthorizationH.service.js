@@ -2,6 +2,10 @@ const crypto = require('crypto');
 const mongoose = require('mongoose');
 const GroupAuthorization = require('../../../model/GroupAuthorization_h');
 const ParticipantCheckinH = require('../../../model/ParticipantCheckin_h');
+const eventCheckinHService = require('./eventCheckinH.service');
+const delegationAuthorizationLogHService = require('./delegationAuthorizationLogH.service');
+const eventBulkMailService = require('./eventBulkMail.service');
+const { getPublicBaseUrl } = require('../../../utils/publicBaseUrl.util');
 
 const CNAME = 'groupAuthorizationH.service.js ';
 
@@ -22,6 +26,51 @@ class GroupAuthorizationHService {
         return mongoose.Types.ObjectId.isValid(sid)
             ? { $or: [{ event_id: sid }, { event_id: new mongoose.Types.ObjectId(sid) }] }
             : { event_id: eventId };
+    }
+
+    /**
+     * Chuẩn hóa field hiển thị: ủy quyền lưu trên participant (không gộp nhóm).
+     */
+    attachParticipantDelegationForList(participants) {
+        if (!participants || !participants.length) return participants;
+        return participants.map((p) => ({
+            ...p,
+            delegation_enabled: p.delegation_enabled === true,
+            delegate_fullname: p.delegate_fullname != null ? String(p.delegate_fullname) : '',
+            delegate_email: p.delegate_email != null ? String(p.delegate_email) : '',
+            delegate_phone: p.delegate_phone != null ? String(p.delegate_phone) : '',
+            delegate_cccd: p.delegate_cccd != null ? String(p.delegate_cccd) : '',
+            group_auth_creation_source: p.group_authorization_id ? 'legacy_group' : undefined,
+            delegate_group_tool_url: '',
+        }));
+    }
+
+    /** @deprecated Dùng attachParticipantDelegationForList */
+    async attachGroupAuthCreationSource(participants) {
+        return this.attachParticipantDelegationForList(participants);
+    }
+
+    /** Gỡ VĐV khỏi nhóm legacy (khi chuyển sang ủy quyền trên participant). */
+    async detachParticipantFromLegacyGroup(participantId, eventId) {
+        try {
+            const pid = toOid(participantId);
+            const eoid = this._eventOid(eventId);
+            if (!pid || !eoid) return { ok: false };
+            const p = await ParticipantCheckinH.findById(pid).lean();
+            if (!p || String(p.event_id) !== String(eventId)) return { ok: false };
+            const gid = p.group_authorization_id;
+            if (!gid) return { ok: true, detached: false };
+            await ParticipantCheckinH.updateOne({ _id: pid }, { $unset: { group_authorization_id: 1 } });
+            await GroupAuthorization.updateOne({ _id: gid }, { $pull: { participant_ids: pid } });
+            const left = await GroupAuthorization.findById(gid).lean();
+            if (!left || !left.participant_ids || left.participant_ids.length === 0) {
+                await GroupAuthorization.deleteOne({ _id: gid });
+            }
+            return { ok: true, detached: true };
+        } catch (e) {
+            console.log(CNAME, e.message);
+            return { ok: false };
+        }
     }
 
     async listByEventId(eventId) {
@@ -188,7 +237,89 @@ class GroupAuthorizationHService {
         return { ok: true, ids: oids, message: '' };
     }
 
-    async create(eventId, body) {
+    /**
+     * @param {object} [options]
+     * @param {'admin_group_tab'|'admin_participant_modal'} [options.delegationSource]
+     * @param {import('mongoose').Types.ObjectId|string} [options.actorAdminId]
+     */
+    async _afterParticipantsAssigned(eventId, gaDoc, participantIds, rep, options = {}) {
+        const source = options.delegationSource || 'admin_group_tab';
+        const actorAdminId = options.actorAdminId;
+        const event = await eventCheckinHService.getById(eventId);
+        if (!event) return;
+        const hostBase = getPublicBaseUrl();
+        const token = gaDoc && gaDoc.token ? String(gaDoc.token) : '';
+        const toolPath = token ? `/tool-checkin/group-auth/${encodeURIComponent(token)}` : '';
+        const toolFullUrl = hostBase && toolPath ? `${hostBase}${toolPath}` : toolPath;
+
+        const pids = (participantIds || []).map(toOid).filter(Boolean);
+        for (const pid of pids) {
+            const p = await ParticipantCheckinH.findById(pid).lean();
+            if (!p) continue;
+            let mailSent = false;
+            let mailError = '';
+            const mailTo = String(rep.email || '').trim();
+            if (mailTo && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mailTo)) {
+                if (eventBulkMailService.isSendGridConfigured()) {
+                    try {
+                        await eventBulkMailService.sendGroupDelegateNotificationMail({
+                            event,
+                            representative: rep,
+                            participant: p,
+                            toolFullUrl: toolFullUrl || toolPath,
+                            toolPath,
+                        });
+                        mailSent = true;
+                    } catch (e) {
+                        mailError = e.message || String(e);
+                    }
+                } else {
+                    mailError = 'SendGrid chưa cấu hình';
+                }
+            } else {
+                mailError = 'Không có email đại diện hợp lệ';
+            }
+
+            await delegationAuthorizationLogHService.append({
+                event_id: eventId,
+                group_authorization_id: gaDoc._id,
+                participant_id: pid,
+                kind: 'participant_assigned',
+                representative: rep,
+                participant_bib: p.bib,
+                participant_fullname: p.fullname,
+                source,
+                actor_admin_id: actorAdminId,
+                mail_to: mailTo,
+                mail_sent: mailSent,
+                mail_error: mailError,
+            });
+        }
+    }
+
+    async _afterParticipantsUnassigned(eventId, gaDoc, participantIds, rep, options = {}) {
+        const source = options.delegationSource || 'admin_group_tab';
+        const actorAdminId = options.actorAdminId;
+        const pids = (participantIds || []).map(toOid).filter(Boolean);
+        for (const pid of pids) {
+            const p = await ParticipantCheckinH.findById(pid).lean();
+            await delegationAuthorizationLogHService.append({
+                event_id: eventId,
+                group_authorization_id: gaDoc ? gaDoc._id : undefined,
+                participant_id: pid,
+                kind: 'participant_unassigned',
+                representative: rep || {},
+                participant_bib: p ? p.bib : '',
+                participant_fullname: p ? p.fullname : '',
+                source,
+                actor_admin_id: actorAdminId,
+                mail_sent: false,
+                mail_error: '',
+            });
+        }
+    }
+
+    async create(eventId, body, options = {}) {
         try {
             const rep = {
                 fullname: String(body.fullname || '').trim(),
@@ -208,11 +339,15 @@ class GroupAuthorizationHService {
             if (!v.ok) return v;
 
             const token = crypto.randomBytes(24).toString('hex');
+            const rawSrc = options.delegationSource || options.creation_source;
+            const CREATION = ['email_single_link', 'admin_group_tab', 'admin_participant_modal'];
+            const creation_source = CREATION.includes(rawSrc) ? rawSrc : 'admin_group_tab';
             const doc = await GroupAuthorization.create({
                 event_id: this._eventOid(eventId),
                 representative: rep,
                 participant_ids: v.ids,
                 token,
+                creation_source,
             });
 
             await ParticipantCheckinH.updateMany(
@@ -220,14 +355,17 @@ class GroupAuthorizationHService {
                 { $set: { group_authorization_id: doc._id } },
             );
 
-            return { ok: true, doc: doc.toObject() };
+            const gaObj = doc.toObject();
+            await this._afterParticipantsAssigned(eventId, gaObj, v.ids, rep, options);
+
+            return { ok: true, doc: gaObj };
         } catch (e) {
             console.log(CNAME, e.message);
             return { ok: false, message: e.message || 'Không tạo được nhóm.' };
         }
     }
 
-    async update(gaId, eventId, body) {
+    async update(gaId, eventId, body, options = {}) {
         try {
             const existing = await this.findByIdAndEvent(gaId, eventId);
             if (!existing) return { ok: false, message: 'Không tìm thấy nhóm ủy quyền.' };
@@ -282,6 +420,13 @@ class GroupAuthorizationHService {
                 { new: true },
             ).lean();
 
+            if (removed.length) {
+                await this._afterParticipantsUnassigned(eventId, existing, removed, existing.representative, options);
+            }
+            if (added.length) {
+                await this._afterParticipantsAssigned(eventId, updated, added, rep, options);
+            }
+
             return { ok: true, doc: updated };
         } catch (e) {
             console.log(CNAME, e.message);
@@ -289,13 +434,14 @@ class GroupAuthorizationHService {
         }
     }
 
-    async remove(gaId, eventId) {
+    async remove(gaId, eventId, options = {}) {
         try {
             const existing = await this.findByIdAndEvent(gaId, eventId);
             if (!existing) return { ok: false, message: 'Không tìm thấy nhóm.' };
 
             const pids = (existing.participant_ids || []).map(toOid).filter(Boolean);
             if (pids.length) {
+                await this._afterParticipantsUnassigned(eventId, existing, pids, existing.representative, options);
                 await ParticipantCheckinH.updateMany(
                     { _id: { $in: pids }, group_authorization_id: existing._id },
                     { $unset: { group_authorization_id: 1 } },

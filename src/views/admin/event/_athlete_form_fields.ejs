@@ -1,49 +1,49 @@
 <% var p = typeof prefix !== 'undefined' ? prefix : 'manual'; %>
-        <div class="col-md-4">
+        <div class="col-12 col-sm-6 col-xl-3">
           <label class="form-label small">Họ tên <span class="text-danger">*</span></label>
           <input type="text" name="fullname" class="form-control form-control-sm <%= p %>-fullname" required maxlength="200" />
         </div>
-        <div class="col-md-3">
+        <div class="col-12 col-sm-6 col-xl-3">
           <label class="form-label small">CCCD <span class="text-danger">*</span></label>
           <input type="text" name="cccd" class="form-control form-control-sm <%= p %>-cccd" required maxlength="20" />
         </div>
-        <div class="col-md-2">
+        <div class="col-12 col-sm-6 col-xl-2">
           <label class="form-label small">BIB</label>
           <input type="text" name="bib" class="form-control form-control-sm <%= p %>-bib" maxlength="50" />
         </div>
-        <div class="col-md-3">
+        <div class="col-12 col-sm-6 col-xl-4">
           <label class="form-label small">BIB name</label>
           <input type="text" name="bib_name" class="form-control form-control-sm <%= p %>-bib_name" maxlength="120" />
         </div>
-        <div class="col-md-3">
-          <label class="form-label small">Hạng mục (category)</label>
+        <div class="col-12 col-sm-6 col-xl-3">
+          <label class="form-label small" title="category">Hạng mục</label>
           <input type="text" name="category" class="form-control form-control-sm <%= p %>-category" maxlength="120" />
         </div>
-        <div class="col-md-3">
-          <label class="form-label small">Item / vật phẩm</label>
+        <div class="col-12 col-sm-6 col-xl-3">
+          <label class="form-label small">Item</label>
           <input type="text" name="item" class="form-control form-control-sm <%= p %>-item" maxlength="120" />
         </div>
-        <div class="col-md-3">
-          <label class="form-label small">Zone / khu</label>
+        <div class="col-12 col-sm-6 col-xl-3">
+          <label class="form-label small">Zone</label>
           <input type="text" name="zone" class="form-control form-control-sm <%= p %>-zone" maxlength="80" />
         </div>
-        <div class="col-md-3">
-          <label class="form-label small">QR code (tùy)</label>
+        <div class="col-12 col-sm-6 col-xl-3">
+          <label class="form-label small">QR code</label>
           <input type="text" name="qr_code" class="form-control form-control-sm <%= p %>-qr_code" maxlength="200" placeholder="Để trống = dùng uid" />
         </div>
-        <div class="col-md-4">
+        <div class="col-12 col-sm-6 col-lg-4">
           <label class="form-label small">Email</label>
           <input type="email" name="email" class="form-control form-control-sm <%= p %>-email" maxlength="120" />
         </div>
-        <div class="col-md-3">
+        <div class="col-12 col-sm-6 col-lg-4">
           <label class="form-label small">Điện thoại</label>
           <input type="text" name="phone" class="form-control form-control-sm <%= p %>-phone" maxlength="30" />
         </div>
-        <div class="col-md-2">
-          <label class="form-label small">Ngày sinh</label>
+        <div class="col-12 col-sm-6 col-lg-2">
+          <label class="form-label small">DOB <small class="text-body-secondary">(yyyy-mm-dd)</small></label>
           <input type="date" name="dob" class="form-control form-control-sm <%= p %>-dob" />
         </div>
-        <div class="col-md-3">
+        <div class="col-12 col-sm-6 col-lg-2">
           <label class="form-label small">Giới tính</label>
           <select name="gender" class="form-select form-select-sm <%= p %>-gender">
             <option value="">—</option>
@@ -61,7 +61,7 @@
             <option value="app">app</option>
           </select>
         </div> -->
-        <div class="col-md-3">
+        <div class="col-12 col-sm-6 col-lg-3">
           <label class="form-label small">Status</label>
           <select name="status" class="form-select form-select-sm <%= p %>-status">
             <option value="registered">registered</option>
@@ -78,7 +78,7 @@
           <label class="form-label small">checkin_time</label>
           <input type="datetime-local" name="checkin_time" class="form-control form-control-sm <%= p %>-checkin_time" />
         </div> -->
-        <div class="col-md-6">
-          <label class="form-label small">Khung giờ nhận (pickup_time_range)</label>
+        <div class="col-12 col-lg-9">
+          <label class="form-label small" title="pickup_time_range">Khung giờ nhận</label>
           <input type="text" name="pickup_time_range" maxlength="120" class="form-control form-control-sm <%= p %>-pickup_time_range" placeholder="vd: 08:00 - 10:00" autocomplete="off" />
         </div>

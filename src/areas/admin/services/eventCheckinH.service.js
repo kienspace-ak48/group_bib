@@ -64,6 +64,7 @@ class EventCheckinHService {
                 'workflow_step',
                 'max_confirmed_step',
                 'checkin_capture_mode',
+                'single_delegation_enabled',
             ];
             const $set = {};
             for (const k of allowed) {

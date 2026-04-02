@@ -6,20 +6,40 @@ const { normalizePickupTimeRange } = require('./pickupTimeRange.util');
 /**
  * Map một dòng Excel → payload ParticipantCheckin_h (trừ uid — gán ở controller).
  *
- * Ngày (dob, checkin_time): ô Date/DateTime Excel (serial ≥ 1 hoặc có ngày) hoặc chuỗi parse được.
+ * dob: ô Date Excel hoặc chuỗi yyyy-mm-dd. checkin_time: Date/DateTime Excel hoặc chuỗi parse được.
  *
  * pickup_time_range: chuỗi tự do (vd "08:00 - 10:00").
  */
+function dateMatchesYMD(d, y, m0based, day) {
+    return d.getFullYear() === y && d.getMonth() === m0based && d.getDate() === day;
+}
+
+/**
+ * Ngày sinh khi import: ô Date/serial Excel, hoặc chuỗi ISO yyyy-mm-dd (có thể kèm giờ).
+ * Không parse dd/mm hay mm/dd trong text — tránh nhầm định dạng.
+ */
 function parseDobCell(dobExcel) {
     if (dobExcel == null || dobExcel === '') return null;
+    if (dobExcel instanceof Date && !Number.isNaN(dobExcel.getTime())) {
+        const d = new Date(dobExcel.getFullYear(), dobExcel.getMonth(), dobExcel.getDate());
+        return Number.isNaN(d.getTime()) ? null : d;
+    }
     if (typeof dobExcel === 'number' && !Number.isNaN(dobExcel)) {
         const d = excelDateToJSDate(dobExcel);
         return d && !Number.isNaN(d.getTime()) ? d : null;
     }
-    const d = new Date(dobExcel);
-    return Number.isNaN(d.getTime()) ? null : d;
+    const s = String(dobExcel).trim();
+    if (!s) return null;
+    const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T\s].*)?$/);
+    if (iso) {
+        const y = parseInt(iso[1], 10);
+        const mo = parseInt(iso[2], 10);
+        const da = parseInt(iso[3], 10);
+        const d = new Date(y, mo - 1, da);
+        return dateMatchesYMD(d, y, mo - 1, da) ? d : null;
+    }
+    return null;
 }
-
 function firstCell(row, ...keys) {
     for (const k of keys) {
         if (row[k] != null && row[k] !== '') {
@@ -31,14 +51,16 @@ function firstCell(row, ...keys) {
 }
 
 function parseDobFromRow(row) {
-    const a = parseDobCell(row['dob(mm/dd/yyyy)']);
-    if (a) return a;
-    const b = parseDobCell(row.dob);
-    if (b) return b;
-    const c = parseDobCell(firstCell(row, 'Ngày sinh', 'ngay_sinh', 'DOB'));
+    const keys = ['dob(yyyy-mm-dd)', 'dob', 'DOB'];
+    for (const key of keys) {
+        if (row[key] != null && row[key] !== '') {
+            const p = parseDobCell(row[key]);
+            if (p) return p;
+        }
+    }
+    const c = parseDobCell(firstCell(row, 'Ngày sinh', 'ngay_sinh'));
     return c || null;
 }
-
 function parseOptionalDate(row, ...keys) {
     const raw = firstCell(row, ...keys);
     if (raw == null || raw === '') return undefined;

@@ -15,7 +15,7 @@ const headers = [
     'cccd',
     'email',
     'phone',
-    'dob(mm/dd/yyyy)',
+    'dob(yyyy-mm-dd)',
     'gender',
     'zone',
     'bib',
@@ -40,7 +40,7 @@ for (let i = 1; i <= 100; i++) {
     const month = 1 + ((i * 3) % 12);
     const day = 1 + ((i * 7) % 28);
     const year = 1988 + (i % 15);
-    const dob = `${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}/${year}`;
+    const dob = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     /** 12 chữ số, duy nhất theo STT */
     const cccd = `10${String(i).padStart(10, '0')}`;
     rows.push([

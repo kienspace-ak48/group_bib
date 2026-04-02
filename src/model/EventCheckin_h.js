@@ -54,6 +54,14 @@ const eventSchema = new mongoose.Schema(
             enum: ['none', 'signature', 'photo', 'both'],
             default: 'both',
         },
+        /**
+         * Bật ủy quyền đơn (link trong mail QR): VĐV forward cho người nhận hộ mở form công khai.
+         * Mặc định true; tắt khi không dùng luồng tự phục vụ.
+         */
+        single_delegation_enabled: {
+            type: Boolean,
+            default: true,
+        },
     },
     { timestamps: true },
 );

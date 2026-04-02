@@ -2,6 +2,21 @@ const mongoose = require('mongoose');
 const Participant = require('../model/ParticipantCheckin_h');
 const EventCheckin = require('../model/EventCheckin_h');
 const groupAuthorizationHService = require('../areas/admin/services/groupAuthorizationH.service');
+const participantCheckinHService = require('../areas/admin/services/participantCheckinH.service');
+const eventCheckinHService = require('../areas/admin/services/eventCheckinH.service');
+const participantDelegationLogHService = require('../areas/admin/services/participantDelegationLogH.service');
+const eventBulkMailService = require('../areas/admin/services/eventBulkMail.service');
+const {
+    parseDelegationFromToolBody,
+    finalizeDelegationState,
+    snapshotFromParticipant,
+    computeDelegationAction,
+    buildDelegationLogSummary,
+} = require('../utils/participantDelegation.util');
+
+function isValidEmailForQr(s) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(String(s || '').trim());
+}
 
 function eventId(req) {
     return req.user?.checkin_event_id;
@@ -280,6 +295,142 @@ const toolCheckinController = () => {
                 groupToken: token,
                 groupAuthViewerRole: role,
             });
+        },
+
+        /** Form công khai: VĐV điền thông tin người nhận hộ (ủy quyền đơn — link trong mail QR). */
+        singleDelegationForm: async (req, res) => {
+            try {
+                const token = String(req.params.token || '').trim();
+                const p = await participantCheckinHService.findByDelegationToken(token);
+                if (!p) {
+                    return res.status(404).render('tool/delegate_error', {
+                        layout: 'layouts/main',
+                        title: 'Lỗi — Ủy quyền nhận đồ',
+                        message: 'Liên kết không hợp lệ hoặc đã hết hiệu lực.',
+                    });
+                }
+                const event = await eventCheckinHService.getById(p.event_id);
+                if (!event) {
+                    return res.status(404).render('tool/delegate_error', {
+                        layout: 'layouts/main',
+                        title: 'Lỗi — Ủy quyền nhận đồ',
+                        message: 'Không tìm thấy sự kiện.',
+                    });
+                }
+                if (event.single_delegation_enabled === false) {
+                    return res.status(403).render('tool/delegate_error', {
+                        layout: 'layouts/main',
+                        title: 'Lỗi — Ủy quyền nhận đồ',
+                        message: 'Sự kiện không bật ủy quyền đơn qua link.',
+                    });
+                }
+                const delegationLocked =
+                    p.delegation_enabled === true && String(p.delegate_fullname || '').trim() !== '';
+                const errQuery = String(req.query.err || '').trim() === '1';
+                const justSaved = String(req.query.saved || '').trim() === '1';
+                const title = `Ủy quyền nhận đồ — ${event.name || 'Sự kiện'}`;
+                return res.render('tool/delegate_form', {
+                    layout: 'layouts/main',
+                    title,
+                    participant: p,
+                    event,
+                    token,
+                    delegationLocked,
+                    errQuery,
+                    justSaved,
+                });
+            } catch (e) {
+                console.error('singleDelegationForm', e);
+                if (!res.headersSent) {
+                    return res.status(500).render('tool/delegate_error', {
+                        layout: 'layouts/main',
+                        title: 'Lỗi — Ủy quyền nhận đồ',
+                        message: 'Lỗi máy chủ. Vui lòng thử lại sau.',
+                    });
+                }
+            }
+        },
+
+        singleDelegationSubmit: async (req, res) => {
+            try {
+                const token = String(req.params.token || '').trim();
+                const p = await participantCheckinHService.findByDelegationToken(token);
+                if (!p) {
+                    return res.status(404).render('tool/delegate_error', {
+                        layout: 'layouts/main',
+                        title: 'Lỗi — Ủy quyền nhận đồ',
+                        message: 'Liên kết không hợp lệ.',
+                    });
+                }
+                const event = await eventCheckinHService.getById(p.event_id);
+                if (!event || event.single_delegation_enabled === false) {
+                    return res.status(403).render('tool/delegate_error', {
+                        layout: 'layouts/main',
+                        title: 'Lỗi — Ủy quyền nhận đồ',
+                        message: 'Không thể gửi biểu mẫu.',
+                    });
+                }
+                const alreadyDone =
+                    p.delegation_enabled === true && String(p.delegate_fullname || '').trim() !== '';
+                if (alreadyDone) {
+                    return res.redirect(303, `/tool-checkin/delegate/${encodeURIComponent(token)}`);
+                }
+                const fullname = String(req.body.fullname || '').trim();
+                if (!fullname) {
+                    return res.redirect(303, `/tool-checkin/delegate/${encodeURIComponent(token)}?err=1`);
+                }
+                const oldSnap = snapshotFromParticipant(p);
+                const parsed = parseDelegationFromToolBody(req.body);
+                const finSnap = finalizeDelegationState(parsed);
+                const action = computeDelegationAction(oldSnap, finSnap);
+                if (!action) {
+                    return res.redirect(303, `/tool-checkin/delegate/${encodeURIComponent(token)}`);
+                }
+                const saved = await participantCheckinHService.updateByIdAndEvent(p._id, p.event_id, finSnap);
+                if (!saved) {
+                    return res.status(400).render('tool/delegate_error', {
+                        layout: 'layouts/main',
+                        title: 'Lỗi — Ủy quyền nhận đồ',
+                        message: 'Không lưu được thông tin ủy quyền.',
+                    });
+                }
+                await groupAuthorizationHService.detachParticipantFromLegacyGroup(p._id, p.event_id);
+                await participantDelegationLogHService.append({
+                    event_id: p.event_id,
+                    participant_id: p._id,
+                    actor: 'participant',
+                    action,
+                    delegate_snapshot: {
+                        fullname: finSnap.delegate_fullname,
+                        email: finSnap.delegate_email,
+                        phone: finSnap.delegate_phone,
+                        cccd: finSnap.delegate_cccd,
+                    },
+                    summary: buildDelegationLogSummary('participant', action, finSnap),
+                });
+                if (finSnap.delegation_enabled && isValidEmailForQr(finSnap.delegate_email)) {
+                    try {
+                        if (eventBulkMailService.isSendGridConfigured()) {
+                            const updated = await participantCheckinHService.getById(p._id);
+                            if (updated) {
+                                await eventBulkMailService.sendQrMailToParticipant(event, updated);
+                            }
+                        }
+                    } catch (mailErr) {
+                        console.error('singleDelegationSubmit sendQrMail', mailErr.message || mailErr);
+                    }
+                }
+                return res.redirect(303, `/tool-checkin/delegate/${encodeURIComponent(token)}?saved=1`);
+            } catch (e) {
+                console.error('singleDelegationSubmit', e);
+                if (!res.headersSent) {
+                    return res.status(500).render('tool/delegate_error', {
+                        layout: 'layouts/main',
+                        title: 'Lỗi — Ủy quyền nhận đồ',
+                        message: 'Lỗi máy chủ. Vui lòng thử lại sau.',
+                    });
+                }
+            }
         },
     };
 };

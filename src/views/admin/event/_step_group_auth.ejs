@@ -2,18 +2,44 @@
   var ev = typeof event !== 'undefined' ? event : {};
   var evId = ev._id ? String(ev._id) : '';
   var groups = typeof groupAuthorizations !== 'undefined' && groupAuthorizations ? groupAuthorizations : [];
+  var logs = typeof delegationLogs !== 'undefined' && delegationLogs ? delegationLogs : [];
+  var logsGroup = logs.filter(function (log) { return (log.source || '') !== 'email_single_link'; });
+  function kindLabel(k) {
+    if (k === 'participant_assigned') return 'Gán VĐV';
+    if (k === 'participant_unassigned') return 'Gỡ VĐV';
+    if (k === 'group_deleted') return 'Xóa nhóm';
+    return k || '—';
+  }
+  function sourceLabel(s) {
+    if (s === 'admin_participant_modal') return 'Modal VĐV';
+    if (s === 'admin_group_tab') return 'Tab nhóm';
+    if (s === 'email_single_link') return 'Link mail (ủy quyền đơn)';
+    return s || '—';
+  }
+  function formatLogAt(d) {
+    if (!d) return '—';
+    var x = new Date(d);
+    if (Number.isNaN(x.getTime())) return '—';
+    return x.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
   function bibListFromRow(row) {
     if (!row.participantPreview || !row.participantPreview.length) return '';
     return row.participantPreview.map(function (p) { return p.bib || ''; }).filter(Boolean).join(', ');
   }
 %>
-<div class="card-body border-bottom bg-body-tertiary">
+<!-- <div class="card-body border-bottom border-warning bg-warning bg-opacity-10">
+  <p class="small text-body-secondary mb-0">
+    <strong>Tab Nhóm</strong> tạm dừng mở rộng — ưu tiên luồng <strong>ủy quyền đơn</strong> (qua link trong mail QR).
+    Danh sách và thao tác dưới đây vẫn giữ để xem / bảo trì dữ liệu cũ.
+  </p>
+</div> -->
+<!-- <div class="card-body border-bottom bg-body-tertiary">
   <p class="small text-body-secondary mb-0">
     Một <strong>người đại diện</strong> có thể nhận đồ / check-in hộ nhiều VĐV (theo BIB). Mỗi VĐV chỉ thuộc <strong>tối đa một</strong> nhóm.
     <strong>Link đầy đủ</strong> và <strong>QR</strong> mở trang danh sách nhóm trong <code>/tool-checkin</code> (TNV đã đăng nhập đúng sự kiện). QR chứa cùng URL — quét bằng điện thoại đã đăng nhập sẵn tài khoản check-in.
-    Có thể đặt biến môi trường <code>PUBLIC_BASE_URL</code> (vd <code>https://ten-mien.com</code>) nếu cần URL tuyệt đối đúng khi có reverse proxy.
+    URL đầy đủ trong mail / link: biến <code>PUBLIC_BASE_URL</code> trong <code>.env</code> (vd <code>http://localhost:8080</code> hoặc <code>https://localhost:8443</code> khi test HTTPS).
   </p>
-</div>
+</div> -->
 <div class="card-header bg-body-tertiary bg-opacity-50 py-2 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
   <span class="small fw-semibold">Danh sách nhóm ủy quyền</span>
   <button type="button" class="btn btn-sm btn-primary" data-coreui-toggle="modal" data-coreui-target="#groupAuthCreateModal">Thêm nhóm</button>
@@ -82,6 +108,63 @@
             <form method="POST" action="/admin/event/<%= evId %>/group-authorizations/<%= row._id %>/delete" class="d-inline" onsubmit="return confirm('Xóa nhóm ủy quyền này?');">
               <button type="submit" class="btn btn-sm btn-outline-danger py-0">Xóa</button>
             </form>
+          </td>
+        </tr>
+        <% }); %>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card-header bg-body-tertiary bg-opacity-50 py-2 border-bottom border-top d-flex flex-wrap justify-content-between align-items-center gap-2">
+  <span class="small fw-semibold">Lịch sử nhóm (gán / gỡ VĐV, không gồm ủy quyền đơn qua link mail)</span>
+  <span class="small text-body-secondary">Mỗi lần gán VĐV: một dòng + một email tới đại diện (nếu gửi được).</span>
+</div>
+<div class="card-body p-0">
+  <div class="table-responsive">
+    <table class="table table-sm table-striped align-middle mb-0">
+      <thead class="table-light">
+        <tr class="small">
+          <th>Thời điểm</th>
+          <th>Loại</th>
+          <th>VĐV (BIB)</th>
+          <th>Đại diện</th>
+          <th>Nguồn</th>
+          <th>Mail</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (!logsGroup.length) { %>
+        <tr>
+          <td colspan="6" class="text-center text-body-secondary py-3 small">Chưa có lịch sử nhóm (từ khi bật ghi nhận).</td>
+        </tr>
+        <% } else { %>
+        <% logsGroup.forEach(function (log) { %>
+        <% var rep = log.representative || {}; %>
+        <tr class="small">
+          <td class="text-nowrap"><%= formatLogAt(log.createdAt) %></td>
+          <td><%= kindLabel(log.kind) %></td>
+          <td>
+            <span class="fw-medium"><%= log.participant_bib != null && String(log.participant_bib).trim() !== '' ? log.participant_bib : '—' %></span>
+            <% if (log.participant_fullname) { %><div class="text-body-secondary text-break"><%= log.participant_fullname %></div><% } %>
+          </td>
+          <td>
+            <div class="text-break"><%= rep.fullname || '—' %></div>
+            <% if (rep.email) { %><div class="text-body-secondary text-break"><%= rep.email %></div><% } %>
+          </td>
+          <td><%= sourceLabel(log.source) %></td>
+          <td>
+            <% if (log.kind === 'participant_assigned') { %>
+              <% if (log.mail_sent) { %>
+              <span class="text-success" title="<%= log.mail_to || '' %>">Đã gửi</span>
+              <% } else { %>
+              <span class="text-warning" title="<%= (log.mail_error || '').replace(/"/g, '&quot;') %>">Không gửi</span>
+              <% if (log.mail_error) { %><div class="text-body-secondary" style="max-width:10rem"><%= log.mail_error.length > 48 ? log.mail_error.slice(0, 48) + '…' : log.mail_error %></div><% } %>
+              <% } %>
+            <% } else { %>
+            <span class="text-body-secondary">—</span>
+            <% } %>
           </td>
         </tr>
         <% }); %>

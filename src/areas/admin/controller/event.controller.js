@@ -12,12 +12,22 @@ const QRCode = require('qrcode');
 const eventCheckinHService = require('../services/eventCheckinH.service');
 const participantCheckinHService = require('../services/participantCheckinH.service');
 const groupAuthorizationHService = require('../services/groupAuthorizationH.service');
+const delegationAuthorizationLogHService = require('../services/delegationAuthorizationLogH.service');
 const auditLogService = require('../services/auditLog.service');
 const eventMailConfigService = require('../services/eventMailConfig.service');
 const eventBulkMailService = require('../services/eventBulkMail.service');
 const mailBulkJobService = require('../services/mailBulkJob.service');
 const { convertRowCheckinH, generateUID } = require('../../../utils/participantCheckinExcelRow.util');
 const { normalizePickupTimeRange } = require('../../../utils/pickupTimeRange.util');
+const { getPublicBaseUrl } = require('../../../utils/publicBaseUrl.util');
+const participantDelegationLogHService = require('../services/participantDelegationLogH.service');
+const {
+    parseDelegationBody,
+    finalizeDelegationState,
+    snapshotFromParticipant,
+    computeDelegationAction,
+    buildDelegationLogSummary,
+} = require('../../../utils/participantDelegation.util');
 
 const BATCH_SIZE = 1000;
 const PARTICIPANT_LIST_LIMIT = 10000;
@@ -25,6 +35,33 @@ const PARTICIPANT_PAGE_DEFAULT = 20;
 const PARTICIPANT_PAGE_MAX = 100;
 const CHECKIN_HISTORY_PAGE_DEFAULT = 25;
 const CHECKIN_HISTORY_PAGE_MAX = 100;
+
+async function appendParticipantDelegationLogIfChanged({
+    eventId,
+    participantId,
+    oldSnap,
+    finSnap,
+    actor,
+    actorAdminId,
+}) {
+    const action = computeDelegationAction(oldSnap, finSnap);
+    if (!action) return;
+    await groupAuthorizationHService.detachParticipantFromLegacyGroup(participantId, eventId);
+    await participantDelegationLogHService.append({
+        event_id: eventId,
+        participant_id: participantId,
+        actor,
+        actor_admin_id: actor === 'admin' ? actorAdminId : undefined,
+        action,
+        delegate_snapshot: {
+            fullname: finSnap.delegate_fullname,
+            email: finSnap.delegate_email,
+            phone: finSnap.delegate_phone,
+            cccd: finSnap.delegate_cccd,
+        },
+        summary: buildDelegationLogSummary(actor === 'admin' ? 'admin' : 'participant', action, finSnap),
+    });
+}
 
 function stepPath(eventId, step) {
     const n = Math.min(4, Math.max(0, Number(step) || 0));
@@ -57,8 +94,51 @@ function redirectSuffixStep1Athletes(body) {
     if (page) q.set('page', page);
     const perPage = String(body.ret_perPage || '').trim();
     if (perPage) q.set('perPage', perPage);
+    const retTab = String(body.ret_tab || '').trim();
+    if (retTab === 'single' || retTab === 'group') q.set('tab', retTab);
     const s = q.toString();
     return s ? `?${s}` : '';
+}
+
+/** Payload cùng cấu trúc với `participantRowJson` trong `_step_athletes.ejs` (form sửa). */
+function buildParticipantEditPayload(p) {
+    const o = {
+        _id: String(p._id),
+        fullname: p.fullname || '',
+        cccd: p.cccd || '',
+        email: p.email || '',
+        phone: p.phone || '',
+        bib: p.bib || '',
+        bib_name: p.bib_name || '',
+        category: p.category || '',
+        item: p.item || '',
+        zone: p.zone || '',
+        qr_code: p.qr_code != null && String(p.qr_code) !== '' ? String(p.qr_code) : '',
+        checkin_method: p.checkin_method || 'import',
+        status: p.status || 'registered',
+        checkin_by: p.checkin_by || '',
+        gender: p.gender,
+        group_authorization_id: p.group_authorization_id ? String(p.group_authorization_id) : '',
+        group_auth_creation_source: p.group_auth_creation_source ? String(p.group_auth_creation_source) : '',
+        delegation_enabled: !!(p.delegation_enabled === true),
+        delegate_fullname: p.delegate_fullname != null ? String(p.delegate_fullname) : '',
+        delegate_email: p.delegate_email != null ? String(p.delegate_email) : '',
+        delegate_phone: p.delegate_phone != null ? String(p.delegate_phone) : '',
+        delegate_cccd: p.delegate_cccd != null ? String(p.delegate_cccd) : '',
+        delegate_group_tool_url: p.delegate_group_tool_url != null ? String(p.delegate_group_tool_url) : '',
+        delegation_logs: (p.delegation_logs || []).map((lg) => ({
+            createdAt: lg.createdAt,
+            summary: lg.summary != null ? String(lg.summary) : '',
+            actor: lg.actor != null ? String(lg.actor) : '',
+            action: lg.action != null ? String(lg.action) : '',
+        })),
+    };
+    if (p.dob) o.dob_iso = new Date(p.dob).toISOString();
+    if (p.checkin_time) o.checkin_time_iso = new Date(p.checkin_time).toISOString();
+    if (p.pickup_time_range != null && String(p.pickup_time_range).trim() !== '') {
+        o.pickup_time_range = String(p.pickup_time_range);
+    }
+    return o;
 }
 
 const adminEventController = () => {
@@ -273,10 +353,21 @@ const adminEventController = () => {
                 }
 
                 let groupAuthorizations = [];
-                const athletesTab = String(req.query.tab || '').trim() === 'group' ? 'group' : 'athletes';
+                let singleDelegationParticipants = [];
+                let participantDelegationLogs = [];
+                let delegationLogs = [];
+                const tabQ = String(req.query.tab || '').trim();
+                const athletesTab =
+                    tabQ === 'group' || tabQ === 'single' ? tabQ : 'athletes';
                 if (n === 1) {
+                    delegationLogs = await delegationAuthorizationLogHService.listByEventId(refreshed._id, {
+                        limit: 200,
+                    });
+                    participantDelegationLogs = await participantDelegationLogHService.listByEventId(refreshed._id, {
+                        limit: 200,
+                    });
                     const rawGroups = await groupAuthorizationHService.listByEventId(refreshed._id);
-                    const hostBase = (process.env.PUBLIC_BASE_URL || '').replace(/\/$/, '')
+                    const hostBase = getPublicBaseUrl()
                         || `${req.protocol}://${req.get('host')}`;
                     groupAuthorizations = await Promise.all(
                         rawGroups.map(async (g) => {
@@ -295,6 +386,30 @@ const adminEventController = () => {
                             return { ...g, toolFullUrl, toolPath: path, qrDataUrl };
                         }),
                     );
+                    const pids = (participants || []).map((p) => p._id);
+                    const partLogsFlat = await participantDelegationLogHService.listByParticipantIds(pids, {
+                        limitPerParticipant: 30,
+                    });
+                    const logByPid = {};
+                    for (const lg of partLogsFlat) {
+                        const pid = String(lg.participant_id);
+                        if (!logByPid[pid]) logByPid[pid] = [];
+                        logByPid[pid].push(lg);
+                    }
+                    for (const pid of Object.keys(logByPid)) {
+                        logByPid[pid].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                    }
+                    participants = (participants || []).map((p) => ({
+                        ...p,
+                        delegation_logs: logByPid[String(p._id)] || [],
+                    }));
+                    participants = groupAuthorizationHService.attachParticipantDelegationForList(participants);
+                    singleDelegationParticipants = await participantCheckinHService.findByEventIdWithDelegationEnabled(
+                        refreshed._id,
+                        500,
+                    );
+                    singleDelegationParticipants =
+                        groupAuthorizationHService.attachParticipantDelegationForList(singleDelegationParticipants);
                 }
 
                 const flash = req.session.flash;
@@ -318,6 +433,9 @@ const adminEventController = () => {
                     sendgridConfigured,
                     checkinStats,
                     groupAuthorizations,
+                    singleDelegationParticipants,
+                    participantDelegationLogs,
+                    delegationLogs,
                     athletesTab,
                     flash: flash || null,
                 });
@@ -477,6 +595,12 @@ const adminEventController = () => {
                 const rawCap = (body.checkin_capture_mode || '').trim();
                 payload.checkin_capture_mode = capModes.includes(rawCap) ? rawCap : 'both';
 
+                payload.single_delegation_enabled = !!(
+                    body.single_delegation_enabled === 'true' ||
+                    body.single_delegation_enabled === true ||
+                    body.single_delegation_enabled === 'on'
+                );
+
                 const updated = await eventCheckinHService.updateById(id, payload);
                 req.session.flash = {
                     type: updated ? 'success' : 'danger',
@@ -510,7 +634,7 @@ const adminEventController = () => {
                     await participantCheckinHService.deleteByEventId(event._id);
                 }
 
-                const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+                const workbook = xlsx.read(req.file.buffer, { type: 'buffer', cellDates: true });
                 const sheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[sheetName];
                 const excelData = xlsx.utils.sheet_to_json(worksheet, { defval: null, raw: false });
@@ -593,6 +717,11 @@ const adminEventController = () => {
                     const x = d instanceof Date ? d : new Date(d);
                     return Number.isNaN(x.getTime()) ? '' : x.toISOString();
                 };
+                const fmtDateYmd = (d) => {
+                    if (!d) return '';
+                    const x = d instanceof Date ? d : new Date(d);
+                    return Number.isNaN(x.getTime()) ? '' : x.toISOString().slice(0, 10);
+                };
                 const exportRows = rows.map((p) => {
                     const gender =
                         p.gender === true ? 'Nam' : p.gender === false ? 'Nữ' : '';
@@ -603,7 +732,7 @@ const adminEventController = () => {
                         cccd: p.cccd || '',
                         email: p.email || '',
                         phone: p.phone || '',
-                        dob: fmtDt(p.dob),
+                        dob: fmtDateYmd(p.dob),
                         gender,
                         zone: p.zone || '',
                         bib: p.bib || '',
@@ -657,7 +786,10 @@ const adminEventController = () => {
                     req.session.flash = { type: 'warning', message: 'Không tìm thấy sự kiện.' };
                     return res.redirect('/admin/event');
                 }
-                const result = await groupAuthorizationHService.create(id, req.body);
+                const result = await groupAuthorizationHService.create(id, req.body, {
+                    delegationSource: 'admin_group_tab',
+                    actorAdminId: req.user?._id,
+                });
                 if (!result.ok) {
                     req.session.flash = { type: 'danger', message: result.message || 'Không tạo được nhóm.' };
                 } else {
@@ -688,7 +820,10 @@ const adminEventController = () => {
                     req.session.flash = { type: 'warning', message: 'Không tìm thấy sự kiện.' };
                     return res.redirect('/admin/event');
                 }
-                const result = await groupAuthorizationHService.update(gaId, id, req.body);
+                const result = await groupAuthorizationHService.update(gaId, id, req.body, {
+                    delegationSource: 'admin_group_tab',
+                    actorAdminId: req.user?._id,
+                });
                 if (!result.ok) {
                     req.session.flash = { type: 'danger', message: result.message || 'Không cập nhật được.' };
                 } else {
@@ -719,7 +854,10 @@ const adminEventController = () => {
                     req.session.flash = { type: 'warning', message: 'Không tìm thấy sự kiện.' };
                     return res.redirect('/admin/event');
                 }
-                const result = await groupAuthorizationHService.remove(gaId, id);
+                const result = await groupAuthorizationHService.remove(gaId, id, {
+                    delegationSource: 'admin_group_tab',
+                    actorAdminId: req.user?._id,
+                });
                 req.session.flash = {
                     type: result.ok ? 'success' : 'danger',
                     message: result.ok ? 'Đã xóa nhóm ủy quyền.' : result.message || 'Không xóa được.',
@@ -739,6 +877,132 @@ const adminEventController = () => {
                 console.log(CNAME, error.message);
                 req.session.flash = { type: 'danger', message: 'Lỗi server.' };
                 return res.redirect(`/admin/event/${id}/step/1?tab=group`);
+            }
+        },
+
+        /** Gán đại diện nhận hộ cho một VĐV (tạo nhóm một người) — POST từ modal sửa VĐV */
+        addParticipantGroupDelegate: async (req, res) => {
+            const { id, participantId } = req.params;
+            const suffix = redirectSuffixStep1Athletes(req.body);
+            try {
+                const event = await eventCheckinHService.getById(id);
+                if (!event) {
+                    req.session.flash = { type: 'warning', message: 'Không tìm thấy sự kiện.' };
+                    return res.redirect('/admin/event');
+                }
+                const p = await participantCheckinHService.getById(participantId);
+                if (!p || String(p.event_id) !== String(event._id)) {
+                    req.session.flash = { type: 'danger', message: 'Không tìm thấy người tham dự.' };
+                    return res.redirect(`/admin/event/${id}/step/1${suffix}`);
+                }
+                if (p.group_authorization_id) {
+                    req.session.flash = {
+                        type: 'warning',
+                        message:
+                            'VĐV này đã có đại diện nhận hộ. Nếu tạo qua link mail QR → tab Ủy quyền đơn; nếu tạo từ BTC → tab Nhóm.',
+                    };
+                    return res.redirect(`/admin/event/${id}/step/1${suffix}`);
+                }
+                const fullname = String(req.body.dlg_fullname || '').trim();
+                const email = String(req.body.dlg_email || '').trim();
+                const phone = String(req.body.dlg_phone || '').trim();
+                const cccd = String(req.body.dlg_cccd || '').trim();
+                if (!fullname) {
+                    req.session.flash = { type: 'danger', message: 'Nhập họ tên người đại diện.' };
+                    return res.redirect(`/admin/event/${id}/step/1${suffix}`);
+                }
+                const result = await groupAuthorizationHService.create(
+                    id,
+                    {
+                        fullname,
+                        email,
+                        phone,
+                        cccd,
+                        participant_ids: [participantId],
+                    },
+                    { delegationSource: 'admin_participant_modal', actorAdminId: req.user?._id },
+                );
+                if (!result.ok) {
+                    req.session.flash = { type: 'danger', message: result.message || 'Không gán được đại diện.' };
+                } else {
+                    req.session.flash = {
+                        type: 'success',
+                        message:
+                            'Đã tạo nhóm ủy quyền cho VĐV này. Mail thông báo gửi tới đại diện nếu có email hợp lệ và SendGrid đã cấu hình.',
+                    };
+                    await auditLogService.write({
+                        actorId: req.user?._id,
+                        action: 'create',
+                        resource: 'group_authorization_h',
+                        documentId: result.doc?._id,
+                        summary: `Gán đại diện từ danh sách VĐV (modal) sự kiện ${id}`,
+                        req,
+                    });
+                }
+                return res.redirect(`/admin/event/${id}/step/1${suffix}`);
+            } catch (error) {
+                console.log(CNAME, error.message);
+                req.session.flash = { type: 'danger', message: 'Lỗi server.' };
+                return res.redirect(`/admin/event/${id}/step/1${suffix}`);
+            }
+        },
+
+        /** Chỉ cập nhật ủy quyền (tab Ủy quyền đơn — form gọn). */
+        saveParticipantDelegation: async (req, res) => {
+            const { id, participantId } = req.params;
+            const suffix = redirectSuffixStep1Athletes(req.body);
+            try {
+                const event = await eventCheckinHService.getById(id);
+                if (!event) {
+                    req.session.flash = { type: 'warning', message: 'Không tìm thấy sự kiện.' };
+                    return res.redirect('/admin/event');
+                }
+                const existing = await participantCheckinHService.getById(participantId);
+                if (!existing || String(existing.event_id) !== String(event._id)) {
+                    req.session.flash = { type: 'danger', message: 'Không tìm thấy người tham dự.' };
+                    return res.redirect(stepPath(id, 1) + suffix);
+                }
+                const oldSnap = snapshotFromParticipant(existing);
+                const parsed = parseDelegationBody(req.body);
+                if (parsed.delegation_enabled && !parsed.delegate_fullname) {
+                    req.session.flash = {
+                        type: 'danger',
+                        message: 'Nhập họ tên người được ủy quyền hoặc tắt ủy quyền.',
+                    };
+                    return res.redirect(stepPath(id, 1) + suffix);
+                }
+                const finSnap = finalizeDelegationState(parsed);
+                if (!computeDelegationAction(oldSnap, finSnap)) {
+                    req.session.flash = { type: 'success', message: 'Không có thay đổi ủy quyền.' };
+                    return res.redirect(stepPath(id, 1) + suffix);
+                }
+                const updated = await participantCheckinHService.updateByIdAndEvent(participantId, id, finSnap);
+                if (!updated) {
+                    req.session.flash = { type: 'danger', message: 'Không lưu được.' };
+                    return res.redirect(stepPath(id, 1) + suffix);
+                }
+                await appendParticipantDelegationLogIfChanged({
+                    eventId: event._id,
+                    participantId,
+                    oldSnap,
+                    finSnap,
+                    actor: 'admin',
+                    actorAdminId: req.user?._id,
+                });
+                req.session.flash = { type: 'success', message: 'Đã cập nhật ủy quyền nhận BIB.' };
+                await auditLogService.write({
+                    actorId: req.user?._id,
+                    action: 'update',
+                    resource: 'participant_checkin_h',
+                    documentId: participantId,
+                    summary: `Cập nhật ủy quyền (VĐV ${participantId}) sự kiện ${id}`,
+                    req,
+                });
+                return res.redirect(stepPath(id, 1) + suffix);
+            } catch (error) {
+                console.log(CNAME, error.message);
+                req.session.flash = { type: 'danger', message: 'Lỗi server.' };
+                return res.redirect(stepPath(id, 1) + suffix);
             }
         },
 
@@ -817,6 +1081,32 @@ const adminEventController = () => {
             }
         },
 
+        /** GET JSON — dữ liệu mới nhất cho popup sửa VĐV (tránh bản snapshot cũ trong data-attribute). */
+        getParticipantJson: async (req, res) => {
+            const { id, participantId } = req.params;
+            try {
+                const event = await eventCheckinHService.getById(id);
+                if (!event) {
+                    return res.status(404).json({ ok: false, message: 'Không tìm thấy sự kiện.' });
+                }
+                let p = await participantCheckinHService.getById(participantId);
+                if (!p || String(p.event_id) !== String(event._id)) {
+                    return res.status(404).json({ ok: false, message: 'Không tìm thấy người tham dự.' });
+                }
+                const logsFlat = await participantDelegationLogHService.listByParticipantIds([p._id], {
+                    limitPerParticipant: 30,
+                });
+                const logs = logsFlat.filter((lg) => String(lg.participant_id) === String(p._id));
+                logs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                p = { ...p, delegation_logs: logs };
+                const [withDelegation] = groupAuthorizationHService.attachParticipantDelegationForList([p]);
+                return res.json({ ok: true, participant: buildParticipantEditPayload(withDelegation) });
+            } catch (error) {
+                console.log(CNAME, error.message);
+                return res.status(500).json({ ok: false, message: 'Lỗi tải dữ liệu.' });
+            }
+        },
+
         /** Cập nhật một người tham dự (bước 2) */
         updateParticipant: async (req, res) => {
             const { id, participantId } = req.params;
@@ -859,6 +1149,19 @@ const adminEventController = () => {
                 const m = (str('checkin_method') || 'import').toLowerCase();
                 const s = (str('status') || 'registered').toLowerCase();
                 const pickup_time_range = normalizePickupTimeRange(body.pickup_time_range);
+                const oldDelegSnap = snapshotFromParticipant(existing);
+                let finDelegSnap = null;
+                if (body.delegation_fields_present === '1') {
+                    const parsed = parseDelegationBody(body);
+                    if (parsed.delegation_enabled && !parsed.delegate_fullname) {
+                        req.session.flash = {
+                            type: 'danger',
+                            message: 'Nhập họ tên người được ủy quyền hoặc tắt ủy quyền.',
+                        };
+                        return res.redirect(stepPath(id, 1) + redirectSuffixStep1Athletes(body));
+                    }
+                    finDelegSnap = finalizeDelegationState(parsed);
+                }
                 const payload = {
                     fullname,
                     cccd,
@@ -877,6 +1180,9 @@ const adminEventController = () => {
                     checkin_by: str('checkin_by'),
                     pickup_time_range,
                 };
+                if (finDelegSnap) {
+                    Object.assign(payload, finDelegSnap);
+                }
                 if (body.checkin_time) {
                     const ct = new Date(body.checkin_time);
                     if (!Number.isNaN(ct.getTime())) payload.checkin_time = ct;
@@ -888,6 +1194,16 @@ const adminEventController = () => {
                     message: updated ? 'Đã cập nhật người tham dự.' : 'Không cập nhật được.',
                 };
                 if (updated) {
+                    if (body.delegation_fields_present === '1' && finDelegSnap) {
+                        await appendParticipantDelegationLogIfChanged({
+                            eventId: event._id,
+                            participantId,
+                            oldSnap: oldDelegSnap,
+                            finSnap: finDelegSnap,
+                            actor: 'admin',
+                            actorAdminId: req.user?._id,
+                        });
+                    }
                     await auditLogService.write({
                         actorId: req.user?._id,
                         action: 'update',
@@ -1081,16 +1397,24 @@ const adminEventController = () => {
                 if (String(p.event_id) !== String(event._id)) {
                     return res.status(400).json({ success: false, message: 'Người tham dự không thuộc sự kiện này.' });
                 }
-                await eventBulkMailService.sendQrMailToParticipant(event, p);
+                const sent = await eventBulkMailService.sendQrMailToParticipant(event, p);
                 await auditLogService.write({
                     actorId: req.user?._id,
                     action: 'create',
                     resource: 'mail_single',
                     documentId: event._id,
-                    summary: `Gửi mail QR thủ công: participant ${participantId} (${p.email || ''})`,
+                    summary: `Gửi mail QR thủ công: participant ${participantId} → ${sent.to} (${sent.recipientType === 'delegate' ? 'người được ủy quyền' : 'VĐV'})`,
                     req,
                 });
-                return res.json({ success: true, message: 'Đã gửi email.' });
+                return res.json({
+                    success: true,
+                    message:
+                        sent.recipientType === 'delegate'
+                            ? `Đã gửi email QR tới người được ủy quyền (${sent.to}).`
+                            : `Đã gửi email QR tới VĐV (${sent.to}).`,
+                    to: sent.to,
+                    recipientType: sent.recipientType,
+                });
             } catch (error) {
                 console.log(CNAME, error.message);
                 return res.status(500).json({ success: false, message: error.message || 'Lỗi gửi mail.' });

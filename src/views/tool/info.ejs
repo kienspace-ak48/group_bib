@@ -41,7 +41,54 @@
             <% var capMode = (typeof event !== 'undefined' && event && event.checkin_capture_mode) ? event.checkin_capture_mode : 'both'; %>
             <% var showSig = (capMode === 'signature' || capMode === 'both'); %>
             <% var showPhoto = (capMode === 'photo' || capMode === 'both'); %>
+            <% 
+              var _delegOn = pc && pc.delegation_enabled === true;
+              function _dash(v) { return (v != null && String(v).trim() !== '') ? String(v).trim() : '—'; }
+            %>
             <div class="flex flex-col gap-6">
+                <% if (_delegOn) { %>
+                <!-- Staff: đối chiếu người nhận BIB khi đã ủy quyền -->
+                <div class="rounded-2xl border-2 border-amber-400 shadow-md bg-gradient-to-br from-amber-50 via-white to-orange-50/90 overflow-hidden" role="region" aria-label="Thông tin ủy quyền nhận BIB">
+                    <div class="px-4 py-4 sm:px-5 sm:py-5 border-b border-amber-200/80 bg-amber-100/50">
+                        <div class="flex flex-col sm:flex-row sm:items-start gap-3">
+                            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white shadow-sm" aria-hidden="true">
+                                <i class="fas fa-user-shield text-lg"></i>
+                            </span>
+                            <div class="min-w-0 flex-1">
+                                <p class="text-sm font-bold text-amber-950 tracking-tight">BIB đã ủy quyền nhận</p>
+                                <p class="mt-1 text-sm text-amber-900/90 leading-relaxed">
+                                    Kit/BIB dành cho VĐV này được giao cho <strong>người được ủy quyền</strong> bên dưới. Staff vui lòng đối chiếu giấy tờ (CCCD / passport) và danh tính người đang nhận với thông tin này trước khi giao đồ.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="px-4 py-4 sm:px-5 sm:pb-5">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">Người được ủy quyền (đối chiếu khi giao)</p>
+                        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
+                            <div class="min-w-0">
+                                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Họ tên</dt>
+                                <dd class="mt-0.5 font-semibold text-gray-900 break-words"><%= _dash(pc.delegate_fullname) %></dd>
+                            </div>
+                            <div class="min-w-0">
+                                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Email</dt>
+                                <dd class="mt-0.5 font-semibold text-gray-900 break-all"><%= _dash(pc.delegate_email) %></dd>
+                            </div>
+                            <div class="min-w-0">
+                                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Số điện thoại</dt>
+                                <dd class="mt-0.5 font-semibold text-gray-900 break-words"><%= _dash(pc.delegate_phone) %></dd>
+                            </div>
+                            <div class="min-w-0">
+                                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">CCCD / Passport</dt>
+                                <dd class="mt-0.5 font-semibold text-gray-900 break-words"><%= _dash(pc.delegate_cccd) %></dd>
+                            </div>
+                        </dl>
+                        <p class="mt-4 text-xs text-gray-500 border-t border-amber-100 pt-3">
+                            <i class="fas fa-info-circle text-amber-600 mr-1" aria-hidden="true"></i>
+                            Phần <strong>Personal Information</strong> bên dưới là dữ liệu <strong>VĐV đăng ký</strong> (chủ BIB), không nhất thiết trùng với người đang nhận hộ.
+                        </p>
+                    </div>
+                </div>
+                <% } %>
                 <!-- Athlete Profile Card -->
                 <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
                     <!-- Header with gradient & status -->
@@ -416,6 +463,12 @@
             }
 
             let signaturePad = null;
+            /** Tránh resize (vốn từng clear canvas) khi đang ký — gây “reset” chữ ký trên mobile / khi layout nhảy */
+            var sigPointerDown = false;
+            var sigResizePending = false;
+            var sigLastCssW = -1;
+            var sigLastCssH = -1;
+            var sigLastRatio = -1;
             var inlinePhotoObjectUrl = null;
 
             function dataURLToBlob(dataUrl) {
@@ -470,27 +523,98 @@
                     var w = sigCanvas.offsetWidth;
                     var h = sigCanvas.offsetHeight;
                     if (!w || !h) return;
+                    if (w === sigLastCssW && h === sigLastCssH && ratio === sigLastRatio) {
+                        return;
+                    }
+                    sigLastCssW = w;
+                    sigLastCssH = h;
+                    sigLastRatio = ratio;
+                    var strokeData = signaturePad.toData();
                     sigCanvas.width = w * ratio;
                     sigCanvas.height = h * ratio;
                     sigCanvas.getContext('2d').scale(ratio, ratio);
                     signaturePad.clear();
+                    if (strokeData && strokeData.length) {
+                        try {
+                            signaturePad.fromData(strokeData);
+                        } catch (e) {}
+                    }
                 }
-                function scheduleResize() {
+                function requestResizeSig() {
+                    if (sigPointerDown) {
+                        sigResizePending = true;
+                        return;
+                    }
                     resizeSig();
+                }
+                function scheduleResizeOnce() {
                     requestAnimationFrame(function () {
-                        resizeSig();
+                        requestResizeSig();
                     });
                 }
                 var resizeTimer;
                 window.addEventListener('resize', function () {
                     clearTimeout(resizeTimer);
-                    resizeTimer = setTimeout(scheduleResize, 250);
+                    resizeTimer = setTimeout(scheduleResizeOnce, 200);
                 });
-                scheduleResize();
-                [0, 50, 150, 400].forEach(function (ms) {
-                    setTimeout(scheduleResize, ms);
-                });
-                window.addEventListener('load', scheduleResize);
+                if (typeof ResizeObserver !== 'undefined' && sigCanvas.parentElement) {
+                    try {
+                        var ro = new ResizeObserver(function () {
+                            clearTimeout(resizeTimer);
+                            resizeTimer = setTimeout(scheduleResizeOnce, 80);
+                        });
+                        ro.observe(sigCanvas.parentElement);
+                    } catch (e) {}
+                }
+                sigCanvas.addEventListener(
+                    'pointerdown',
+                    function () {
+                        sigPointerDown = true;
+                    },
+                    { passive: true },
+                );
+                sigCanvas.addEventListener(
+                    'pointerup',
+                    function () {
+                        sigPointerDown = false;
+                        if (sigResizePending) {
+                            sigResizePending = false;
+                            scheduleResizeOnce();
+                        }
+                    },
+                    { passive: true },
+                );
+                sigCanvas.addEventListener(
+                    'pointercancel',
+                    function () {
+                        sigPointerDown = false;
+                        if (sigResizePending) {
+                            sigResizePending = false;
+                            scheduleResizeOnce();
+                        }
+                    },
+                    { passive: true },
+                );
+                /** Một số WebView / Safari cũ: bổ sung touch nếu pointer không bắt được */
+                sigCanvas.addEventListener('touchstart', function () {
+                    sigPointerDown = true;
+                }, { passive: true });
+                sigCanvas.addEventListener('touchend', function () {
+                    sigPointerDown = false;
+                    if (sigResizePending) {
+                        sigResizePending = false;
+                        scheduleResizeOnce();
+                    }
+                }, { passive: true });
+                sigCanvas.addEventListener('touchcancel', function () {
+                    sigPointerDown = false;
+                    if (sigResizePending) {
+                        sigResizePending = false;
+                        scheduleResizeOnce();
+                    }
+                }, { passive: true });
+                scheduleResizeOnce();
+                window.addEventListener('load', scheduleResizeOnce);
             }
             if (btnClearSig && signaturePad) {
                 btnClearSig.addEventListener('click', function () {

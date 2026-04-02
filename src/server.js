@@ -6,8 +6,7 @@ const fs = require('fs')
 const app = require('./app');
 const HOST ='0.0.0.0';
 console.log(process.env.NODE_ENV)
-const success = require('../src/middleware/success.middleware')()
-success.Test();
+
 // Initial double server setup for HTTP and HTTPS 🚀
 // HTTP Server 🔵
 const httpServer = http.createServer(app);

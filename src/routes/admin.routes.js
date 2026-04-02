@@ -43,6 +43,7 @@ router.get('/event', evPerm, adminEventController.Index);
 router.post('/event', evPerm, adminEventController.create);
 router.get('/event/athlete-import-template', evPerm, adminEventController.downloadAthleteImportTemplate);
 router.get('/event/:id/participants/export', evPerm, adminEventController.exportParticipantsExcel);
+router.get('/event/:id/participants/:participantId/json', evPerm, adminEventController.getParticipantJson);
 router.post('/event/:id/delete', evPerm, adminEventController.destroy);
 router.post('/event/:id/participants/:participantId/delete', evPerm, adminEventController.deleteParticipant);
 router.post(
@@ -54,6 +55,16 @@ router.post(
 router.post('/event/:id/participants/manual', evPerm, adminEventController.addParticipantManual);
 router.post('/event/:id/participants/:participantId/update', evPerm, adminEventController.updateParticipant);
 router.post('/event/:id/participants/:participantId/send-mail', evPerm, adminEventController.sendParticipantQrMail);
+router.post(
+    '/event/:id/participants/:participantId/delegate-group',
+    evPerm,
+    adminEventController.addParticipantGroupDelegate,
+);
+router.post(
+    '/event/:id/participants/:participantId/delegation',
+    evPerm,
+    adminEventController.saveParticipantDelegation,
+);
 router.post('/event/:id/group-authorizations/:gaId/update', evPerm, adminEventController.updateGroupAuthorization);
 router.post('/event/:id/group-authorizations/:gaId/delete', evPerm, adminEventController.deleteGroupAuthorization);
 router.post('/event/:id/group-authorizations', evPerm, adminEventController.createGroupAuthorization);

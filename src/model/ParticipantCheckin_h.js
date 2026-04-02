@@ -74,6 +74,19 @@ const ParticipantCheckinSchema = new mongoose.Schema(
             ref: 'group_authorization_h',
             default: undefined,
         },
+        /** Token bí mật cho link ủy quyền đơn trong mail (một VĐV một token) */
+        delegation_token: {
+            type: String,
+            unique: true,
+            sparse: true,
+            index: true,
+        },
+        /** Ủy quyền nhận BIB — theo từng VĐV (không gộp nhóm). Nhiều VĐV có thể cùng trỏ một người nhận. */
+        delegation_enabled: { type: Boolean, default: false },
+        delegate_fullname: { type: String, trim: true, default: '' },
+        delegate_email: { type: String, trim: true, default: '' },
+        delegate_phone: { type: String, trim: true, default: '' },
+        delegate_cccd: { type: String, trim: true, default: '' },
     },
     { timestamps: true },
 );
