@@ -11,6 +11,7 @@ const auditLogService = require('./auditLog.service');
 const eventCheckinHService = require('./eventCheckinH.service');
 const { resolvePickupRangeDisplay } = require('../../../utils/pickupTimeRange.util');
 const { getPublicBaseUrl } = require('../../../utils/publicBaseUrl.util');
+const { buildCheckinScanAbsoluteUrl } = require('../../../utils/checkinScanUrl.util');
 
 const BATCH_MAIL_BATCH = 50;
 const BATCH_MAIL_CONCURRENCY = 4;
@@ -55,6 +56,7 @@ async function sendGridSendWithRetry(msg) {
 
 const CNAME = 'eventBulkMail.service.js ';
 const TEMPLATE_REL = path.join('src', 'views', 'mail_template', 'template_one.html');
+const TEMPLATE_GROUP_BIB_REL = path.join('src', 'views', 'mail_template', 'template_group_bib.html');
 
 function getApiKey() {
     const k =
@@ -424,6 +426,7 @@ const SAMPLE_PREVIEW_PARTICIPANT = {
     _id: '000000000000000000000000',
     uid: 'preview_sample_uid',
     qr_code: 'preview_sample_uid',
+    qr_scan_token: 'preview_scan_token_sample',
     delegation_token: 'preview_token_sample',
     fullname: 'Nguyễn Văn A',
     bib: '1001',
@@ -448,7 +451,10 @@ const SAMPLE_PREVIEW_PARTICIPANT = {
 async function buildQrMailPreviewHtml(event, mailConfig) {
     const r = SAMPLE_PREVIEW_PARTICIPANT;
     const assets = loadQrMailAssets(mailConfig);
-    const qrPayload = (r.qr_code && String(r.qr_code).trim()) || r.uid;
+    let qrPayload = buildCheckinScanAbsoluteUrl(r.qr_scan_token || 'preview_scan_token_sample');
+    if (!qrPayload || !/^https?:\/\//i.test(qrPayload)) {
+        qrPayload = 'https://example.invalid/tool-checkin/scan/preview_scan_token_sample';
+    }
     const qrDataUrl = await QRCode.toDataURL(qrPayload, {
         margin: 1,
         width: 300,
@@ -480,7 +486,16 @@ async function buildQrMailMessage(event, mailConfig, r, assets, fromEmail) {
     if (!rec) {
         throw new Error('Không có email hợp lệ để gửi (VĐV hoặc người được ủy quyền).');
     }
-    const qrPayload = (rForMail.qr_code && String(rForMail.qr_code).trim()) || rForMail.uid;
+    const scanTok = await participantCheckinHService.ensureQrScanToken(rForMail._id);
+    if (!scanTok) {
+        throw new Error('Không tạo được mã qr_scan_token cho VĐV.');
+    }
+    const qrPayload = buildCheckinScanAbsoluteUrl(scanTok);
+    if (!qrPayload || !/^https?:\/\//i.test(qrPayload)) {
+        throw new Error(
+            'Thiếu PUBLIC_BASE_URL trong .env — không tạo URL scan cho QR (vd http://localhost:8080).',
+        );
+    }
     const qrBase64 = await QRCode.toDataURL(qrPayload, {
         margin: 1,
         width: 300,
@@ -787,6 +802,245 @@ async function sendGroupDelegateNotificationMail({ event, representative, partic
     await sendGridSendWithRetry(msg);
 }
 
+function buildGroupBibCommonVars(event, mailConfig) {
+    const mc = mailConfig || {};
+    return {
+        event_name: escapeHtml(event.name || ''),
+        content_1: mc.content_1 == null ? '' : String(mc.content_1),
+        content_2: mc.content_2 == null ? '' : String(mc.content_2),
+        footer_bg_color: escapeHtml(mc.footer_bg_color || '#f8f8f8'),
+        footer_text_color: escapeHtml(mc.footer_text_color || '#666666'),
+        footer_body: mc.footer_body == null ? '' : String(mc.footer_body),
+        delegation_cta_block: '',
+    };
+}
+
+/** Cùng dòng dữ liệu với mail QR cá nhân: tiêu đề cấu hình (bước 3), địa điểm, ngày giải. */
+function buildEventSummaryBlockForGroupBibMail(event, mailConfig) {
+    const mc = mailConfig || {};
+    const title = String(mc.title || '').trim();
+    const locRaw = event.location != null ? String(event.location).trim() : '';
+    const loc = locRaw ? escapeHtml(locRaw) : '';
+    const sd = escapeHtml(formatDateVi(event.start_date));
+    const ed = escapeHtml(formatDateVi(event.end_date));
+    let inner = '';
+    if (title) {
+        inner += `<p style="margin:0 0 10px 0;font-size:13px;font-weight:bold;color:#0d47a1;text-align:center;line-height:1.35;">${escapeHtml(title)}</p>`;
+    }
+    inner += `<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;font-size:11px;margin:0 0 14px 0;color:#37474f;">`;
+    if (loc) {
+        inner += `<tr><td style="padding:6px 8px;border:1px solid #e0e0e0;background:#fafafa;vertical-align:top;"><b>Địa điểm / Venue</b></td><td style="padding:6px 8px;border:1px solid #e0e0e0;">${loc}</td></tr>`;
+    }
+    inner += `<tr><td style="padding:6px 8px;border:1px solid #e0e0e0;background:#fafafa;"><b>Ngày bắt đầu / Start</b></td><td style="padding:6px 8px;border:1px solid #e0e0e0;">${sd}</td></tr>`;
+    inner += `<tr><td style="padding:6px 8px;border:1px solid #e0e0e0;background:#fafafa;"><b>Ngày kết thúc / End</b></td><td style="padding:6px 8px;border:1px solid #e0e0e0;">${ed}</td></tr>`;
+    inner += `</table>`;
+    return inner;
+}
+
+function buildGroupToolLinkBlock(toolFullUrl) {
+    const u = String(toolFullUrl || '').trim();
+    if (!u) return '';
+    const esc = escapeHtml(u);
+    return `<p align="center" style="margin:0 0 14px 0;font-size:10px;line-height:1.45;word-break:break-all;color:#546e7a;">Nếu quét QR không mở được trang, copy liên kết đầy đủ dưới đây (cần đăng nhập tài khoản check-in đúng sự kiện).<br/><a href="${esc}" style="color:#1565c0;font-weight:600;">${esc}</a></p>`;
+}
+
+function buildGroupBibBadgeBlock(groupName) {
+    const gn = escapeHtml(groupName || 'Nhóm BIB');
+    return `<table width="100%" cellpadding="0" cellspacing="0" style="margin: 0 0 14px 0; border: 1px solid #1565c0; border-radius: 8px; background: linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%);">
+<tr><td style="padding: 12px 14px; font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #0d47a1;">
+<p style="margin: 0 0 4px 0; font-weight: bold; font-size: 13px; letter-spacing: 0.02em;">● Nhóm BIB · Group registration</p>
+<p style="margin: 0; font-size: 11px; line-height: 1.45; color: #37474f;">Thư này gửi <strong>một lần</strong> tới người đại diện nhóm <strong>${gn}</strong>. Thành viên không nhận email riêng.</p>
+<p style="margin: 6px 0 0 0; font-size: 10px; line-height: 1.4; color: #546e7a;">This email is sent <strong>once</strong> to the group representative only; members do not receive individual emails.</p>
+</td></tr></table>`;
+}
+
+function buildRepresentativeSectionHtml(representative, groupName) {
+    const rep = representative || {};
+    const rows = [
+        ['Họ tên / Full name', rep.fullname],
+        ['Email', rep.email],
+        ['Điện thoại / Phone', rep.phone],
+        ['CCCD / ID', rep.cccd],
+        ['Tên nhóm / Group name', groupName || '—'],
+    ];
+    let body = '';
+    rows.forEach(([label, val], i) => {
+        const bg = i % 2 === 1 ? 'background: #f9f9f9;' : '';
+        body += `<tr style="${bg}">
+<td style="padding: 8px 6px; border: 1px solid #ddd; white-space: nowrap; vertical-align: middle; font-size: 11px"><b>${escapeHtml(label)}</b></td>
+<td style="padding: 8px 6px; border: 1px solid #ddd; font-size: 12px; word-wrap: break-word">${escapeHtml(val != null && String(val).trim() !== '' ? String(val) : '—')}</td>
+</tr>`;
+    });
+    return `<div style="padding: 4px 0 8px 0"><table width="100%" cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed"><colgroup><col style="width: 38%" /><col style="width: 62%" /></colgroup>${body}</table></div>`;
+}
+
+function buildGroupMembersTableHtml(participants) {
+    const list = Array.isArray(participants) ? participants : [];
+    let rows = '';
+    list.forEach((p, idx) => {
+        const bg = idx % 2 === 1 ? 'background: #f9f9f9;' : '';
+        const fn = escapeHtml(p.fullname || '—');
+        const cat = escapeHtml(p.category != null && String(p.category).trim() !== '' ? String(p.category) : '—');
+        const bib = escapeHtml(p.bib != null && String(p.bib).trim() !== '' ? String(p.bib) : '—');
+        rows += `<tr style="${bg}">
+<td style="padding: 8px 6px; border: 1px solid #ddd; font-size: 12px; word-wrap: break-word">${fn}</td>
+<td style="padding: 8px 6px; border: 1px solid #ddd; font-size: 12px; word-wrap: break-word">${cat}</td>
+<td style="padding: 8px 6px; border: 1px solid #ddd; font-size: 12px; font-weight: bold; color: #e65100; word-wrap: break-word">${bib}</td>
+</tr>`;
+    });
+    if (!rows) {
+        rows = `<tr><td colspan="3" style="padding: 10px; border: 1px solid #ddd; font-size: 12px; color: #666">—</td></tr>`;
+    }
+    const head = `<tr style="background: #eceff1;">
+<td style="padding: 8px 6px; border: 1px solid #ddd; font-size: 11px; font-weight: bold">Họ tên / Full name</td>
+<td style="padding: 8px 6px; border: 1px solid #ddd; font-size: 11px; font-weight: bold">Hạng mục / Category</td>
+<td style="padding: 8px 6px; border: 1px solid #ddd; font-size: 11px; font-weight: bold">BIB</td>
+</tr>`;
+    return `<div style="padding: 4px 0 8px 0"><table width="100%" cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed">${head}${rows}</table></div>`;
+}
+
+function loadGroupBibMailAssets(mailConfig) {
+    const templatePath = path.join(myPathConfig.root, TEMPLATE_GROUP_BIB_REL);
+    if (!fs.existsSync(templatePath)) {
+        throw new Error('Không tìm thấy file template: ' + templatePath);
+    }
+    const templateRaw = fs.readFileSync(templatePath, 'utf8');
+    const showBanner = !!mailConfig.banner_option;
+    let bannerBase64 = '';
+    if (showBanner && mailConfig.banner_img) {
+        const abs = path.join(myPathConfig.root, 'public', mailConfig.banner_img.replace(/^\//, ''));
+        if (fs.existsSync(abs)) {
+            bannerBase64 = fs.readFileSync(abs, { encoding: 'base64' });
+        }
+    }
+    const bannerOrTextSection = buildBannerHtml(showBanner, mailConfig.banner_text);
+    return {
+        templateRaw,
+        showBanner,
+        bannerBase64,
+        bannerOrTextSection,
+    };
+}
+
+/**
+ * Gửi **một** email tới đại diện nhóm: QR nhóm + bảng thành viên (không gửi từng VĐV).
+ * @param {object} params
+ * @param {object} params.event
+ * @param {object} params.mailConfig - từ findByEventId (đã kiểm tra)
+ * @param {object} params.representative - { fullname, email, phone, cccd }
+ * @param {string} params.groupName
+ * @param {object[]} params.participants - danh sách đủ để hiển thị bảng (fullname, bib, category)
+ * @param {string} params.toolFullUrl
+ */
+async function buildGroupBibMailMessage(event, mailConfig, representative, groupName, participants, assets, fromEmail, toolFullUrl) {
+    const qrPayload = String(toolFullUrl || '').trim();
+    if (!qrPayload) {
+        throw new Error('Thiếu URL đầy đủ cho mã QR nhóm.');
+    }
+    const qrBase64 = await QRCode.toDataURL(qrPayload, {
+        margin: 1,
+        width: 300,
+        color: { dark: '#000000', light: '#ffffff' },
+    });
+    const base64Data = qrBase64.replace(/^data:image\/png;base64,/, '');
+
+    const common = buildGroupBibCommonVars(event, mailConfig);
+    const repName = escapeHtml(representative.fullname || 'Quý khách');
+    const qrCaption = `<p align="center" style="margin: 0 0 8px 0; font-size: 11px; line-height: 1.45; color: #444;">Mã QR chứa <strong>URL đầy đủ</strong> (https://…) tới trang <strong>danh sách nhóm BIB</strong>. Mở bằng trình duyệt đã <strong>đăng nhập</strong> tài khoản check-in (TNV) được gán đúng sự kiện — nếu chưa đăng nhập, hệ thống sẽ chuyển tới trang đăng nhập rồi mở lại liên kết.</p>`;
+
+    const vars = {
+        ...common,
+        greeting_name: repName,
+        event_summary_block: buildEventSummaryBlockForGroupBibMail(event, mailConfig),
+        group_bib_badge_block: buildGroupBibBadgeBlock(groupName),
+        representative_section_html: buildRepresentativeSectionHtml(representative, groupName),
+        group_members_table_html: buildGroupMembersTableHtml(participants),
+        qr_caption: qrCaption,
+        group_link_block: buildGroupToolLinkBlock(qrPayload),
+    };
+
+    let htmlTemplate = assets.templateRaw;
+    htmlTemplate = applyTemplate(htmlTemplate, vars);
+    htmlTemplate = htmlTemplate.replace('<!-- BANNER_OR_TEXT_PLACEHOLDER -->', assets.bannerOrTextSection);
+
+    const attachments = [];
+    if (assets.showBanner && assets.bannerBase64) {
+        attachments.push({
+            content: assets.bannerBase64,
+            filename: 'banner.png',
+            type: 'image/png',
+            disposition: 'inline',
+            content_id: 'banner',
+        });
+    }
+    attachments.push({
+        content: base64Data,
+        filename: 'qrcode.png',
+        type: 'image/png',
+        disposition: 'inline',
+        content_id: 'qrcode',
+    });
+
+    const gn = String(groupName || '').trim();
+    const cfgTitle = mailConfig && String(mailConfig.title || '').trim();
+    const subjectBase = cfgTitle ? cfgTitle.slice(0, 120) : String(event.name || 'Sự kiện').slice(0, 100);
+    const subject = `[Nhóm BIB] ${subjectBase}${gn ? ` — ${gn.slice(0, 60)}` : ''}`;
+
+    return {
+        to: String(representative.email).trim(),
+        from: {
+            email: fromEmail,
+            name: (mailConfig.sender_name && String(mailConfig.sender_name).trim()) || 'BTC',
+        },
+        subject,
+        html: htmlTemplate,
+        attachments,
+        substitutionWrappers: ['<<', '>>'],
+        hideWarnings: true,
+    };
+}
+
+/**
+ * Một email duy nhất tới đại diện nhóm (toàn bộ thành viên trong bảng).
+ */
+async function sendGroupBibNotificationMail({ event, representative, groupName, participants, toolFullUrl, toolPath }) {
+    ensureSendGrid();
+    const fromEmail = getFromEmail();
+    if (!fromEmail) {
+        throw new Error('Thiếu SENDGRID_FROM_EMAIL hoặc SENDGRID_FROM_DOMAIN (sender đã xác minh trên SendGrid).');
+    }
+    const to = String(representative.email || '').trim();
+    if (!QR_MAIL_EMAIL_OK.test(to)) {
+        throw new Error('Email đại diện không hợp lệ.');
+    }
+    const mailConfig = await eventMailConfigService.findByEventId(event._id);
+    if (!mailConfig || !String(mailConfig.title || '').trim()) {
+        throw new Error('Chưa cấu hình mail (tiêu đề / nội dung). Lưu cấu hình ở bước 3 trước khi gửi.');
+    }
+    let href = String(toolFullUrl || toolPath || '').trim();
+    const hostBase = getPublicBaseUrl();
+    if (href && href.startsWith('/') && hostBase) {
+        href = `${String(hostBase).replace(/\/$/, '')}${href}`;
+    }
+    if (!href || !/^https?:\/\//i.test(href)) {
+        throw new Error(
+            'Thiếu URL đầy đủ công khai cho QR nhóm (đặt PUBLIC_BASE_URL trong .env — ví dụ http://localhost:8080).',
+        );
+    }
+    const assets = loadGroupBibMailAssets(mailConfig);
+    const msg = await buildGroupBibMailMessage(
+        event,
+        mailConfig,
+        representative,
+        groupName,
+        participants,
+        assets,
+        fromEmail,
+        href,
+    );
+    await sendGridSendWithRetry(msg);
+}
+
 module.exports = {
     isSendGridConfigured,
     enqueueBulkQrMailJob,
@@ -794,6 +1048,7 @@ module.exports = {
     serializeBulkJobForApi,
     sendQrMailToParticipant,
     sendGroupDelegateNotificationMail,
+    sendGroupBibNotificationMail,
     getFromEmail,
     buildEndMailImageSection,
     getEndMailImageAttachment,

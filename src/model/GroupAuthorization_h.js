@@ -28,6 +28,8 @@ const GroupAuthorizationSchema = new mongoose.Schema(
                 ref: 'participant_checkin_h',
             },
         ],
+        /** Tên nhóm (BTC đặt khi tạo nhóm theo danh sách BIB ở tab Nhóm) */
+        group_name: { type: String, trim: true, default: '' },
         /** Token không đoán được — tra cứu trong tool check-in cùng sự kiện */
         token: { type: String, unique: true, sparse: true, index: true },
         /** Cách tạo nhóm: link mail (ủy quyền đơn) vs admin */

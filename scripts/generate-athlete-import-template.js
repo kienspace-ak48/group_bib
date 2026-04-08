@@ -7,8 +7,10 @@ const xlsx = require('xlsx');
 
 const outPath = path.join(__dirname, '..', 'src', 'utils', 'athlete_import_example.xlsx');
 
-/** Khớp participantCheckinExcelRow.util.js — sheet đầu dùng cho import */
+/** Khớp participantCheckinExcelRow.util.js — cột 1–2: bib, chip */
 const headers = [
+    'bib',
+    'chip',
     'fullname',
     'cccd',
     'email',
@@ -16,7 +18,6 @@ const headers = [
     'dob(yyyy-mm-dd)',
     'gender',
     'zone',
-    'bib',
     'bib_name',
     'category',
     'item',
@@ -30,6 +31,8 @@ const headers = [
 
 const exampleRows = [
     [
+        '1001',
+        'CHIP001',
         'Nguyen Van A',
         '034085012345',
         'nguyenvana@example.com',
@@ -37,7 +40,6 @@ const exampleRows = [
         '1990-03-15',
         'M',
         'Khu A',
-        '1001',
         'NVA-21K',
         '21km',
         'Ao size M',
@@ -49,6 +51,8 @@ const exampleRows = [
         '08:00 - 10:00',
     ],
     [
+        '1002',
+        '',
         'Tran Thi B',
         '079123456789',
         'tranthib@example.com',
@@ -56,7 +60,6 @@ const exampleRows = [
         '1995-12-01',
         'F',
         'Khu B',
-        '1002',
         'TTB-42K',
         '42km',
         'Ao size S',
@@ -74,6 +77,7 @@ wsData['!cols'] = headers.map(() => ({ wch: 16 }));
 
 const guideAoA = [
     ['Ten cot', 'Bat buoc', 'Ghi chu'],
+    ['bib, chip', 'Khong', 'Cot 1-2: BIB, chip RFID (tuong ung participant_checkin_h).'],
     ['fullname, cccd', 'Co', 'Ho ten day du + so giay to (CCCD/CMND).'],
     ['dob(yyyy-mm-dd) hoac dob', 'Khong', 'Ngay sinh: chuoi yyyy-mm-dd hoac o Date trong Excel; khong dung text dang dd/mm/yyyy.'],
     ['gender', 'Khong', 'M hoac F / Nam hoac Nu.'],
@@ -86,7 +90,7 @@ const guideAoA = [
         'Chuoi khung gio nhan (vd 08:00 - 10:00).',
     ],
     ['checkin_time', 'Khong', 'Ngay gio day du: o Excel Date/DateTime hoac chuoi parse duoc.'],
-    ['Cac cot khac', 'Khong', 'email, phone, zone, bib, bib_name, category, item, checkin_by...'],
+    ['Cac cot khac', 'Khong', 'email, phone, zone, bib_name, category, item, checkin_by...'],
 ];
 const wsGuide = xlsx.utils.aoa_to_sheet(guideAoA);
 wsGuide['!cols'] = [{ wch: 28 }, { wch: 12 }, { wch: 55 }];

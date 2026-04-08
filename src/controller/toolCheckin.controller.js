@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Participant = require('../model/ParticipantCheckin_h');
+const GroupAuthorization = require('../model/GroupAuthorization_h');
 const EventCheckin = require('../model/EventCheckin_h');
 const groupAuthorizationHService = require('../areas/admin/services/groupAuthorizationH.service');
 const participantCheckinHService = require('../areas/admin/services/participantCheckinH.service');
@@ -33,6 +34,19 @@ function eventIdMatch(eid) {
 function parseIntSafe(v, fallback) {
     const n = parseInt(v, 10);
     return Number.isFinite(n) ? n : fallback;
+}
+
+/** Snapshot đại diện nhóm lưu trên từng participant khi check-in BIB nhóm. */
+function snapshotGroupRepresentative(rep) {
+    if (!rep || typeof rep !== 'object') return undefined;
+    const o = {
+        fullname: String(rep.fullname || '').trim(),
+        email: String(rep.email || '').trim(),
+        phone: String(rep.phone || '').trim(),
+        cccd: String(rep.cccd || '').trim(),
+    };
+    if (!o.fullname && !o.email && !o.phone && !o.cccd) return undefined;
+    return o;
 }
 
 const toolCheckinController = () => {
@@ -113,11 +127,33 @@ const toolCheckinController = () => {
                 Participant.find(match).sort({ fullname: 1 }).skip(start).limit(length).lean(),
             ]);
 
-            const data = rows.map((r) => ({
-                ...r,
-                code: r.uid,
-                checkin_status: r.status === 'checked_in',
-            }));
+            const gaIds = [
+                ...new Set(
+                    rows
+                        .map((r) => r.group_authorization_id)
+                        .filter((id) => id && mongoose.Types.ObjectId.isValid(String(id)))
+                        .map((id) => String(id)),
+                ),
+            ];
+            const gaOids = gaIds.map((id) => new mongoose.Types.ObjectId(id));
+            const gaRows =
+                gaOids.length > 0
+                    ? await GroupAuthorization.find({ _id: { $in: gaOids } })
+                          .select('_id token')
+                          .lean()
+                    : [];
+            const groupTokenByGaId = new Map(gaRows.map((g) => [String(g._id), g.token ? String(g.token) : '']));
+
+            const data = rows.map((r) => {
+                const gid = r.group_authorization_id ? String(r.group_authorization_id) : '';
+                const group_scan_token = gid ? groupTokenByGaId.get(gid) || '' : '';
+                return {
+                    ...r,
+                    code: r.uid,
+                    checkin_status: r.status === 'checked_in',
+                    group_scan_token,
+                };
+            });
 
             return res.json({
                 draw,
@@ -155,6 +191,19 @@ const toolCheckinController = () => {
             if (!pc) {
                 return res.status(404).send('Không tìm thấy vận động viên trong sự kiện này.');
             }
+            /** TNV: VĐV thuộc BIB nhóm → luôn vào trang nhóm (một thủ tục check-in cho cả danh sách). */
+            if (req.user?.role === 'account_checkin' && pc.group_authorization_id) {
+                const gaRedirect = await groupAuthorizationHService.findByIdAndEvent(
+                    pc.group_authorization_id,
+                    eid,
+                );
+                if (gaRedirect && gaRedirect.token) {
+                    return res.redirect(
+                        302,
+                        `/tool-checkin/group-auth/${encodeURIComponent(gaRedirect.token)}`,
+                    );
+                }
+            }
             const event = await EventCheckin.findById(eid).lean();
             if (!event) {
                 return res.status(404).send('Sự kiện không tồn tại.');
@@ -176,13 +225,77 @@ const toolCheckinController = () => {
             ) {
                 checkinViaGroupId = gaIdQuery;
             }
+            let groupBibForInfo = null;
+            if (pc.group_authorization_id) {
+                const ga = await groupAuthorizationHService.findByIdAndEvent(pc.group_authorization_id, eid);
+                if (ga) {
+                    const orderedIds = (ga.participant_ids || []).map((x) => String(x));
+                    const oids = orderedIds
+                        .filter((id) => mongoose.Types.ObjectId.isValid(id))
+                        .map((id) => new mongoose.Types.ObjectId(id));
+                    const partDocs = oids.length
+                        ? await Participant.find({ _id: { $in: oids } })
+                              .select('bib fullname category')
+                              .lean()
+                        : [];
+                    const pmap = new Map(partDocs.map((p) => [String(p._id), p]));
+                    const membersOrdered = orderedIds.map((id) => pmap.get(id)).filter(Boolean);
+                    groupBibForInfo = {
+                        group_name: ga.group_name != null ? String(ga.group_name).trim() : '',
+                        representative: ga.representative || {},
+                        members: membersOrdered,
+                    };
+                }
+            }
             return res.render('tool/info', {
                 layout: false,
                 pc,
                 event,
                 returnTo,
                 checkinViaGroupId,
+                groupBibForInfo,
             });
+        },
+
+        /**
+         * Một điểm vào cho mọi QR (VĐV: qr_scan_token, nhóm: group token) — chỉ sau đăng nhập TNV + đúng sự kiện.
+         */
+        scanResolve: async (req, res) => {
+            const eid = eventId(req);
+            if (!eid) {
+                return res.status(403).send('Chưa gán sự kiện.');
+            }
+            let raw = String(req.params.token || '').trim();
+            try {
+                raw = decodeURIComponent(raw);
+            } catch (e) {
+                /* ignore */
+            }
+            raw = String(raw || '').trim();
+            if (!raw) {
+                return res.status(400).send('Thiếu mã.');
+            }
+            const ga = await GroupAuthorization.findOne({
+                $and: [eventIdMatch(eid), { token: raw }],
+            })
+                .select('_id')
+                .lean();
+            if (ga) {
+                return res.redirect(302, `/tool-checkin/group-auth/${encodeURIComponent(raw)}`);
+            }
+            const p = await Participant.findOne({
+                $and: [eventIdMatch(eid), { qr_scan_token: raw }],
+            })
+                .select('uid')
+                .lean();
+            if (p && p.uid) {
+                const qs = new URLSearchParams({
+                    code: String(p.uid),
+                    return_to: '/tool-checkin',
+                });
+                return res.redirect(302, `/tool-checkin/info?${qs.toString()}`);
+            }
+            return res.status(404).send('Mã QR không hợp lệ hoặc không thuộc sự kiện này.');
         },
 
         checkIn: async (req, res) => {
@@ -244,10 +357,100 @@ const toolCheckinController = () => {
                 String(participant.group_authorization_id) === viaGroup
             ) {
                 participant.checkin_via_group_id = new mongoose.Types.ObjectId(viaGroup);
+                const gaRep = await groupAuthorizationHService.findByIdAndEvent(viaGroup, eid);
+                const repSnap = gaRep ? snapshotGroupRepresentative(gaRep.representative) : undefined;
+                if (repSnap) {
+                    participant.checkin_group_representative = repSnap;
+                }
             }
             await participant.save();
 
             return res.json({ success: true });
+        },
+
+        /**
+         * Tương thích URL cũ: gộp vào một trang group-auth (không còn bước riêng).
+         */
+        groupCheckInPage: async (req, res) => {
+            let token = String(req.params.token || '').trim();
+            try {
+                token = decodeURIComponent(token);
+            } catch (e) {
+                /* ignore */
+            }
+            token = String(token || '').trim();
+            if (!token) {
+                return res.status(400).send('Thiếu mã.');
+            }
+            return res.redirect(302, `/tool-checkin/group-auth/${encodeURIComponent(token)}`);
+        },
+
+        /** POST: check-in hàng loạt cùng ảnh/chữ ký; mỗi BIB một dòng lịch sử + snapshot đại diện. */
+        groupCheckInSubmit: async (req, res) => {
+            const eid = eventId(req);
+            if (!eid) {
+                return res.status(403).json({ success: false, mess: 'Chưa gán sự kiện.' });
+            }
+            let token = String(req.params.token || '').trim();
+            try {
+                token = decodeURIComponent(token);
+            } catch (e) {
+                /* ignore */
+            }
+            token = String(token || '').trim();
+            const ga = await groupAuthorizationHService.findByToken(token);
+            if (!ga || String(ga.event_id) !== String(eid)) {
+                return res.status(404).json({ success: false, mess: 'Không tìm thấy nhóm hoặc không thuộc sự kiện này.' });
+            }
+
+            const eventDoc = await EventCheckin.findById(eid).select('checkin_capture_mode').lean();
+            const rawMode = String(eventDoc?.checkin_capture_mode || 'both').trim();
+            const allowedModes = ['none', 'signature', 'photo', 'both'];
+            const mode = allowedModes.includes(rawMode) ? rawMode : 'both';
+            const sig = req.files?.signature?.[0];
+            const photo = req.files?.photo?.[0];
+
+            if (mode === 'both' && (!sig || !photo)) {
+                return res.status(400).json({ success: false, mess: 'Cần chữ ký và ảnh chụp.' });
+            }
+            if (mode === 'signature' && !sig) {
+                return res.status(400).json({ success: false, mess: 'Cần chữ ký.' });
+            }
+            if (mode === 'photo' && !photo) {
+                return res.status(400).json({ success: false, mess: 'Cần chụp ảnh.' });
+            }
+
+            const relBase = `/uploads/checkin/${eid}`;
+            const staff = req.user.email || req.user.name || String(req.user._id);
+            const now = new Date();
+            const repSnap = snapshotGroupRepresentative(ga.representative);
+            const setDoc = {
+                checkin_method: 'scan',
+                checkin_time: now,
+                checkin_by: staff,
+                checkin_via_group_id: ga._id,
+            };
+            if (repSnap) {
+                setDoc.checkin_group_representative = repSnap;
+            }
+            if (sig) {
+                setDoc.checkin_signature_path = `${relBase}/${sig.filename}`;
+            }
+            if (photo) {
+                setDoc.checkin_photo_path = `${relBase}/${photo.filename}`;
+            }
+
+            const result = await groupAuthorizationHService.applyGroupRepresentativeCheckIn(eid, ga._id, setDoc);
+            if (!result.ok) {
+                return res.status(400).json({ success: false, mess: 'Không cập nhật được nhóm.' });
+            }
+            if (!result.updated) {
+                return res.status(400).json({
+                    success: false,
+                    mess: 'Không còn VĐV nào trong nhóm cần check-in (đã check-in hoặc đã hủy).',
+                });
+            }
+            return res.json({ success: true, count: result.updated });
         },
 
         /**
@@ -256,7 +459,13 @@ const toolCheckinController = () => {
          * - super_admin / admin: mở được để xem/preview (không cần gán sự kiện trên user).
          */
         groupAuthByToken: async (req, res) => {
-            const token = String(req.params.token || '').trim();
+            let token = String(req.params.token || '').trim();
+            try {
+                token = decodeURIComponent(token);
+            } catch (e) {
+                /* ignore */
+            }
+            token = String(token || '').trim();
             const doc = await groupAuthorizationHService.findByToken(token);
             if (!doc) {
                 return res.status(404).send('Không tìm thấy nhóm ủy quyền hoặc token không hợp lệ.');
@@ -287,6 +496,7 @@ const toolCheckinController = () => {
                 .sort({ bib: 1 })
                 .lean();
             const event = await EventCheckin.findById(eid).lean();
+            const groupCheckinPostPath = `/tool-checkin/group-check-in/${encodeURIComponent(token)}`;
             return res.render('tool/group_auth', {
                 layout: false,
                 group: doc,
@@ -294,6 +504,7 @@ const toolCheckinController = () => {
                 event,
                 groupToken: token,
                 groupAuthViewerRole: role,
+                groupCheckinPostPath,
             });
         },
 

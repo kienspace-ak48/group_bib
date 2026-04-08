@@ -3,66 +3,120 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Nhóm ủy quyền — <%= event && event.name ? event.name : 'Check-in' %></title>
+  <title>Nhận BIB nhóm — <%= event && event.name ? event.name : 'Check-in' %></title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>body { font-family: Inter, ui-sans-serif, system-ui, sans-serif; }</style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen p-4 md:p-8">
-  <% var rep = group && group.representative ? group.representative : {}; %>
-  <% var capMode = (event && event.checkin_capture_mode) ? event.checkin_capture_mode : 'both'; %>
-  <% var returnPath = '/tool-checkin/group-auth/' + encodeURIComponent(typeof groupToken !== 'undefined' ? groupToken : (group && group.token || '')); %>
-  <% var gaId = group && group._id ? String(group._id) : ''; %>
-  <% var viewerRole = typeof groupAuthViewerRole !== 'undefined' ? groupAuthViewerRole : ''; %>
-  <% var isAdminViewer = viewerRole === 'admin' || viewerRole === 'super_admin'; %>
-  <div class="max-w-4xl mx-auto">
-    <div class="flex flex-wrap items-start justify-between gap-3 mb-6">
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+<% 
+  var rep = group && group.representative ? group.representative : {};
+  var capMode = (event && event.checkin_capture_mode) ? String(event.checkin_capture_mode).trim() : 'both';
+  if (['none','signature','photo','both'].indexOf(capMode) === -1) capMode = 'both';
+  var showSig = (capMode === 'signature' || capMode === 'both');
+  var showPhoto = (capMode === 'photo' || capMode === 'both');
+  var capModeLabel = 'Chữ ký và ảnh chụp';
+  if (capMode === 'none') capModeLabel = 'Chỉ xác nhận (không chữ ký / ảnh)';
+  else if (capMode === 'signature') capModeLabel = 'Chỉ chữ ký';
+  else if (capMode === 'photo') capModeLabel = 'Chỉ ảnh chụp';
+  var returnPath = '/tool-checkin/group-auth/' + encodeURIComponent(typeof groupToken !== 'undefined' ? groupToken : (group && group.token || ''));
+  var gaId = group && group._id ? String(group._id) : '';
+  var viewerRole = typeof groupAuthViewerRole !== 'undefined' ? groupAuthViewerRole : '';
+  var isAdminViewer = viewerRole === 'admin' || viewerRole === 'super_admin';
+  var pendingRemaining = 0;
+  if (participants && participants.length) {
+    participants.forEach(function (x) {
+      if (x.status !== 'checked_in' && x.status !== 'cancelled') pendingRemaining++;
+    });
+  }
+  var allCheckedIn = pendingRemaining === 0;
+  var showCheckinUi = !isAdminViewer && !allCheckedIn && (participants && participants.length);
+  var postPath = typeof groupCheckinPostPath !== 'undefined' ? groupCheckinPostPath : '';
+  if (!postPath && typeof groupToken !== 'undefined' && groupToken) {
+    postPath = '/tool-checkin/group-check-in/' + encodeURIComponent(groupToken);
+  }
+  function _dash(v) { return (v != null && String(v).trim() !== '') ? String(v).trim() : '—'; }
+  var groupName = (group && group.group_name != null && String(group.group_name).trim() !== '') ? String(group.group_name).trim() : '';
+%>
+  <input type="hidden" id="group_checkin_post_url" value="<%= postPath %>" />
+
+  <div class="max-w-4xl mx-auto p-4 md:p-8 pb-24">
+    <div class="flex flex-wrap items-start justify-between gap-3 mb-5">
       <div>
-        <h1 class="text-xl font-semibold text-slate-900 mb-1">Nhóm ủy quyền</h1>
-        <p class="text-sm text-slate-500"><%= event && event.name ? event.name : '' %></p>
+        <p class="text-xs font-semibold uppercase tracking-wide text-teal-700 mb-1">Nhận BIB theo nhóm</p>
+        <h1 class="text-xl font-semibold text-slate-900"><%= event && event.name ? event.name : 'Sự kiện' %></h1>
       </div>
       <% if (isAdminViewer) { %>
-      <a href="/admin" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+      <a href="/admin" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 shrink-0">
         <i class="fas fa-arrow-left"></i> Về quản trị
       </a>
       <% } else { %>
-      <a href="/tool-checkin" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
-        <i class="fas fa-arrow-left"></i> Về danh sách check-in
+      <a href="/tool-checkin" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 shrink-0">
+        <i class="fas fa-arrow-left"></i> Danh sách check-in
       </a>
       <% } %>
     </div>
 
+    <!-- Một card: hướng dẫn BIB nhóm (mint) + người đại diện (trắng) — cùng khối, chủ đề teal -->
+    <div class="rounded-2xl border-2 border-teal-400 bg-white shadow-md shadow-teal-900/5 overflow-hidden mb-5 ring-1 ring-teal-400/20" role="region" aria-label="BIB nhóm và người đại diện">
+      <div class="px-4 py-4 sm:px-5 sm:py-5 bg-gradient-to-b from-teal-50 via-[#e6fffa] to-teal-50/80 border-b border-teal-200/70">
+        <div class="flex flex-col sm:flex-row sm:items-start gap-3">
+          <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-teal-600 text-white shadow-md shadow-teal-700/25" aria-hidden="true">
+            <i class="fas fa-users text-lg"></i>
+          </span>
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-bold text-teal-950 tracking-tight">BIB nhóm — một đại diện nhận hộ nhiều VĐV</p>
+            <p class="mt-1 text-sm text-teal-900/95 leading-relaxed">
+              Quét QR mở đúng trang này. Ngay trong khối này, phần dưới là <strong class="text-teal-950">người đại diện</strong> (đối chiếu giấy tờ khi giao BIB).
+              Bảng kế tiếp là <strong class="text-teal-950">toàn bộ thành viên</strong> trong nhóm. Cuối trang: <strong class="text-teal-950">thủ tục check-in một lần</strong> cho cả nhóm.
+            </p>
+            <% if (groupName) { %>
+            <p class="mt-2 text-sm font-semibold text-teal-950">Tên nhóm: <span class="font-bold tracking-tight"><%= groupName %></span></p>
+            <% } %>
+          </div>
+        </div>
+      </div>
+      <div class="px-4 py-4 sm:px-5 sm:pb-5 bg-white">
+        <p class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">Người đại diện nhận BIB</p>
+        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
+          <div class="min-w-0">
+            <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Họ tên</dt>
+            <dd class="mt-0.5 font-semibold text-teal-800 break-words"><%= rep.fullname || '—' %></dd>
+          </div>
+          <div class="min-w-0">
+            <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">CCCD / Passport</dt>
+            <dd class="mt-0.5 font-semibold text-slate-900 break-words"><%= rep.cccd || '—' %></dd>
+          </div>
+          <div class="min-w-0">
+            <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Email</dt>
+            <dd class="mt-0.5 font-semibold text-slate-900 break-all"><%= rep.email || '—' %></dd>
+          </div>
+          <div class="min-w-0">
+            <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Số điện thoại</dt>
+            <dd class="mt-0.5 font-semibold text-slate-900 break-words"><%= rep.phone || '—' %></dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+
     <% if (isAdminViewer) { %>
     <div class="rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900 mb-4">
-      Bạn đang xem bằng tài khoản <strong>quản trị</strong> (xem/preview). Thao tác <strong>Check-in</strong> cần đăng nhập tài khoản <strong>check-in</strong> được gán đúng sự kiện.
+      Bạn đang xem bằng tài khoản <strong>quản trị</strong> (preview). Check-in nhóm cần tài khoản <strong>check-in</strong> được gán đúng sự kiện.
     </div>
     <% } %>
 
-    <div class="bg-white rounded-lg border border-slate-200 shadow-sm p-4 mb-6">
-      <div class="text-xs uppercase text-slate-400 mb-2">Người đại diện</div>
-      <div class="font-medium text-blue-700"><%= rep.fullname || '—' %></div>
-      <div class="text-sm mt-1"><%= rep.email || '—' %></div>
-      <div class="text-sm"><%= rep.phone || '—' %></div>
-      <div class="text-sm">CCCD: <%= rep.cccd || '—' %></div>
-    </div>
-
-    <div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 mb-6">
-      <strong class="font-semibold">Hướng dẫn TNV:</strong> Dưới đây là toàn bộ VĐV trong nhóm. Với từng người <strong>chưa check-in</strong>, nhấn
-      <strong>Check-in</strong> — mở màn hình giống check-in cá nhân (chữ ký / ảnh theo cấu hình sự kiện:
-      <code class="rounded bg-amber-100 px-1"><%= capMode %></code>).
-      Sau khi hoàn tất, bạn được đưa lại về trang này để tiếp tục người khác trong nhóm.
-    </div>
-
-    <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-      <div class="px-4 py-2 bg-slate-100 border-b border-slate-200 text-sm font-medium">VĐV trong nhóm</div>
+    <div class="bg-white rounded-xl border-2 border-teal-200/80 shadow-sm shadow-teal-900/5 overflow-hidden mb-5 ring-1 ring-teal-300/15">
+      <div class="px-4 py-2.5 bg-teal-50/90 border-b border-teal-200/70 text-sm font-semibold text-teal-950">Danh sách thành viên trong nhóm</div>
       <div class="overflow-x-auto">
         <table class="w-full text-sm min-w-[640px]">
           <thead>
-            <tr class="text-left text-slate-500 border-b border-slate-100">
+            <tr class="text-left text-sm font-medium text-teal-900 border-b border-teal-100/80 bg-teal-50/40">
               <th class="p-3">BIB</th>
               <th class="p-3">Họ tên</th>
               <th class="p-3">Hạng mục</th>
               <th class="p-3">Trạng thái</th>
-              <th class="p-3 text-right">Thao tác</th>
+              <th class="p-3 text-right">Chi tiết</th>
             </tr>
           </thead>
           <tbody>
@@ -81,6 +135,8 @@
                 <span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-emerald-800 text-xs font-medium">
                   <i class="fas fa-check-circle"></i> Đã check-in
                 </span>
+                <% } else if (p.status === 'cancelled') { %>
+                <span class="text-xs text-slate-500">Đã hủy</span>
                 <% } else { %>
                 <span class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-amber-900 text-xs font-medium">
                   <i class="fas fa-hourglass-half"></i> Chưa check-in
@@ -88,12 +144,12 @@
                 <% } %>
               </td>
               <td class="p-3 text-right whitespace-nowrap">
-                <% if (!checked) { %>
-                <a href="/tool-checkin/info?<%= infoQs %>" class="inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow hover:bg-indigo-700">
-                  <i class="fas fa-user-check"></i> Check-in
-                </a>
+                <% if (checked) { %>
+                <a href="/tool-checkin/info?<%= infoQs %>" target="_blank" rel="noopener noreferrer" class="text-xs text-teal-700 hover:underline font-medium">Xem VĐV</a>
+                <% } else if (p.status !== 'cancelled') { %>
+                <span class="text-xs text-slate-400">—</span>
                 <% } else { %>
-                <a href="/tool-checkin/info?<%= infoQs %>" class="text-xs text-slate-500 hover:text-slate-800 underline">Xem chi tiết</a>
+                <span class="text-xs text-slate-400">—</span>
                 <% } %>
               </td>
             </tr>
@@ -104,9 +160,385 @@
       </div>
     </div>
 
-    <p class="mt-6 text-xs text-slate-400">
-      Trang này chỉ hiển thị khi token khớp sự kiện và tài khoản check-in. Mã QR in từ admin chứa URL — điện thoại quét cần đã đăng nhập công cụ check-in (cùng sự kiện).
-    </p>
+    <% if (allCheckedIn && participants && participants.length) { %>
+    <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 mb-4">
+      <i class="fas fa-check-circle mr-1"></i> Toàn bộ BIB trong nhóm đã check-in.
+    </div>
+    <% } %>
+
+    <% if (showCheckinUi) { %>
+    <input type="hidden" id="capture_mode" value="<%= capMode %>" />
+    <div class="rounded-2xl border border-slate-200 bg-white shadow-md p-4 sm:p-6 mb-6">
+      <h2 class="text-base font-bold text-slate-900 pb-3 border-b border-slate-200 mb-4 flex items-center gap-2">
+        <i class="fas fa-clipboard-check text-teal-600"></i>
+        Thủ tục check-in nhóm (một lần)
+      </h2>
+      <p class="text-sm text-slate-600 mb-4">
+        Cấu hình sự kiện: <strong><%= capModeLabel %></strong>
+      </p>
+      <% if (capMode === 'none') { %>
+      <p class="text-sm text-slate-700 mb-4">Nhấn <strong>Hoàn tất check-in nhóm</strong> để ghi nhận cho mọi BIB chưa check-in.</p>
+      <% } else if (capMode === 'both') { %>
+      <p class="text-sm text-slate-700 mb-4">Ký và chụp ảnh <strong>người đại diện</strong>, rồi nhấn <strong>Hoàn tất check-in nhóm</strong>.</p>
+      <% } else if (capMode === 'signature') { %>
+      <p class="text-sm text-slate-700 mb-4">Thu <strong>chữ ký</strong> người đại diện, rồi nhấn <strong>Hoàn tất check-in nhóm</strong>.</p>
+      <% } else if (capMode === 'photo') { %>
+      <p class="text-sm text-slate-700 mb-4">Chụp <strong>ảnh</strong> người đại diện, rồi nhấn <strong>Hoàn tất check-in nhóm</strong>.</p>
+      <% } %>
+
+      <% if (capMode !== 'none') { %>
+      <div class="grid grid-cols-1 <%= showSig && showPhoto ? 'md:grid-cols-2' : '' %> gap-4 items-stretch">
+        <% if (showSig) { %>
+        <div class="flex flex-col min-w-0">
+          <p class="text-xs font-medium text-slate-500 mb-1">Chữ ký người đại diện</p>
+          <div class="rounded-xl border border-slate-200 bg-white overflow-hidden h-[200px] w-full">
+            <canvas id="signature-pad" class="w-full h-full touch-none block cursor-crosshair"></canvas>
+          </div>
+          <button type="button" id="btn_clear_sig" class="mt-2 px-4 py-2 rounded-lg border border-slate-300 text-sm font-medium hover:bg-slate-50 self-start">Xóa chữ ký</button>
+        </div>
+        <% } %>
+        <% if (showPhoto) { %>
+        <div class="flex flex-col min-w-0">
+          <p class="text-xs font-medium text-slate-500 mb-1">Ảnh người đại diện</p>
+          <div id="photo_preview_wrap" class="rounded-xl border border-dashed border-slate-300 bg-slate-50 h-[200px] w-full flex items-center justify-center overflow-hidden relative">
+            <span id="photo_placeholder" class="text-sm text-slate-400 text-center px-3">Nhấn <strong>Chụp ảnh</strong></span>
+            <img id="inline_photo_preview" class="hidden w-full h-full object-cover" alt="" />
+          </div>
+          <button type="button" id="btn_open_camera" class="mt-2 px-4 py-2 rounded-lg bg-teal-600 text-white text-sm font-medium hover:bg-teal-700 self-start">
+            <i class="fas fa-camera mr-1"></i> Chụp ảnh
+          </button>
+        </div>
+        <% } %>
+      </div>
+      <% } %>
+      <p id="photo_status" class="text-sm text-green-600 hidden mt-2"><i class="fas fa-check-circle"></i> Đã có ảnh.</p>
+      <p id="checkin_err" class="text-sm text-red-600 hidden mt-2"></p>
+
+      <div class="flex flex-wrap justify-center gap-4 mt-6">
+        <button type="button" id="btn_submit_group_checkin" class="min-w-[240px] bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-5 py-3 rounded-xl shadow-md">
+          <i class="fas fa-check-circle mr-2"></i> Check-in nhóm
+        </button>
+      </div>
+    </div>
+    <% } %>
+
   </div>
+
+  <% if (showCheckinUi && showPhoto) { %>
+  <div id="modal" class="fixed inset-0 bg-black/50 flex items-center justify-center hidden z-[100]">
+    <div class="bg-white rounded-xl w-full max-w-md p-6 shadow-xl" id="modalBox">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-lg font-semibold">Chụp ảnh</h2>
+        <button type="button" id="modal_close_x" class="text-slate-400 hover:text-slate-600 text-xl leading-none" aria-label="Đóng">✕</button>
+      </div>
+      <div class="py-4 flex flex-col items-center gap-6">
+        <div id="cameraBox" class="w-full">
+          <video id="video" autoplay playsinline muted class="w-full max-h-64 rounded-lg border border-slate-300 bg-black object-cover"></video>
+        </div>
+        <div id="previewBox" class="w-full hidden">
+          <img id="preview" class="w-full max-h-64 rounded-lg border border-slate-300 object-cover" alt="" />
+        </div>
+        <canvas id="canvas" class="hidden"></canvas>
+        <div class="flex justify-between w-full gap-2">
+          <button type="button" id="recapture" class="flex-1 border border-slate-300 rounded-lg py-2 text-sm">Chụp lại</button>
+          <button type="button" id="capture" class="flex-1 border border-slate-300 rounded-lg py-2 text-sm">Chụp</button>
+        </div>
+      </div>
+      <div class="flex gap-3">
+        <button type="button" id="btn_close_modal" class="flex-1 border border-slate-300 rounded-lg py-2">Huỷ</button>
+        <button type="button" class="flex-1 bg-emerald-600 text-white rounded-lg py-2" id="capture_confirm">Xác nhận</button>
+      </div>
+    </div>
+  </div>
+  <% } %>
+
+  <% if (showCheckinUi) { %>
+  <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var postUrlEl = document.getElementById('group_checkin_post_url');
+    var POST_URL = postUrlEl ? postUrlEl.value : '';
+    var returnPath = '<%= returnPath %>';
+    var capModeEl = document.getElementById('capture_mode');
+    var capMode = capModeEl ? capModeEl.value : 'both';
+    var stream;
+    var photoBlob = null;
+    var modal = document.getElementById('modal');
+    var modalBox = document.getElementById('modalBox');
+    var video = document.querySelector('#video');
+    var capCanvas = document.querySelector('#canvas');
+    var preview = document.querySelector('#preview');
+    var btnCaptureCamera = document.querySelector('#capture');
+    var btnRetake = document.querySelector('#recapture');
+    var btnCaptureConfirm = document.querySelector('#capture_confirm');
+    var btnSubmit = document.querySelector('#btn_submit_group_checkin');
+    var sigCanvas = document.getElementById('signature-pad');
+    var btnClearSig = document.getElementById('btn_clear_sig');
+    var btnOpenCamera = document.getElementById('btn_open_camera');
+    var photoStatus = document.getElementById('photo_status');
+    var errEl = document.getElementById('checkin_err');
+    var inlinePhotoPreview = document.getElementById('inline_photo_preview');
+    var photoPlaceholder = document.getElementById('photo_placeholder');
+    var cameraBox = document.getElementById('cameraBox');
+    var previewBox = document.getElementById('previewBox');
+    var btnModalCloseX = document.getElementById('modal_close_x');
+    var signaturePad = null;
+    var sigPointerDown = false;
+    var sigLastCssW = -1, sigLastCssH = -1, sigLastRatio = -1;
+    var inlinePhotoObjectUrl = null;
+
+    function dataURLToBlob(dataUrl) {
+      try {
+        var parts = dataUrl.split(',');
+        var mime = (parts[0].match(/:(.*?);/) || [null, 'image/png'])[1];
+        var bstr = atob(parts[1] || '');
+        var n = bstr.length;
+        var u8 = new Uint8Array(n);
+        while (n--) u8[n] = bstr.charCodeAt(n);
+        return new Blob([u8], { type: mime });
+      } catch (e) { return null; }
+    }
+    function getSignatureBlob(callback) {
+      if (!signaturePad) { callback(null); return; }
+      try {
+        signaturePad.toBlob(function (blob) {
+          if (blob && blob.size > 0) { callback(blob); return; }
+          var url = signaturePad.toDataURL('image/png');
+          var b = dataURLToBlob(url);
+          callback(b && b.size > 0 ? b : null);
+        }, 'image/png');
+      } catch (e) {
+        try {
+          var url2 = signaturePad.toDataURL('image/png');
+          var b2 = dataURLToBlob(url2);
+          callback(b2 && b2.size > 0 ? b2 : null);
+        } catch (e2) { callback(null); }
+      }
+    }
+    function showErr(msg) {
+      if (!errEl) return;
+      errEl.textContent = msg || '';
+      errEl.classList.toggle('hidden', !msg);
+    }
+    if (sigCanvas && typeof SignaturePad !== 'undefined') {
+      signaturePad = new SignaturePad(sigCanvas, { backgroundColor: 'rgb(255, 255, 255)', penColor: 'rgb(0, 0, 0)' });
+      function resizeSig() {
+        if (!signaturePad) return;
+        var ratio = Math.max(window.devicePixelRatio || 1, 1);
+        var w = sigCanvas.offsetWidth, h = sigCanvas.offsetHeight;
+        if (!w || !h) return;
+        if (w === sigLastCssW && h === sigLastCssH && ratio === sigLastRatio) return;
+        sigLastCssW = w; sigLastCssH = h; sigLastRatio = ratio;
+        var strokeData = signaturePad.toData();
+        sigCanvas.width = w * ratio; sigCanvas.height = h * ratio;
+        sigCanvas.getContext('2d').scale(ratio, ratio);
+        signaturePad.clear();
+        if (strokeData && strokeData.length) {
+          try { signaturePad.fromData(strokeData); } catch (e) {}
+        }
+      }
+      function scheduleResizeOnce() {
+        requestAnimationFrame(function () {
+          if (!sigPointerDown) resizeSig();
+        });
+      }
+      var resizeTimer;
+      window.addEventListener('resize', function () {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(scheduleResizeOnce, 200);
+      });
+      sigCanvas.addEventListener('pointerdown', function () { sigPointerDown = true; }, { passive: true });
+      sigCanvas.addEventListener('pointerup', function () { sigPointerDown = false; scheduleResizeOnce(); }, { passive: true });
+      scheduleResizeOnce();
+      window.addEventListener('load', scheduleResizeOnce);
+    }
+    if (btnClearSig && signaturePad) {
+      btnClearSig.addEventListener('click', function () { signaturePad.clear(); });
+    }
+    function stopCamera() {
+      if (stream && stream.getTracks) stream.getTracks().forEach(function (t) { t.stop(); });
+      stream = null;
+      if (video) video.srcObject = null;
+    }
+    async function openCamera() {
+      stopCamera();
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Trình duyệt không hỗ trợ camera (HTTPS hoặc localhost).');
+      }
+      var attempts = [
+        { video: { facingMode: { ideal: 'environment' } }, audio: false },
+        { video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
+        { video: true, audio: false },
+      ];
+      var lastErr;
+      for (var i = 0; i < attempts.length; i++) {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia(attempts[i]);
+          video.srcObject = stream;
+          await video.play();
+          await waitVideoReady();
+          return;
+        } catch (e) { lastErr = e; stopCamera(); }
+      }
+      throw lastErr || new Error('Không mở được camera.');
+    }
+    function waitVideoReady() {
+      if (video.videoWidth > 0 && video.videoHeight > 0) return Promise.resolve();
+      return new Promise(function (resolve, reject) {
+        var to = setTimeout(function () { reject(new Error('Camera chưa hiển thị hình.')); }, 12000);
+        video.addEventListener('loadedmetadata', function () {
+          clearTimeout(to);
+          if (video.videoWidth > 0 && video.videoHeight > 0) resolve();
+          else reject(new Error('Kích thước video = 0.'));
+        }, { once: true });
+      });
+    }
+    function setInlinePhotoPreview(blob) {
+      if (inlinePhotoObjectUrl) { URL.revokeObjectURL(inlinePhotoObjectUrl); inlinePhotoObjectUrl = null; }
+      if (!blob || !inlinePhotoPreview || !photoPlaceholder) return;
+      inlinePhotoObjectUrl = URL.createObjectURL(blob);
+      inlinePhotoPreview.src = inlinePhotoObjectUrl;
+      inlinePhotoPreview.classList.remove('hidden');
+      photoPlaceholder.classList.add('hidden');
+    }
+    function clearInlinePhotoPreview() {
+      if (inlinePhotoObjectUrl) { URL.revokeObjectURL(inlinePhotoObjectUrl); inlinePhotoObjectUrl = null; }
+      if (inlinePhotoPreview) {
+        inlinePhotoPreview.removeAttribute('src');
+        inlinePhotoPreview.classList.add('hidden');
+      }
+      if (photoPlaceholder) photoPlaceholder.classList.remove('hidden');
+    }
+    if (btnCaptureCamera) {
+      btnCaptureCamera.addEventListener('click', async function () {
+        try {
+          if (!video.srcObject) { alert('Camera chưa được mở!'); return; }
+          await waitVideoReady();
+          var vw = video.videoWidth, vh = video.videoHeight;
+          if (!vw || !vh) { await new Promise(function (r) { setTimeout(r, 200); }); vw = video.videoWidth; vh = video.videoHeight; }
+          if (!vw || !vh) { alert('Chưa lấy được khung hình.'); return; }
+          capCanvas.width = vw; capCanvas.height = vh;
+          capCanvas.getContext('2d').drawImage(video, 0, 0, vw, vh);
+          preview.src = capCanvas.toDataURL('image/jpeg', 0.92);
+          if (cameraBox) cameraBox.classList.add('hidden');
+          if (previewBox) previewBox.classList.remove('hidden');
+        } catch (err) { alert(err.message || 'Lỗi chụp ảnh'); }
+      });
+    }
+    if (btnRetake) {
+      btnRetake.addEventListener('click', async function () {
+        if (previewBox) previewBox.classList.add('hidden');
+        if (cameraBox) cameraBox.classList.remove('hidden');
+        if (preview) preview.removeAttribute('src');
+        photoBlob = null;
+        clearInlinePhotoPreview();
+        if (photoStatus) photoStatus.classList.add('hidden');
+        try {
+          if (stream && stream.getTracks().some(function (t) { return t.readyState === 'live'; })) {
+            video.srcObject = stream;
+            await video.play();
+          } else await openCamera();
+        } catch (e) { alert(e.message || 'Không mở lại được camera'); }
+      });
+    }
+    function closeModal() {
+      if (!modal) return;
+      document.body.classList.remove('overflow-hidden');
+      stopCamera();
+      modal.classList.add('hidden');
+    }
+    function openModalCam() {
+      if (!modal) return;
+      document.body.classList.add('overflow-hidden');
+      modal.classList.remove('hidden');
+      if (cameraBox) cameraBox.classList.remove('hidden');
+      if (previewBox) previewBox.classList.add('hidden');
+      if (preview) preview.removeAttribute('src');
+      openCamera().catch(function (e) { alert(e.message || 'Không mở được camera'); closeModal(); });
+    }
+    if (btnOpenCamera && modal) btnOpenCamera.addEventListener('click', openModalCam);
+    var btnCloseModalFooter = document.getElementById('btn_close_modal');
+    if (btnCloseModalFooter) btnCloseModalFooter.addEventListener('click', closeModal);
+    if (btnModalCloseX) btnModalCloseX.addEventListener('click', closeModal);
+    if (btnCaptureConfirm && modal) {
+      btnCaptureConfirm.addEventListener('click', function () {
+        if (!capCanvas.width || !capCanvas.height || !preview.src) {
+          alert('Nhấn Chụp để lấy ảnh trước.');
+          return;
+        }
+        capCanvas.toBlob(function (blob) {
+          if (!blob) { alert('Không tạo được file ảnh.'); return; }
+          photoBlob = blob;
+          setInlinePhotoPreview(blob);
+          if (photoStatus) photoStatus.classList.remove('hidden');
+          closeModal();
+        }, 'image/jpeg', 0.92);
+      });
+    }
+    function postGroupCheckin(fd) {
+      if (!btnSubmit || !POST_URL) return;
+      btnSubmit.disabled = true;
+      fetch(POST_URL, { method: 'POST', body: fd, credentials: 'same-origin' })
+        .then(function (r) {
+          return r.text().then(function (text) {
+            var j = {};
+            try { j = text ? JSON.parse(text) : {}; } catch (e) { j = { mess: text || 'Lỗi ' + r.status }; }
+            return { ok: r.ok, body: j };
+          });
+        })
+        .then(function (res) {
+          if (res.ok && res.body && res.body.success) {
+            // Về danh sách check-in (tab mở từ danh sách cũng đổi sang list sau khi xong)
+            window.location.href = '/tool-checkin';
+          } else {
+            showErr((res.body && res.body.mess) || 'Lỗi server');
+          }
+        })
+        .catch(function () { showErr('Lỗi mạng hoặc server.'); })
+        .finally(function () { btnSubmit.disabled = false; });
+    }
+    if (btnSubmit) {
+      btnSubmit.addEventListener('click', function () {
+        showErr('');
+        capMode = (document.getElementById('capture_mode') || {}).value || 'both';
+        if (capMode === 'none') {
+          postGroupCheckin(new FormData());
+          return;
+        }
+        if ((capMode === 'signature' || capMode === 'both') && signaturePad) {
+          if (signaturePad.isEmpty()) { showErr('Vui lòng ký tên.'); return; }
+        } else if ((capMode === 'signature' || capMode === 'both') && !signaturePad) {
+          showErr('Thiếu vùng chữ ký.'); return;
+        }
+        if ((capMode === 'photo' || capMode === 'both') && !photoBlob) {
+          showErr('Vui lòng chụp ảnh người đại diện.'); return;
+        }
+        if (capMode === 'signature') {
+          getSignatureBlob(function (sigBlob) {
+            if (!sigBlob) { showErr('Không xuất được chữ ký.'); return; }
+            var fd = new FormData();
+            fd.append('signature', sigBlob, 'signature.png');
+            postGroupCheckin(fd);
+          });
+          return;
+        }
+        if (capMode === 'photo') {
+          var fdP = new FormData();
+          fdP.append('photo', photoBlob, 'photo.jpg');
+          postGroupCheckin(fdP);
+          return;
+        }
+        getSignatureBlob(function (sigBlob) {
+          if (!sigBlob) { showErr('Không xuất được chữ ký.'); return; }
+          var fdB = new FormData();
+          fdB.append('signature', sigBlob, 'signature.png');
+          fdB.append('photo', photoBlob, 'photo.jpg');
+          postGroupCheckin(fdB);
+        });
+      });
+    }
+  });
+  </script>
+  <% } %>
 </body>
 </html>

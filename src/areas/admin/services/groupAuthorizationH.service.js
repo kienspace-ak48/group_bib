@@ -87,7 +87,7 @@ class GroupAuthorizationHService {
             const participants = await ParticipantCheckinH.find({
                 _id: { $in: allPids },
             })
-                .select('bib fullname')
+                .select('bib fullname email phone cccd category')
                 .lean();
             const pmap = new Map(participants.map((p) => [String(p._id), p]));
             return rows.map((r) => ({
@@ -238,6 +238,42 @@ class GroupAuthorizationHService {
     }
 
     /**
+     * Không gán nhóm cho VĐV đã check-in hoặc đã bật ủy quyền đơn (nhận BIB hộ).
+     * @param {import('mongoose').Types.ObjectId[]} participantOids
+     */
+    async _validateEligibilityForGroupMembers(eventId, participantOids) {
+        const eoid = this._eventOid(eventId);
+        if (!eoid) return { ok: false, message: 'Sự kiện không hợp lệ.' };
+        const oids = (participantOids || []).map(toOid).filter(Boolean);
+        if (!oids.length) return { ok: true, message: '' };
+        const found = await ParticipantCheckinH.find({
+            $and: [this._eventIdQuery(eventId), { _id: { $in: oids } }],
+        })
+            .select('_id bib status delegation_enabled')
+            .lean();
+        if (found.length !== oids.length) {
+            return { ok: false, message: 'Một số VĐV không thuộc sự kiện này.' };
+        }
+        const checkedIn = [];
+        const delegated = [];
+        for (const p of found) {
+            const bib =
+                p.bib != null && String(p.bib).trim() !== ''
+                    ? String(p.bib).trim()
+                    : `id:${String(p._id).slice(-8)}`;
+            if (p.status === 'checked_in') checkedIn.push(bib);
+            if (p.delegation_enabled === true) delegated.push(bib);
+        }
+        if (checkedIn.length || delegated.length) {
+            const parts = [];
+            if (checkedIn.length) parts.push(`đã check-in: ${[...new Set(checkedIn)].join(', ')}`);
+            if (delegated.length) parts.push(`đã bật ủy quyền đơn: ${[...new Set(delegated)].join(', ')}`);
+            return { ok: false, message: `Không gán nhóm cho BIB — ${parts.join('; ')}.` };
+        }
+        return { ok: true, message: '' };
+    }
+
+    /**
      * @param {object} [options]
      * @param {'admin_group_tab'|'admin_participant_modal'} [options.delegationSource]
      * @param {import('mongoose').Types.ObjectId|string} [options.actorAdminId]
@@ -246,55 +282,89 @@ class GroupAuthorizationHService {
         const source = options.delegationSource || 'admin_group_tab';
         const actorAdminId = options.actorAdminId;
         const event = await eventCheckinHService.getById(eventId);
-        if (!event) return;
+        if (!event) return null;
         const hostBase = getPublicBaseUrl();
         const token = gaDoc && gaDoc.token ? String(gaDoc.token) : '';
-        const toolPath = token ? `/tool-checkin/group-auth/${encodeURIComponent(token)}` : '';
+        /** QR/mail thống nhất: resolve → redirect tới group-auth sau khi khớp sự kiện. */
+        const toolPath = token ? `/tool-checkin/scan/${encodeURIComponent(token)}` : '';
         const toolFullUrl = hostBase && toolPath ? `${hostBase}${toolPath}` : toolPath;
 
-        const pids = (participantIds || []).map(toOid).filter(Boolean);
-        for (const pid of pids) {
-            const p = await ParticipantCheckinH.findById(pid).lean();
-            if (!p) continue;
-            let mailSent = false;
-            let mailError = '';
-            const mailTo = String(rep.email || '').trim();
-            if (mailTo && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mailTo)) {
-                if (eventBulkMailService.isSendGridConfigured()) {
-                    try {
-                        await eventBulkMailService.sendGroupDelegateNotificationMail({
-                            event,
-                            representative: rep,
-                            participant: p,
-                            toolFullUrl: toolFullUrl || toolPath,
-                            toolPath,
-                        });
-                        mailSent = true;
-                    } catch (e) {
-                        mailError = e.message || String(e);
-                    }
-                } else {
-                    mailError = 'SendGrid chưa cấu hình';
+        const gaFresh = await GroupAuthorization.findById(gaDoc._id).lean();
+        if (!gaFresh) return null;
+        const orderedIds = (gaFresh.participant_ids || []).map((x) => String(x));
+        const oids = orderedIds.map(toOid).filter(Boolean);
+        const participants = oids.length
+            ? await ParticipantCheckinH.find({ _id: { $in: oids } })
+                  .select('bib fullname category')
+                  .lean()
+            : [];
+        const pmap = new Map(participants.map((p) => [String(p._id), p]));
+        const ordered = orderedIds.map((id) => pmap.get(id)).filter(Boolean);
+
+        const groupName = gaFresh.group_name != null ? String(gaFresh.group_name).trim() : '';
+        const mailTo = String(rep.email || '').trim();
+        let mailSent = false;
+        let mailError = '';
+        if (mailTo && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mailTo)) {
+            if (eventBulkMailService.isSendGridConfigured()) {
+                try {
+                    await eventBulkMailService.sendGroupBibNotificationMail({
+                        event,
+                        representative: rep,
+                        groupName,
+                        participants: ordered,
+                        toolFullUrl: toolFullUrl || toolPath,
+                        toolPath,
+                    });
+                    mailSent = true;
+                } catch (e) {
+                    mailError = e.message || String(e);
                 }
             } else {
-                mailError = 'Không có email đại diện hợp lệ';
+                mailError = 'SendGrid chưa cấu hình';
             }
-
-            await delegationAuthorizationLogHService.append({
-                event_id: eventId,
-                group_authorization_id: gaDoc._id,
-                participant_id: pid,
-                kind: 'participant_assigned',
-                representative: rep,
-                participant_bib: p.bib,
-                participant_fullname: p.fullname,
-                source,
-                actor_admin_id: actorAdminId,
-                mail_to: mailTo,
-                mail_sent: mailSent,
-                mail_error: mailError,
-            });
+        } else {
+            mailError = 'Không có email đại diện hợp lệ';
         }
+
+        const members_snapshot = ordered.map((p) => ({
+            bib: p.bib != null ? String(p.bib) : '',
+            fullname: p.fullname != null ? String(p.fullname) : '',
+            category: p.category != null ? String(p.category) : '',
+        }));
+
+        await delegationAuthorizationLogHService.append({
+            event_id: eventId,
+            group_authorization_id: gaDoc._id,
+            kind: 'group_mail_sent',
+            representative: rep,
+            participant_bib: '',
+            participant_fullname: '',
+            source,
+            actor_admin_id: actorAdminId,
+            mail_to: mailTo,
+            mail_sent: mailSent,
+            mail_error: mailError,
+            group_name: groupName,
+            members_snapshot,
+        });
+        return { mailSent, mailError };
+    }
+
+    /**
+     * Gửi lại mail nhóm BIB tới người đại diện (cùng nội dung như khi tạo/cập nhật nhóm).
+     * @param {{ delegationSource?: string, actorAdminId?: import('mongoose').Types.ObjectId|string }} [options]
+     */
+    async resendGroupBibMail(eventId, gaId, options = {}) {
+        const ga = await this.findByIdAndEvent(gaId, eventId);
+        if (!ga) return { ok: false, message: 'Không tìm thấy nhóm.' };
+        const r = await this._afterParticipantsAssigned(eventId, ga, [], ga.representative, {
+            delegationSource: options.delegationSource || 'admin_group_tab',
+            actorAdminId: options.actorAdminId,
+        });
+        if (!r) return { ok: false, message: 'Không gửi được mail.' };
+        if (r.mailSent) return { ok: true, message: 'Đã gửi lại mail tới người đại diện.' };
+        return { ok: false, message: r.mailError || 'Không gửi được mail.' };
     }
 
     async _afterParticipantsUnassigned(eventId, gaDoc, participantIds, rep, options = {}) {
@@ -315,6 +385,7 @@ class GroupAuthorizationHService {
                 actor_admin_id: actorAdminId,
                 mail_sent: false,
                 mail_error: '',
+                group_name: gaDoc && gaDoc.group_name != null ? String(gaDoc.group_name).trim() : '',
             });
         }
     }
@@ -329,14 +400,22 @@ class GroupAuthorizationHService {
             };
             if (!rep.fullname) return { ok: false, message: 'Nhập họ tên người đại diện.' };
 
+            const hasBibList = typeof body.bib_list === 'string' && body.bib_list.trim();
+            const group_name = String(body.group_name || '').trim();
+            if (hasBibList && !group_name) {
+                return { ok: false, message: 'Nhập tên nhóm.' };
+            }
+
             let rawIds = Array.isArray(body.participant_ids) ? body.participant_ids : [];
-            if (typeof body.bib_list === 'string' && body.bib_list.trim()) {
+            if (hasBibList) {
                 const r = await this.resolveParticipantIdsFromBibLines(eventId, body.bib_list);
                 if (!r.ok) return r;
                 rawIds = r.ids;
             }
             const v = await this._validateParticipantIds(eventId, rawIds, null);
             if (!v.ok) return v;
+            const el = await this._validateEligibilityForGroupMembers(eventId, v.ids);
+            if (!el.ok) return el;
 
             const token = crypto.randomBytes(24).toString('hex');
             const rawSrc = options.delegationSource || options.creation_source;
@@ -348,6 +427,7 @@ class GroupAuthorizationHService {
                 participant_ids: v.ids,
                 token,
                 creation_source,
+                group_name: group_name || '',
             });
 
             await ParticipantCheckinH.updateMany(
@@ -379,7 +459,17 @@ class GroupAuthorizationHService {
             if (!rep.fullname) return { ok: false, message: 'Nhập họ tên người đại diện.' };
 
             let rawIds = Array.isArray(body.participant_ids) ? body.participant_ids : existing.participant_ids || [];
-            if (typeof body.bib_list === 'string' && body.bib_list.trim()) {
+            const hasBibList = typeof body.bib_list === 'string' && body.bib_list.trim();
+            const group_name = String(
+                body.group_name !== undefined && body.group_name !== null
+                    ? body.group_name
+                    : (existing.group_name || ''),
+            ).trim();
+            if (hasBibList && !group_name) {
+                return { ok: false, message: 'Nhập tên nhóm.' };
+            }
+
+            if (hasBibList) {
                 const r = await this.resolveParticipantIdsFromBibLines(eventId, body.bib_list);
                 if (!r.ok) return r;
                 rawIds = r.ids;
@@ -391,6 +481,10 @@ class GroupAuthorizationHService {
             const newIds = v.ids.map((x) => String(x));
             const removed = oldIds.filter((id) => !newIds.includes(id));
             const added = newIds.filter((id) => !oldIds.includes(id));
+
+            const addedOids = added.map(toOid).filter(Boolean);
+            const el = await this._validateEligibilityForGroupMembers(eventId, addedOids);
+            if (!el.ok) return el;
 
             if (removed.length) {
                 const roids = removed.map(toOid).filter(Boolean);
@@ -415,6 +509,7 @@ class GroupAuthorizationHService {
                     $set: {
                         representative: rep,
                         participant_ids: v.ids,
+                        group_name: group_name || '',
                     },
                 },
                 { new: true },
@@ -432,6 +527,54 @@ class GroupAuthorizationHService {
             console.log(CNAME, e.message);
             return { ok: false, message: e.message || 'Không cập nhật được.' };
         }
+    }
+
+    /**
+     * Đại diện nhóm check-in một lần: gán cùng chữ ký/ảnh/TNV/thời gian cho mọi BIB chưa check-in; lưu snapshot đại diện nhận hộ.
+     * @param {object} setDoc
+     * @param {string} setDoc.checkin_method
+     * @param {Date} setDoc.checkin_time
+     * @param {string} setDoc.checkin_by
+     * @param {import('mongoose').Types.ObjectId} setDoc.checkin_via_group_id
+     * @param {{ fullname?: string, email?: string, phone?: string, cccd?: string }} setDoc.checkin_group_representative
+     * @param {string} [setDoc.checkin_signature_path]
+     * @param {string} [setDoc.checkin_photo_path]
+     */
+    async applyGroupRepresentativeCheckIn(eventId, groupAuthorizationId, setDoc) {
+        const ga = await this.findByIdAndEvent(groupAuthorizationId, eventId);
+        if (!ga) return { ok: false, updated: 0 };
+        const oids = (ga.participant_ids || [])
+            .map((x) => String(x))
+            .filter((id) => id && mongoose.Types.ObjectId.isValid(id))
+            .map((id) => new mongoose.Types.ObjectId(id));
+        if (!oids.length) return { ok: true, updated: 0 };
+        const $set = {
+            status: 'checked_in',
+            checkin_method: setDoc.checkin_method || 'scan',
+            checkin_time: setDoc.checkin_time,
+            checkin_by: setDoc.checkin_by,
+            checkin_via_group_id: setDoc.checkin_via_group_id,
+        };
+        if (setDoc.checkin_group_representative && typeof setDoc.checkin_group_representative === 'object') {
+            $set.checkin_group_representative = setDoc.checkin_group_representative;
+        }
+        if (setDoc.checkin_signature_path) {
+            $set.checkin_signature_path = setDoc.checkin_signature_path;
+        }
+        if (setDoc.checkin_photo_path) {
+            $set.checkin_photo_path = setDoc.checkin_photo_path;
+        }
+        const res = await ParticipantCheckinH.updateMany(
+            {
+                $and: [
+                    this._eventIdQuery(eventId),
+                    { _id: { $in: oids } },
+                    { status: { $nin: ['checked_in', 'cancelled'] } },
+                ],
+            },
+            { $set },
+        );
+        return { ok: true, updated: res.modifiedCount || 0 };
     }
 
     async remove(gaId, eventId, options = {}) {

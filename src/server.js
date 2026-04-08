@@ -1,7 +1,10 @@
 const http = require('http');
 const https = require('https');
 const HTTPS_PORT = 8443;
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config(
+    {path: path.join(__dirname, '../.env')}
+);
 const fs = require('fs')
 const app = require('./app');
 const HOST ='0.0.0.0';

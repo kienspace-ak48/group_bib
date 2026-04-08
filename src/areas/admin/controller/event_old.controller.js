@@ -440,7 +440,6 @@ const eventController = () => {
 
                     // right
                     bib: data.bibCode,
-                    // epc,
                     gender: data.gender === 'true', // "true" | "false"
                     blood: data.blood,
                     dob: data.dob,

@@ -290,6 +290,14 @@ class ParticipantCheckinHService {
                     { email: rx },
                     { cccd: rx },
                     { checkin_by: rx },
+                    { 'checkin_group_representative.fullname': rx },
+                    { 'checkin_group_representative.email': rx },
+                    { 'checkin_group_representative.phone': rx },
+                    { 'checkin_group_representative.cccd': rx },
+                    { delegate_fullname: rx },
+                    { delegate_email: rx },
+                    { delegate_phone: rx },
+                    { delegate_cccd: rx },
                 ],
             });
         }
@@ -542,6 +550,69 @@ class ParticipantCheckinHService {
         } catch (e) {
             console.log(CNAME, e.message);
             return null;
+        }
+    }
+
+    /** Sinh `qr_scan_token` một lần — dùng cho URL `/tool-checkin/scan/:token`. */
+    async ensureQrScanToken(participantId) {
+        try {
+            if (!mongoose.Types.ObjectId.isValid(String(participantId))) return null;
+            const id = new mongoose.Types.ObjectId(String(participantId));
+            const cur = await ParticipantCheckinH.findById(id).select('qr_scan_token').lean();
+            if (!cur) return null;
+            if (cur.qr_scan_token && String(cur.qr_scan_token).trim()) return String(cur.qr_scan_token).trim();
+            const token = crypto.randomBytes(24).toString('hex');
+            await ParticipantCheckinH.updateOne(
+                {
+                    _id: id,
+                    $or: [
+                        { qr_scan_token: { $exists: false } },
+                        { qr_scan_token: null },
+                        { qr_scan_token: '' },
+                    ],
+                },
+                { $set: { qr_scan_token: token } },
+            );
+            const again = await ParticipantCheckinH.findById(id).select('qr_scan_token').lean();
+            return again && again.qr_scan_token ? String(again.qr_scan_token).trim() : token;
+        } catch (e) {
+            console.log(CNAME, e.message);
+            return null;
+        }
+    }
+
+    /**
+     * Gán hàng loạt qr_scan_token cho VĐV chưa có (dùng khi mở workspace — QR mới chuẩn hóa).
+     * @param {{ limit?: number }} [options]
+     */
+    async backfillQrScanTokensForEvent(eventId, options = {}) {
+        const lim = Math.min(5000, Math.max(1, Number(options.limit) || 2000));
+        try {
+            const q = {
+                $and: [
+                    this._eventIdQuery(eventId),
+                    {
+                        $or: [
+                            { qr_scan_token: { $exists: false } },
+                            { qr_scan_token: null },
+                            { qr_scan_token: '' },
+                        ],
+                    },
+                ],
+            };
+            const rows = await ParticipantCheckinH.find(q).select('_id').limit(lim).lean();
+            if (!rows.length) return { updated: 0 };
+            const bulk = rows.map((r) => ({
+                updateOne: {
+                    filter: { _id: r._id },
+                    update: { $set: { qr_scan_token: crypto.randomBytes(24).toString('hex') } },
+                },
+            }));
+            const res = await ParticipantCheckinH.bulkWrite(bulk, { ordered: false });
+            return { updated: res.modifiedCount || rows.length };
+        } catch (e) {
+            console.log(CNAME, e.message);
+            return { updated: 0, err: e.message };
         }
     }
 }

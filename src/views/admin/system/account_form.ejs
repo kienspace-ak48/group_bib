@@ -1,6 +1,7 @@
 <% var isEdit = !!(account && account._id); %>
+<% var checkinOnly = typeof checkinOnlyEdit !== 'undefined' && checkinOnlyEdit; %>
 <div class="mb-4">
-  <h4 class="mb-1"><%= isEdit ? 'Sửa tài khoản' : 'Tạo tài khoản' %></h4>
+  <h4 class="mb-1"><%= checkinOnly ? 'Tài khoản check-in' : (isEdit ? 'Sửa tài khoản' : 'Tạo tài khoản') %></h4>
   <p class="text-body-secondary small mb-0">
     <a href="/admin/system/accounts">← Danh sách</a>
   </p>
@@ -15,6 +16,42 @@
 
 <div class="card border-0 shadow-sm" style="max-width: 640px;">
   <div class="card-body">
+    <% if (checkinOnly) { %>
+    <form method="POST" action="/admin/system/accounts/<%= account._id %>">
+      <p class="small text-body-secondary mb-3">Chỉnh sự kiện check-in, trạng thái hoặc đặt lại mật khẩu. Thông tin đăng nhập cơ bản do <code>super_admin</code> quản lý.</p>
+      <div class="mb-3">
+        <label class="form-label text-body-secondary small">Email</label>
+        <div class="fw-medium"><%= account.email || '—' %></div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label text-body-secondary small">Tên hiển thị</label>
+        <div class="fw-medium"><%= account.name || '—' %></div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label text-body-secondary small">Username</label>
+        <div class="fw-medium"><%= account.username || '—' %></div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Sự kiện check-in <span class="text-danger">*</span></label>
+        <select name="checkin_event_id" id="checkinEventId" class="form-select" required>
+          <option value="">— Chọn sự kiện —</option>
+          <% (events || []).forEach(function (ev) { %>
+          <option value="<%= ev._id %>" <%= account && account.checkin_event_id && String(account.checkin_event_id) === String(ev._id) ? 'selected' : '' %>><%= ev.name %><% if (ev.start_date) { %> · <%= new Date(ev.start_date).toLocaleDateString('vi-VN') %><% } %></option>
+          <% }); %>
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Mật khẩu mới (để trống nếu giữ nguyên)</label>
+        <input type="password" name="password" class="form-control" autocomplete="new-password" />
+      </div>
+      <div class="mb-3 form-check">
+        <input type="checkbox" name="status" class="form-check-input" id="accStatus" value="on" <%= !account || account.status ? 'checked' : '' %> />
+        <label class="form-check-label" for="accStatus">Kích hoạt</label>
+      </div>
+      <button type="submit" class="btn btn-primary">Lưu</button>
+      <a href="/admin/system/accounts" class="btn btn-link">Hủy</a>
+    </form>
+    <% } else { %>
     <form method="POST" action="<%= isEdit ? '/admin/system/accounts/' + account._id : '/admin/system/accounts' %>">
       <div class="mb-3">
         <label class="form-label">Email <span class="text-danger">*</span></label>
@@ -54,7 +91,7 @@
         <label class="form-label">Quyền (mỗi dòng hoặc cách nhau bằng dấu phẩy)</label>
         <textarea name="permissions" class="form-control font-monospace small" rows="4" placeholder="admin.event&#10;admin.dashboard"><% if (account && account.permissions && account.permissions.length) { %><%= account.permissions.join('\n') %><% } else if (!account) { %>admin.event
 admin.dashboard<% } %></textarea>
-        <div class="form-text">Ví dụ: <code>admin.event</code>, <code>admin.dashboard</code>. <code>super_admin</code> không cần danh sách.</div>
+        <div class="form-text">Ví dụ: <code>admin.event</code>, <code>admin.dashboard</code>, <code>admin.system.accounts</code> (xem/chỉnh tài khoản check-in). <code>super_admin</code> không cần danh sách.</div>
       </div>
       <div class="mb-3 form-check">
         <input type="checkbox" name="status" class="form-check-input" id="accStatus" value="on" <%= !account || account.status ? 'checked' : '' %> />
@@ -63,8 +100,10 @@ admin.dashboard<% } %></textarea>
       <button type="submit" class="btn btn-primary"><%= isEdit ? 'Lưu' : 'Tạo' %></button>
       <a href="/admin/system/accounts" class="btn btn-link">Hủy</a>
     </form>
+    <% } %>
   </div>
 </div>
+<% if (!checkinOnly) { %>
 <script>
 (function () {
   var sel = document.getElementById('accountRole');
@@ -79,3 +118,4 @@ admin.dashboard<% } %></textarea>
   sync();
 })();
 </script>
+<% } %>

@@ -38,20 +38,15 @@
     return '<span class="badge rounded-pill bg-light text-secondary border" title="Chưa rõ">—</span>';
   }
   /** Ngày giờ check-in hiển thị dưới cột QR */
-  function formatCheckinDisplay(d) {
-    if (!d) return '';
-    var x = new Date(d);
-    if (Number.isNaN(x.getTime())) return '';
-    return x.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-  }
   var ev = typeof event !== 'undefined' ? event : {};
   var sgOk = typeof sendgridConfigured !== 'undefined' ? sendgridConfigured : false;
+  var publicCheckinScanBase = typeof publicCheckinScanBase !== 'undefined' ? publicCheckinScanBase : '';
   var pf = typeof participantFilters !== 'undefined' && participantFilters ? participantFilters : { q_name: '', q_bib: '', q_phone: '', q_cccd: '' };
   var pp = typeof participantPagination !== 'undefined' && participantPagination ? participantPagination : null;
   var defaultPerPage = 20;
   var atTab = 'athletes';
   if (typeof athletesTab !== 'undefined') {
-    if (athletesTab === 'group') atTab = 'group';
+    if (athletesTab === 'group' || athletesTab === 'group_members') atTab = 'group';
     else if (athletesTab === 'single') atTab = 'single';
   }
   function step1Query(pageNum) {
@@ -79,11 +74,13 @@
       email: p.email || '',
       phone: p.phone || '',
       bib: p.bib || '',
+      chip: p.chip != null ? String(p.chip) : '',
       bib_name: p.bib_name || '',
       category: p.category || '',
       item: p.item || '',
       zone: p.zone || '',
       qr_code: (p.qr_code != null && String(p.qr_code) !== '') ? String(p.qr_code) : '',
+      qr_scan_token: p.qr_scan_token != null && String(p.qr_scan_token).trim() !== '' ? String(p.qr_scan_token).trim() : '',
       checkin_method: p.checkin_method || 'import',
       status: p.status || 'registered',
       checkin_by: p.checkin_by || '',
@@ -138,9 +135,9 @@
   <div class="tab-pane fade <%= atTab === 'athletes' ? 'show active' : '' %>" id="paneAthletes" role="tabpanel" aria-labelledby="tab-athletes">
   <div class="card-body border-bottom">
     <p class="small text-body-secondary mb-3">
-      Import Excel (sheet đầu): cột gợi ý <code>fullname</code>, <code>cccd</code>, <code>email</code>, <code>phone</code>,
+      Import Excel (sheet đầu): thứ tự cột gợi ý <code>bib</code>, <code>chip</code>, rồi <code>fullname</code>, <code>cccd</code>, <code>email</code>, <code>phone</code>,
       <code>dob</code> / <code>dob(yyyy-mm-dd)</code> — ngày sinh chỉ nhận <strong>chuỗi ISO</strong> <code>yyyy-mm-dd</code> (vd <code>1990-03-15</code>) hoặc ô <strong>kiểu ngày</strong> / serial trong Excel; không parse <code>dd/mm/yyyy</code> dạng text.
-      <code>gender</code>, <code>zone</code>, <code>bib</code>, <code>bib_name</code>, <code>category</code>, <code>item</code>,
+      <code>gender</code>, <code>zone</code>, <code>bib_name</code>, <code>category</code>, <code>item</code>,
       <code>qr_code</code> (tùy; nếu trống sẽ dùng mã <code>uid</code> sinh tự động), <code>status</code>, <code>checkin_method</code>,
       <code>pickup_time_range</code> — chuỗi khung giờ nhận (vd <code>08:00 - 10:00</code>). …
       Mỗi dòng sau import sẽ có <code>uid</code> duy nhất (prefix theo sự kiện, giống logic cũ <code>generateUID</code>).
@@ -234,9 +231,10 @@
 
   <div class="card-body p-0 " style="min-width: 0">
     <div class="table-responsive step-athletes-scroll-x w-100">
-      <table class="table table-sm table-striped table-hover align-middle mb-0 athlete-table-fixed" style="min-width: 880px">
+      <table class="table table-sm table-striped table-hover align-middle mb-0 athlete-table-fixed" style="min-width: 1000px">
         <colgroup>
           <col class="athlete-col-bib" />
+          <col class="athlete-col-chip" />
           <col class="athlete-col-zone" />
           <col class="athlete-col-name" />
           <col class="athlete-col-cccd" />
@@ -247,6 +245,7 @@
         <thead class="table-light">
           <tr class="text-center small">
             <th class="text-start">Code / Category</th>
+            <th class="text-start">Chip</th>
             <th>Zone</th>
             <th class="text-start">Họ tên</th>
             <th class="text-start">CCCD</th>
@@ -258,20 +257,23 @@
         <tbody>
           <% if (!participants || !participants.length) { %>
           <tr>
-            <td colspan="7" class="text-center text-body-secondary py-4">Chưa có người tham dự hoặc không khớp bộ lọc. Dùng import Excel hoặc Thêm thủ công.</td>
+            <td colspan="8" class="text-center text-body-secondary py-4">Chưa có người tham dự hoặc không khớp bộ lọc. Dùng import Excel hoặc Thêm thủ công.</td>
           </tr>
           <% } else { %>
           <% participants.forEach(function (p) { %>
           <% var emailOk = p.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(p.email).trim()); %>
           <% var delEmailOk = p.delegation_enabled && p.delegate_email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(p.delegate_email).trim()); %>
           <% var emailOkForMail = delEmailOk || (!p.delegation_enabled && emailOk) || (p.delegation_enabled && !delEmailOk && emailOk); %>
-          <% var qrPayload = (p.qr_code != null && String(p.qr_code) !== '') ? String(p.qr_code) : String(p.uid || ''); %>
+          <% var qrPayload = (publicCheckinScanBase && p.qr_scan_token && String(p.qr_scan_token).trim() !== '') ? (publicCheckinScanBase + encodeURIComponent(String(p.qr_scan_token).trim())) : ''; %>
           <% var isCheckedIn = p.status === 'checked_in' || p.checkin_status === true; %>
-          <% var checkinLine = (isCheckedIn && p.checkin_time) ? formatCheckinDisplay(p.checkin_time) : ''; %>
+          <% var checkinLine = (isCheckedIn && p.checkin_time) ? formatDateTimeVn(p.checkin_time) : ''; %>
           <tr class="participant-row" data-participant-id="<%= p._id %>" data-participant="<%= participantRowJson(p) %>">
             <td class="text-start text-nowrap">
               <div><span class="fw-bold text-danger"><%= dash(p.bib) %></span></div>
               <div class="small text-body-secondary"><%= dash(p.category) %></div>
+            </td>
+            <td class="text-start small athlete-chip-cell">
+              <div class="text-break" title="Chip"><%= dash(p.chip) %></div>
             </td>
             <td class="text-center small"><%= dash(p.zone) %></td>
             <td class="text-start js-open-edit participant-name-col" role="button" tabindex="0" title="Click để sửa">
@@ -293,9 +295,10 @@
               <button
                 type="button"
                 class="btn btn-sm btn-outline-secondary py-0 px-2 js-qr-share"
-                title="Xem mã QR"
+                title="<%= qrPayload ? 'QR mở /tool-checkin/scan (TNV)' : 'Thiếu mã scan — tải lại trang hoặc cấu hình PUBLIC_BASE_URL' %>"
                 aria-label="Xem mã QR"
                 data-qr="<%= encodeURIComponent(qrPayload) %>"
+                <%= !qrPayload ? 'disabled' : '' %>
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 1a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM11 2.5a2.5 2.5 0 1 1 .603 1.628l-6.718 3.12a2.5 2.5 0 0 1 0 1.504l6.718 3.12a2.5 2.5 0 1 1-.488.876l-6.718-3.12a2.5 2.5 0 1 1 0-3.256l6.718-3.12A2.5 2.5 0 0 1 11 2.5zm-6.5 6a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm11 5.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/></svg>
               </button>
@@ -374,6 +377,7 @@
       event: ev,
       groupAuthorizations: typeof groupAuthorizations !== 'undefined' ? groupAuthorizations : [],
       delegationLogs: typeof delegationLogs !== 'undefined' ? delegationLogs : [],
+      sendgridConfigured: typeof sendgridConfigured !== 'undefined' ? sendgridConfigured : false,
     }) %>
   </div>
   </div>
@@ -393,6 +397,8 @@
         <input type="hidden" name="ret_q_cccd" value="<%= pf.q_cccd %>" />
         <input type="hidden" name="ret_page" value="<%= pp ? pp.page : 1 %>" />
         <input type="hidden" name="ret_perPage" value="<%= pp ? pp.perPage : defaultPerPage %>" />
+        <% if (atTab === 'group') { %><input type="hidden" name="ret_tab" value="group" /><% } %>
+        <% if (atTab === 'single') { %><input type="hidden" name="ret_tab" value="single" /><% } %>
         <div class="modal-body">
           <div class="row g-2">
             <%- include('./_athlete_form_fields', { prefix: 'manual' }) %>
@@ -491,7 +497,7 @@
 </div>
 
 <div class="modal fade" id="participantQrModal" tabindex="-1" aria-labelledby="participantQrModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable modal-fullscreen-md-down">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable ">
     <div class="modal-content">
       <div class="modal-header py-2">
         <h5 class="modal-title" id="participantQrModalLabel">Mã QR</h5>
@@ -523,6 +529,7 @@
     padding-right: 0.4rem;
   }
   .athlete-col-bib { width: 5.25rem; }
+  .athlete-col-chip { width: 4.5rem; min-width: 3rem; }
   .athlete-col-zone { width: 3rem; }
   .athlete-col-name { width: 20%; min-width: 7.5rem; }
   .athlete-col-cccd { width: 6.5rem; }
@@ -650,6 +657,7 @@
     set('.edit-fullname', data.fullname);
     set('.edit-cccd', data.cccd);
     set('.edit-bib', data.bib);
+    set('.edit-chip', data.chip);
     set('.edit-bib_name', data.bib_name);
     set('.edit-category', data.category);
     set('.edit-item', data.item);

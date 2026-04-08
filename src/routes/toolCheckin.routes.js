@@ -1,9 +1,19 @@
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const router = express.Router();
 const rbac = require('../middleware/rbac.middleware');
 const checkinUpload = require('../config/checkinUploadM');
 const { ADMIN_LOGIN_URL } = require('../config/auth.config');
 const toolCheckinController = require('../controller/toolCheckin.controller')();
+
+/** Giảm dò mã scan (cần đăng nhập; bổ sung per-IP). */
+const scanResolveLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 90,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: 'Quá nhiều yêu cầu quét. Thử lại sau.',
+});
 
 function requireCheckinEvent(req, res, next) {
     if (!req.user?.checkin_event_id) {
@@ -31,9 +41,12 @@ function requireGroupAuthPageViewer(req, res, next) {
 }
 
 router.get('/group-auth/:token', requireGroupAuthPageViewer, toolCheckinController.groupAuthByToken);
+router.get('/group-checkin/:token', requireGroupAuthPageViewer, toolCheckinController.groupCheckInPage);
 
 router.use(rbac.requireRole('account_checkin'));
 router.use(requireCheckinEvent);
+
+router.get('/scan/:token', scanResolveLimiter, toolCheckinController.scanResolve);
 
 router.get('/', toolCheckinController.dashboard);
 router.get('/get-data', toolCheckinController.getData);
@@ -47,5 +60,14 @@ router.post('/check-in', (req, res, next) => {
         next();
     });
 }, toolCheckinController.checkIn);
+
+router.post('/group-check-in/:token', (req, res, next) => {
+    checkinUpload(req, res, (err) => {
+        if (err) {
+            return res.status(400).json({ success: false, mess: err.message || 'Lỗi upload ảnh.' });
+        }
+        next();
+    });
+}, toolCheckinController.groupCheckInSubmit);
 
 module.exports = router;

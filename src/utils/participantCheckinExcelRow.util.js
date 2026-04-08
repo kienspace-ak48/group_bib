@@ -130,6 +130,7 @@ function convertRowCheckinH(row, eventId) {
         checkin_by: firstCell(row, 'checkin_by', 'checkinBy'),
         checkin_time: parseOptionalDate(row, 'checkin_time', 'checkinTime', 'Checkin time'),
         bib: firstCell(row, 'bib', 'BIB') || (row.bib != null ? String(row.bib).trim() : undefined),
+        chip: firstCell(row, 'chip', 'Chip', 'CHIP') || undefined,
         bib_name: firstCell(row, 'bib_name', 'bibName', 'BIB name', 'Ten BIB'),
         category: firstCell(row, 'category', 'cu_ly', 'Cự ly'),
         item: firstCell(row, 'item', 'vat_pham', 'Item'),

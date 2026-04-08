@@ -3,9 +3,12 @@
   var evId = ev._id ? String(ev._id) : '';
   var groups = typeof groupAuthorizations !== 'undefined' && groupAuthorizations ? groupAuthorizations : [];
   var logs = typeof delegationLogs !== 'undefined' && delegationLogs ? delegationLogs : [];
-  var logsGroup = logs.filter(function (log) { return (log.source || '') !== 'email_single_link'; });
+  var sgOk = typeof sendgridConfigured !== 'undefined' ? sendgridConfigured : false;
+  var logsGroupRaw = logs.filter(function (log) { return (log.source || '') !== 'email_single_link'; });
+  var logsGroup = logsGroupRaw.filter(function (log) { return log.kind !== 'participant_assigned'; });
   function kindLabel(k) {
-    if (k === 'participant_assigned') return 'Gán VĐV';
+    if (k === 'group_mail_sent') return 'Mail nhóm';
+    if (k === 'participant_assigned') return 'Gán VĐV (cũ)';
     if (k === 'participant_unassigned') return 'Gỡ VĐV';
     if (k === 'group_deleted') return 'Xóa nhóm';
     return k || '—';
@@ -17,174 +20,371 @@
     return s || '—';
   }
   function formatLogAt(d) {
-    if (!d) return '—';
-    var x = new Date(d);
-    if (Number.isNaN(x.getTime())) return '—';
-    return x.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    return typeof formatDateTimeVn === 'function' ? formatDateTimeVn(d) : '—';
   }
+  function dash(v) { return (v != null && String(v).trim() !== '') ? String(v).trim() : '—'; }
   function bibListFromRow(row) {
     if (!row.participantPreview || !row.participantPreview.length) return '';
     return row.participantPreview.map(function (p) { return p.bib || ''; }).filter(Boolean).join(', ');
   }
+  function emailOk(e) {
+    return e && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(e).trim());
+  }
+  function safeIdPart(s) {
+    return String(s || '').replace(/[^a-zA-Z0-9]/g, '');
+  }
 %>
-<!-- <div class="card-body border-bottom border-warning bg-warning bg-opacity-10">
-  <p class="small text-body-secondary mb-0">
-    <strong>Tab Nhóm</strong> tạm dừng mở rộng — ưu tiên luồng <strong>ủy quyền đơn</strong> (qua link trong mail QR).
-    Danh sách và thao tác dưới đây vẫn giữ để xem / bảo trì dữ liệu cũ.
-  </p>
-</div> -->
-<!-- <div class="card-body border-bottom bg-body-tertiary">
-  <p class="small text-body-secondary mb-0">
-    Một <strong>người đại diện</strong> có thể nhận đồ / check-in hộ nhiều VĐV (theo BIB). Mỗi VĐV chỉ thuộc <strong>tối đa một</strong> nhóm.
-    <strong>Link đầy đủ</strong> và <strong>QR</strong> mở trang danh sách nhóm trong <code>/tool-checkin</code> (TNV đã đăng nhập đúng sự kiện). QR chứa cùng URL — quét bằng điện thoại đã đăng nhập sẵn tài khoản check-in.
-    URL đầy đủ trong mail / link: biến <code>PUBLIC_BASE_URL</code> trong <code>.env</code> (vd <code>http://localhost:8080</code> hoặc <code>https://localhost:8443</code> khi test HTTPS).
-  </p>
-</div> -->
-<div class="card-header bg-body-tertiary bg-opacity-50 py-2 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
-  <span class="small fw-semibold">Danh sách nhóm ủy quyền</span>
-  <button type="button" class="btn btn-sm btn-primary" data-coreui-toggle="modal" data-coreui-target="#groupAuthCreateModal">Thêm nhóm</button>
-</div>
-<div class="card-body p-0">
-  <div class="table-responsive">
-    <table class="table table-sm table-striped table-hover align-middle mb-0">
-      <thead class="table-light">
-        <tr>
-          <th class="text-center" style="width: 3rem">STT</th>
-          <th>Thông tin đại diện</th>
-          <th>CCCD</th>
-          <th>BIB</th>
-          <th style="min-width: 10rem">Link &amp; QR</th>
-          <th class="text-end">Thao tác</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% if (!groups.length) { %>
-        <tr>
-          <td colspan="6" class="text-center text-body-secondary py-4">Chưa có nhóm ủy quyền nào. Tạo nhóm để có <strong>link đầy đủ</strong> và <strong>mã QR</strong> (quét → mở trang nhóm trong công cụ check-in).</td>
-        </tr>
-        <% } else { %>
-        <% groups.forEach(function (row, idx) { %>
-        <% var rep = row.representative || {}; %>
-        <tr>
-          <td class="text-center small"><%= idx + 1 %></td>
-          <td class="small">
-            <div class="fw-medium text-primary"><%= rep.fullname || '—' %></div>
-            <div class="text-body-secondary"><%= rep.email || '—' %></div>
-            <div class="text-body-secondary"><%= rep.phone || '—' %></div>
-          </td>
-          <td class="small"><%= rep.cccd || '—' %></td>
-          <td class="small text-break" style="max-width: 14rem"><%= bibListFromRow(row) || '—' %></td>
-          <td class="small">
-            <% if (row.token) { %>
-            <% var linkUrl = row.toolPath || ('/tool-checkin/group-auth/' + encodeURIComponent(row.token)); %>
-            <% var linkFull = row.toolFullUrl || ''; %>
-            <div class="d-flex flex-wrap align-items-center gap-2">
-              <% if (linkFull) { %>
-              <a href="<%= linkFull %>" target="_blank" rel="noopener noreferrer" class="text-nowrap">Mở link</a>
-              <button type="button" class="btn btn-link btn-sm p-0 js-copy-ga-link" data-full-url="<%= String(linkFull).replace(/&/g, '&amp;').replace(/"/g, '&quot;') %>" title="Sao chép URL đầy đủ">Copy</button>
-              <% } else { %>
-              <span class="text-warning small">Tải lại trang sau khi cập nhật server</span>
-              <% } %>
-              <% if (row.qrDataUrl) { %>
-              <img id="gaQrImg<%= idx %>" src="<%= row.qrDataUrl %>" alt="" class="d-none" aria-hidden="true" />
-              <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2 js-show-ga-qr" data-qr-img-id="gaQrImg<%= idx %>" data-label="<%= String(rep.fullname || 'Nhóm').replace(/&/g, '&amp;').replace(/"/g, '&quot;') %>" title="Xem mã QR nhóm (phóng to)">
-                Mã QR
-              </button>
-              <% } %>
-            </div>
-            <% } else { %>—<% } %>
-          </td>
-          <td class="text-end text-nowrap">
-            <button
-              type="button"
-              class="btn btn-sm btn-outline-secondary py-0 js-edit-group-auth"
-              data-id="<%= row._id %>"
-              data-fullname="<%= encodeURIComponent(rep.fullname || '') %>"
-              data-email="<%= encodeURIComponent(rep.email || '') %>"
-              data-phone="<%= encodeURIComponent(rep.phone || '') %>"
-              data-cccd="<%= encodeURIComponent(rep.cccd || '') %>"
-              data-bib-list="<%= encodeURIComponent(bibListFromRow(row)) %>"
-            >Sửa</button>
-            <form method="POST" action="/admin/event/<%= evId %>/group-authorizations/<%= row._id %>/delete" class="d-inline" onsubmit="return confirm('Xóa nhóm ủy quyền này?');">
-              <button type="submit" class="btn btn-sm btn-outline-danger py-0">Xóa</button>
-            </form>
-          </td>
-        </tr>
-        <% }); %>
-        <% } %>
-      </tbody>
-    </table>
+<style>
+  .ga-summary-row { cursor: pointer; transition: background-color 0.12s ease; }
+  .ga-summary-row:hover { background-color: rgba(var(--cui-primary-rgb, 13, 110, 253), 0.06); }
+  .ga-actions .btn { white-space: nowrap; }
+  details.ga-history-details > summary { list-style: none; }
+  details.ga-history-details > summary::-webkit-details-marker { display: none; }
+  .ga-bib-intro-card {
+    border-radius: 0.75rem;
+    border: 1px solid #2dd4bf;
+    background: linear-gradient(135deg, #f0fdfa 0%, #ecfeff 45%, #ffffff 100%);
+    overflow: hidden;
+  }
+  .ga-bib-intro-banner {
+    border-bottom: 1px solid rgba(45, 212, 191, 0.35);
+    background: linear-gradient(180deg, rgba(204, 251, 241, 0.65) 0%, rgba(240, 253, 250, 0.95) 100%);
+  }
+  .ga-bib-intro-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.65rem;
+    background: linear-gradient(145deg, #14b8a6 0%, #0d9488 100%);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(13, 148, 136, 0.35);
+  }
+  .ga-rep-grid .ga-rep-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--cui-secondary-color);
+    margin-bottom: 0.2rem;
+  }
+  .ga-rep-grid .ga-rep-value {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--cui-body-color);
+    word-break: break-word;
+  }
+  .ga-member-table thead th {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--cui-secondary-color);
+  }
+</style>
+
+<div class="card-body border-bottom py-3 px-3">
+  <div class="ga-bib-intro-card mb-3">
+    <div class="ga-bib-intro-banner px-3 py-3 px-md-4">
+      <div class="d-flex gap-3 align-items-start">
+        <div class="ga-bib-intro-icon" aria-hidden="true">
+          <i class="fas fa-users"></i>
+        </div>
+        <div class="min-w-0 flex-grow-1">
+          <div class="fw-bold mb-1" style="color: #134e4a !important; font-size: 1rem;">BIB nhóm</div>
+          <p class="small mb-0 lh-base" style="color: #115e59;">
+            Các VĐV trong nhóm nhận đồ và <strong class="text-dark">check-in theo một người đại diện</strong> (không gộp với ủy quyền đơn từng VĐV ở tab khác).
+            Tại đây BTC <strong class="text-dark">tạo nhóm, gán BIB</strong> và gửi link/QR cho đại diện; trên công cụ check-in, TNV <strong class="text-dark">đối chiếu người nhận</strong> với thông tin đại diện và làm <strong class="text-dark">một lần</strong> thủ tục (chữ ký/ảnh theo cấu hình) cho <strong class="text-dark">toàn bộ BIB</strong> trong nhóm.
+          </p>
+          <p class="small text-body-secondary mb-0 mt-2">
+            <i class="fas fa-qrcode me-1" style="color: #0d9488;"></i>
+            Link &amp; QR dùng cùng tuyến <code class="small">/tool-checkin/scan/…</code> như mã cá nhân; đại diện mở đúng trang nhóm để TNV xử lý.
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="px-3 py-2 px-md-4 d-flex flex-wrap justify-content-between align-items-center gap-2 bg-body-tertiary bg-opacity-50 border-top" style="border-color: rgba(45, 212, 191, 0.35) !important;">
+      <span class="small text-body-secondary mb-0">Danh sách nhóm và thao tác ở bảng bên dưới.</span>
+      <button type="button" class="btn btn-primary btn-sm shrink-0" data-coreui-toggle="modal" data-coreui-target="#groupAuthCreateModal">
+        <i class="fas fa-plus me-1"></i> Thêm nhóm
+      </button>
+    </div>
   </div>
+  <% if (!sgOk) { %>
+  <p class="small text-warning mb-0"><i class="fas fa-exclamation-triangle me-1"></i>SendGrid chưa cấu hình — không gửi email nhóm từ đây.</p>
+  <% } %>
 </div>
 
-<div class="card-header bg-body-tertiary bg-opacity-50 py-2 border-bottom border-top d-flex flex-wrap justify-content-between align-items-center gap-2">
-  <span class="small fw-semibold">Lịch sử nhóm (gán / gỡ VĐV, không gồm ủy quyền đơn qua link mail)</span>
-  <span class="small text-body-secondary">Mỗi lần gán VĐV: một dòng + một email tới đại diện (nếu gửi được).</span>
-</div>
 <div class="card-body p-0">
+  <% if (!groups.length) { %>
+  <p class="text-center text-body-secondary py-5 px-3 mb-0 small">Chưa có nhóm. Nhấn <strong>Thêm nhóm</strong> để tạo link/QR gửi đại diện.</p>
+  <% } else { %>
   <div class="table-responsive">
-    <table class="table table-sm table-striped align-middle mb-0">
-      <thead class="table-light">
-        <tr class="small">
-          <th>Thời điểm</th>
-          <th>Loại</th>
-          <th>VĐV (BIB)</th>
-          <th>Đại diện</th>
-          <th>Nguồn</th>
-          <th>Mail</th>
+    <table class="table table-hover align-middle mb-0 ga-master-table">
+      <thead class="table-light small text-body-secondary">
+        <tr>
+          <th class="text-center" style="width:2rem" aria-hidden="true"></th>
+          <th style="width:2.5rem" class="text-center">#</th>
+          <th style="min-width:8rem">Tên nhóm</th>
+          <th style="min-width:11rem">Người đại diện</th>
+          <th style="min-width:6rem">BIB</th>
+          <th style="min-width:9rem">Link &amp; QR</th>
+          <th class="text-end" style="min-width:12rem">Thao tác</th>
         </tr>
       </thead>
-      <tbody>
-        <% if (!logsGroup.length) { %>
-        <tr>
-          <td colspan="6" class="text-center text-body-secondary py-3 small">Chưa có lịch sử nhóm (từ khi bật ghi nhận).</td>
-        </tr>
-        <% } else { %>
-        <% logsGroup.forEach(function (log) { %>
-        <% var rep = log.representative || {}; %>
-        <tr class="small">
-          <td class="text-nowrap"><%= formatLogAt(log.createdAt) %></td>
-          <td><%= kindLabel(log.kind) %></td>
+      <% groups.forEach(function (row, idx) { %>
+      <% var rep = row.representative || {}; %>
+      <% var accId = 'gaRow' + safeIdPart(row._id) + idx; %>
+      <% var collapseId = 'gaColl' + accId; %>
+      <% var repMailOk = emailOk(rep.email); %>
+      <% var bibStr = bibListFromRow(row); %>
+      <% var bibCount = row.participantPreview ? row.participantPreview.filter(function (p) { return p && p.bib; }).length : 0; %>
+      <tbody class="border-top">
+        <tr
+          class="ga-summary-row js-ga-head small"
+          role="button"
+          tabindex="0"
+          data-collapse-id="<%= collapseId %>"
+          aria-expanded="false"
+          aria-controls="<%= collapseId %>"
+        >
+          <td class="text-center text-body-secondary js-ga-chevron">▸</td>
+          <td class="text-center text-body-secondary"><%= idx + 1 %></td>
+          <td class="fw-semibold text-primary text-break"><%= row.group_name != null && String(row.group_name).trim() !== '' ? String(row.group_name).trim() : '—' %></td>
           <td>
-            <span class="fw-medium"><%= log.participant_bib != null && String(log.participant_bib).trim() !== '' ? log.participant_bib : '—' %></span>
-            <% if (log.participant_fullname) { %><div class="text-body-secondary text-break"><%= log.participant_fullname %></div><% } %>
+            <div class="fw-medium text-body text-break"><%= dash(rep.fullname) %></div>
+            <div class="text-body-secondary text-truncate" style="max-width: 14rem" title="<%= rep.email || '' %>"><%= dash(rep.email) %></div>
           </td>
           <td>
-            <div class="text-break"><%= rep.fullname || '—' %></div>
-            <% if (rep.email) { %><div class="text-body-secondary text-break"><%= rep.email %></div><% } %>
-          </td>
-          <td><%= sourceLabel(log.source) %></td>
-          <td>
-            <% if (log.kind === 'participant_assigned') { %>
-              <% if (log.mail_sent) { %>
-              <span class="text-success" title="<%= log.mail_to || '' %>">Đã gửi</span>
-              <% } else { %>
-              <span class="text-warning" title="<%= (log.mail_error || '').replace(/"/g, '&quot;') %>">Không gửi</span>
-              <% if (log.mail_error) { %><div class="text-body-secondary" style="max-width:10rem"><%= log.mail_error.length > 48 ? log.mail_error.slice(0, 48) + '…' : log.mail_error %></div><% } %>
-              <% } %>
+            <% if (bibCount) { %>
+            <span class="badge bg-light text-dark border"><%= bibCount %> BIB</span>
+            <div class="text-body-secondary mt-1" style="font-size: 0.75rem; max-width: 12rem; line-height: 1.25" title="<%= bibStr %>"><%= bibStr.length > 42 ? bibStr.slice(0, 40) + '…' : bibStr %></div>
             <% } else { %>
             <span class="text-body-secondary">—</span>
             <% } %>
           </td>
+          <td class="py-2" onclick="event.stopPropagation();">
+            <% if (row.token) { %>
+            <% var linkUrl = row.toolPath || ('/tool-checkin/scan/' + encodeURIComponent(row.token)); %>
+            <% var linkFull = row.toolFullUrl || ''; %>
+            <div class="d-flex flex-wrap align-items-center gap-1">
+              <% if (linkFull) { %>
+              <a href="<%= linkFull %>" target="_blank" rel="noopener noreferrer" class="btn btn-outline-secondary btn-sm py-0 px-2" title="Mở link check-in nhóm"><i class="fas fa-external-link-alt"></i></a>
+              <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2 js-copy-ga-link" data-full-url="<%= String(linkFull).replace(/&/g, '&amp;').replace(/"/g, '&quot;') %>" title="Sao chép URL"><i class="fas fa-copy"></i></button>
+              <% } else { %>
+              <span class="badge text-bg-warning">Thiếu PUBLIC_BASE_URL</span>
+              <% } %>
+              <% if (row.qrDataUrl) { %>
+              <img id="gaQrImg<%= idx %>" src="<%= row.qrDataUrl %>" alt="" class="d-none" aria-hidden="true" />
+              <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2 js-show-ga-qr" data-qr-img-id="gaQrImg<%= idx %>" data-label="<%= String(rep.fullname || 'Nhóm').replace(/&/g, '&amp;').replace(/"/g, '&quot;') %>" title="Xem QR"><i class="fas fa-qrcode"></i></button>
+              <% } %>
+            </div>
+            <% } else { %><span class="text-body-secondary">—</span><% } %>
+          </td>
+          <td class="text-end ga-actions py-2" onclick="event.stopPropagation();">
+            <div class="d-inline-flex flex-wrap justify-content-end gap-1">
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary py-0 px-2 js-edit-group-auth"
+                data-id="<%= row._id %>"
+                data-group-name="<%= encodeURIComponent(row.group_name != null ? String(row.group_name) : '') %>"
+                data-fullname="<%= encodeURIComponent(rep.fullname || '') %>"
+                data-email="<%= encodeURIComponent(rep.email || '') %>"
+                data-phone="<%= encodeURIComponent(rep.phone || '') %>"
+                data-cccd="<%= encodeURIComponent(rep.cccd || '') %>"
+                data-bib-list="<%= encodeURIComponent(bibListFromRow(row)) %>"
+              ><i class="fas fa-edit me-1 d-none d-md-inline"></i>Sửa</button>
+              <form method="POST" action="/admin/event/<%= evId %>/group-authorizations/<%= row._id %>/resend-mail" class="d-inline" onsubmit="return confirm('Gửi lại email nhóm BIB (link + QR) tới người đại diện?');">
+                <button
+                  type="submit"
+                  class="btn btn-sm btn-outline-primary py-0 px-2"
+                  title="<%= repMailOk && sgOk ? 'Gửi lại mail tới người đại diện' : (!sgOk ? 'Chưa cấu hình SendGrid' : 'Email đại diện không hợp lệ') %>"
+                  <%= (!sgOk || !repMailOk) ? 'disabled' : '' %>
+                ><i class="fas fa-envelope me-1 d-none d-md-inline"></i>Gửi mail</button>
+              </form>
+              <form method="POST" action="/admin/event/<%= evId %>/group-authorizations/<%= row._id %>/delete" class="d-inline" onsubmit="return confirm('Xóa nhóm BIB này?');">
+                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2" title="Xóa nhóm"><i class="fas fa-trash-alt me-1 d-none d-md-inline"></i>Xóa</button>
+              </form>
+            </div>
+          </td>
         </tr>
-        <% }); %>
-        <% } %>
+        <tr class="p-0 border-0">
+          <td colspan="7" class="p-0 border-0 bg-body-tertiary bg-opacity-25">
+            <div id="<%= collapseId %>" class="collapse">
+              <div class="p-3 border-top">
+                <div class="ga-bib-intro-card p-3 p-md-4 bg-white">
+                  <p class="small mb-3 mb-md-4">
+                    <span class="text-body-secondary">Tên nhóm:</span>
+                    <strong class="text-body"><%= row.group_name != null && String(row.group_name).trim() !== '' ? String(row.group_name).trim() : '—' %></strong>
+                  </p>
+                  <p class="small text-uppercase fw-semibold text-body-secondary mb-2" style="letter-spacing: 0.04em;">Người đại diện nhóm (đối chiếu khi giao)</p>
+                  <div class="row g-3 ga-rep-grid mb-4">
+                    <div class="col-sm-6">
+                      <div class="ga-rep-label">Họ tên</div>
+                      <div class="ga-rep-value"><%= dash(rep.fullname) %></div>
+                    </div>
+                    <div class="col-sm-6">
+                      <div class="ga-rep-label">Email</div>
+                      <div class="ga-rep-value text-break"><%= dash(rep.email) %></div>
+                    </div>
+                    <div class="col-sm-6">
+                      <div class="ga-rep-label">Số điện thoại</div>
+                      <div class="ga-rep-value"><%= dash(rep.phone) %></div>
+                    </div>
+                    <div class="col-sm-6">
+                      <div class="ga-rep-label">CCCD / Passport</div>
+                      <div class="ga-rep-value"><%= dash(rep.cccd) %></div>
+                    </div>
+                  </div>
+                  <p class="small text-uppercase fw-semibold text-body-secondary mb-2" style="letter-spacing: 0.04em;">Danh sách thành viên trong nhóm</p>
+                  <div class="table-responsive border rounded ga-member-table bg-white">
+                    <table class="table table-sm table-hover align-middle mb-0 small">
+                      <thead class="table-light">
+                        <tr>
+                          <th class="text-nowrap">BIB</th>
+                          <th>Họ tên</th>
+                          <th>Category</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <% var prev = row.participantPreview || []; %>
+                        <% if (!prev.length) { %>
+                        <tr><td colspan="3" class="text-center text-body-secondary py-3">Chưa có VĐV trong nhóm.</td></tr>
+                        <% } else { %>
+                        <% prev.forEach(function (p) { %>
+                        <tr>
+                          <td class="text-nowrap"><a href="/admin/event/<%= evId %>/step/1?q_bib=<%= encodeURIComponent(String(p.bib || '').trim()) %>" class="text-decoration-none fw-semibold text-primary"><%= dash(p.bib) %></a></td>
+                          <td><%= dash(p.fullname) %></td>
+                          <td><%= dash(p.category) %></td>
+                        </tr>
+                        <% }); %>
+                        <% } %>
+                      </tbody>
+                    </table>
+                  </div>
+                  <p class="small text-body-secondary mb-0 mt-3 d-flex align-items-start gap-2">
+                    <i class="fas fa-info-circle text-primary mt-0 flex-shrink-0" style="opacity: 0.85;" aria-hidden="true"></i>
+                    <span>Trên công cụ check-in, phần thông tin từng VĐV là VĐV đang được mở (một BIB trong nhóm); TNV vẫn đối chiếu với <strong>đại diện</strong> khi giao nhận.</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </td>
+        </tr>
       </tbody>
+      <% }); %>
     </table>
   </div>
+  <% } %>
 </div>
+
+<details class="border-top ga-history-details bg-body-tertiary bg-opacity-10">
+  <summary class="px-3 py-2 small fw-semibold text-body-secondary user-select-none" style="cursor: pointer;">
+    Lịch sử nhóm (mail, thay đổi) — nhấn để mở
+  </summary>
+  <div class="card-body p-0 border-top">
+    <div class="table-responsive">
+      <table class="table table-sm table-striped align-middle mb-0">
+        <thead class="table-light">
+          <tr class="small">
+            <th>Thời điểm</th>
+            <th>Loại</th>
+            <th>Tên nhóm</th>
+            <th>Đại diện</th>
+            <th>Nguồn</th>
+            <th>Mail</th>
+            <th class="text-end" style="width: 5rem">Chi tiết</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (!logsGroup.length) { %>
+          <tr>
+            <td colspan="7" class="text-center text-body-secondary py-3 small">Chưa có lịch sử.</td>
+          </tr>
+          <% } else { %>
+          <% logsGroup.forEach(function (log) { %>
+          <% var rep = log.representative || {}; %>
+          <% var logRowId = 'glog-' + String(log._id || '').replace(/[^a-zA-Z0-9_-]/g, ''); %>
+          <% var hasExpand = (log.kind === 'group_mail_sent' && log.members_snapshot && log.members_snapshot.length) || (log.participant_bib && String(log.participant_bib).trim()); %>
+          <tr class="small">
+            <td class="text-nowrap"><%= formatLogAt(log.createdAt) %></td>
+            <td><%= kindLabel(log.kind) %></td>
+            <td class="text-break fw-medium" style="max-width: 10rem"><%= log.group_name != null && String(log.group_name).trim() !== '' ? String(log.group_name).trim() : '—' %></td>
+            <td>
+              <div class="text-break"><%= rep.fullname || '—' %></div>
+              <% if (rep.email) { %><div class="text-body-secondary text-break"><%= rep.email %></div><% } %>
+            </td>
+            <td><%= sourceLabel(log.source) %></td>
+            <td>
+              <% if (log.kind === 'group_mail_sent') { %>
+                <% if (log.mail_sent) { %>
+                <span class="text-success" title="<%= log.mail_to || '' %>">Đã gửi</span>
+                <% } else { %>
+                <span class="text-warning" title="<%= (log.mail_error || '').replace(/"/g, '&quot;') %>">Không gửi</span>
+                <% if (log.mail_error) { %><div class="text-body-secondary" style="max-width:10rem"><%= log.mail_error.length > 48 ? log.mail_error.slice(0, 48) + '…' : log.mail_error %></div><% } %>
+                <% } %>
+              <% } else { %>
+              <span class="text-body-secondary">—</span>
+              <% } %>
+            </td>
+            <td class="text-end text-nowrap">
+              <% if (hasExpand) { %>
+              <button type="button" class="btn btn-link btn-sm py-0 px-1" data-coreui-toggle="collapse" data-bs-toggle="collapse" data-coreui-target="#<%= logRowId %>" data-bs-target="#<%= logRowId %>" aria-expanded="false">Mở</button>
+              <% } else { %>
+              <span class="text-body-secondary">—</span>
+              <% } %>
+            </td>
+          </tr>
+          <% if (hasExpand) { %>
+          <tr class="collapse bg-body-tertiary bg-opacity-25" id="<%= logRowId %>">
+            <td colspan="7" class="small py-2">
+              <% if (log.kind === 'group_mail_sent' && log.members_snapshot && log.members_snapshot.length) { %>
+              <div class="fw-semibold mb-1">Thành viên nhóm</div>
+              <div class="table-responsive">
+                <table class="table table-sm table-bordered mb-0 bg-white">
+                  <thead class="table-light"><tr><th>Họ tên</th><th>Hạng mục</th><th>BIB</th></tr></thead>
+                  <tbody>
+                    <% log.members_snapshot.forEach(function (m) { %>
+                    <tr>
+                      <td><%= m.fullname != null && String(m.fullname).trim() !== '' ? String(m.fullname) : '—' %></td>
+                      <td><%= m.category != null && String(m.category).trim() !== '' ? String(m.category) : '—' %></td>
+                      <td><code><%= m.bib != null && String(m.bib).trim() !== '' ? String(m.bib) : '—' %></code></td>
+                    </tr>
+                    <% }); %>
+                  </tbody>
+                </table>
+              </div>
+              <% } else { %>
+              <span class="text-body-secondary">VĐV: <strong><%= log.participant_bib || '—' %></strong><% if (log.participant_fullname) { %> — <%= log.participant_fullname %><% } %></span>
+              <% } %>
+            </td>
+          </tr>
+          <% } %>
+          <% }); %>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</details>
 
 <!-- Modal tạo -->
 <div class="modal fade" id="groupAuthCreateModal" tabindex="-1" aria-labelledby="groupAuthCreateModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-scrollable">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="groupAuthCreateModalLabel">Thêm nhóm ủy quyền</h5>
+        <h5 class="modal-title" id="groupAuthCreateModalLabel">Thêm nhóm BIB</h5>
         <button type="button" class="btn-close" data-coreui-dismiss="modal" aria-label="Đóng"></button>
       </div>
       <form method="POST" action="/admin/event/<%= evId %>/group-authorizations">
         <div class="modal-body">
           <div class="row g-2">
+            <div class="col-12">
+              <label class="form-label small">Tên nhóm <span class="text-danger">*</span></label>
+              <input type="text" name="group_name" class="form-control" required maxlength="120" placeholder="VD: CLB chạy bộ Q1" autocomplete="off" />
+            </div>
             <div class="col-md-6">
               <label class="form-label small">Họ tên đại diện <span class="text-danger">*</span></label>
               <input type="text" name="fullname" class="form-control" required maxlength="200" />
@@ -203,8 +403,8 @@
             </div>
             <div class="col-12">
               <label class="form-label small">Danh sách BIB <span class="text-danger">*</span></label>
-              <textarea name="bib_list" class="form-control font-monospace" rows="4" required placeholder="Ví dụ: 3412, 5625, 1001 (phân cách bằng dấu phẩy hoặc xuống dòng)"></textarea>
-              <div class="form-text">Chỉ BIB đã tồn tại trong sự kiện này. Mỗi VĐV chỉ thuộc một nhóm: nếu BIB đã nằm trong nhóm khác, hệ thống từ chối và báo lỗi kèm danh sách BIB xung đột.</div>
+              <textarea name="bib_list" class="form-control font-monospace" rows="5" required placeholder="Mỗi dòng một BIB hoặc cách nhau bằng dấu phẩy. VD:&#10;3412&#10;5625, 1001"></textarea>
+              <div class="form-text">Chỉ BIB đã có trong sự kiện, <strong>chưa check-in</strong> và <strong>chưa bật ủy quyền đơn</strong>. Mỗi VĐV chỉ một nhóm.</div>
             </div>
           </div>
         </div>
@@ -222,12 +422,16 @@
   <div class="modal-dialog modal-lg modal-dialog-scrollable">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="groupAuthEditModalLabel">Sửa nhóm ủy quyền</h5>
+        <h5 class="modal-title" id="groupAuthEditModalLabel">Sửa nhóm BIB</h5>
         <button type="button" class="btn-close" data-coreui-dismiss="modal" aria-label="Đóng"></button>
       </div>
       <form method="POST" action="" id="groupAuthEditForm" class="js-group-auth-edit-form">
         <div class="modal-body">
           <div class="row g-2">
+            <div class="col-12">
+              <label class="form-label small">Tên nhóm <span class="text-danger">*</span></label>
+              <input type="text" name="group_name" id="gaEditGroupName" class="form-control" required maxlength="120" autocomplete="off" />
+            </div>
             <div class="col-md-6">
               <label class="form-label small">Họ tên đại diện <span class="text-danger">*</span></label>
               <input type="text" name="fullname" id="gaEditFullname" class="form-control" required maxlength="200" />
@@ -247,7 +451,7 @@
             <div class="col-12">
               <label class="form-label small">Danh sách BIB <span class="text-danger">*</span></label>
               <textarea name="bib_list" id="gaEditBibList" class="form-control font-monospace" rows="4" required></textarea>
-              <div class="form-text">BIB đã thuộc nhóm khác sẽ bị từ chối; xem thông báo lỗi trên trang nếu có xung đột.</div>
+              <div class="form-text">BIB đã check-in, đã bật ủy quyền đơn, hoặc đã thuộc nhóm khác sẽ bị từ chối.</div>
             </div>
           </div>
         </div>
@@ -264,7 +468,7 @@
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header py-2">
-        <h6 class="modal-title" id="groupAuthQrModalTitle">Mã QR nhóm ủy quyền</h6>
+        <h6 class="modal-title" id="groupAuthQrModalTitle">Mã QR nhóm BIB</h6>
         <button type="button" class="btn-close" data-coreui-dismiss="modal" aria-label="Đóng"></button>
       </div>
       <div class="modal-body text-center">
@@ -281,13 +485,11 @@
     if (!text) return;
     function done() {
       var t = btn.textContent;
-      btn.textContent = 'Đã copy';
-      setTimeout(function () { btn.textContent = t || 'Copy'; }, 1800);
+      btn.innerHTML = '<i class="fas fa-check"></i>';
+      setTimeout(function () { btn.innerHTML = '<i class="fas fa-copy"></i>'; }, 1800);
     }
     if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(text).then(done).catch(function () {
-        fallbackCopy(text, done);
-      });
+      navigator.clipboard.writeText(text).then(done).catch(function () { fallbackCopy(text, done); });
     } else {
       fallbackCopy(text, done);
     }
@@ -300,9 +502,7 @@
     ta.style.left = '-9999px';
     document.body.appendChild(ta);
     ta.select();
-    try {
-      document.execCommand('copy');
-    } catch (e) {}
+    try { document.execCommand('copy'); } catch (e) {}
     document.body.removeChild(ta);
     if (cb) cb();
   }
@@ -323,7 +523,7 @@
       var titleEl = document.getElementById('groupAuthQrModalTitle');
       var bodyEl = document.getElementById('groupAuthQrModalBody');
       if (!modalEl || !bodyEl) return;
-      if (titleEl) titleEl.textContent = label ? ('QR — ' + label) : 'Mã QR nhóm ủy quyền';
+      if (titleEl) titleEl.textContent = label ? ('QR — ' + label) : 'Mã QR nhóm BIB';
       bodyEl.innerHTML = '';
       if (data) {
         var img = document.createElement('img');
@@ -346,6 +546,8 @@
       function dec(a) {
         try { return decodeURIComponent(btn.getAttribute(a) || ''); } catch (e) { return ''; }
       }
+      var gn = document.getElementById('gaEditGroupName');
+      if (gn) gn.value = dec('data-group-name');
       document.getElementById('gaEditFullname').value = dec('data-fullname');
       document.getElementById('gaEditEmail').value = dec('data-email');
       document.getElementById('gaEditPhone').value = dec('data-phone');
@@ -355,6 +557,35 @@
       var ModalCtor = typeof coreui !== 'undefined' && coreui.Modal ? coreui.Modal : (typeof bootstrap !== 'undefined' ? bootstrap.Modal : null);
       if (ModalCtor && el) ModalCtor.getOrCreateInstance(el).show();
     });
+  });
+  function getCollapseCtor() {
+    if (typeof bootstrap !== 'undefined' && bootstrap.Collapse) return bootstrap.Collapse;
+    if (typeof coreui !== 'undefined' && coreui.Collapse) return coreui.Collapse;
+    return null;
+  }
+  function toggleChevron(tr, expanded) {
+    var ch = tr.querySelector('.js-ga-chevron');
+    if (ch) ch.textContent = expanded ? '▾' : '▸';
+    tr.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+  }
+  document.querySelectorAll('.js-ga-head').forEach(function (tr) {
+    var id = tr.getAttribute('data-collapse-id');
+    var el = id ? document.getElementById(id) : null;
+    if (el) {
+      el.addEventListener('shown.bs.collapse', function () { toggleChevron(tr, true); });
+      el.addEventListener('hidden.bs.collapse', function () { toggleChevron(tr, false); });
+      el.addEventListener('shown.coreui.collapse', function () { toggleChevron(tr, true); });
+      el.addEventListener('hidden.coreui.collapse', function () { toggleChevron(tr, false); });
+    }
+    function openClose(e) {
+      if (e && (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ')) return;
+      if (e && e.type === 'keydown') e.preventDefault();
+      if (!el) return;
+      var Ctor = getCollapseCtor();
+      if (Ctor) Ctor.getOrCreateInstance(el).toggle();
+    }
+    tr.addEventListener('click', openClose);
+    tr.addEventListener('keydown', openClose);
   });
 })();
 </script>

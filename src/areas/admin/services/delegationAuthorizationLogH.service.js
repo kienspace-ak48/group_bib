@@ -38,6 +38,14 @@ class DelegationAuthorizationLogHService {
                 mail_to: row.mail_to != null ? String(row.mail_to).trim() : '',
                 mail_sent: !!row.mail_sent,
                 mail_error: row.mail_error != null ? String(row.mail_error) : '',
+                group_name: row.group_name != null ? String(row.group_name).trim() : '',
+                members_snapshot: Array.isArray(row.members_snapshot)
+                    ? row.members_snapshot.map((m) => ({
+                          bib: m && m.bib != null ? String(m.bib) : '',
+                          fullname: m && m.fullname != null ? String(m.fullname) : '',
+                          category: m && m.category != null ? String(m.category) : '',
+                      }))
+                    : undefined,
             });
             return doc.toObject();
         } catch (e) {

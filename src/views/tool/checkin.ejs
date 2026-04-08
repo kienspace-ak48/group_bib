@@ -23,7 +23,7 @@
     <div class="checkin-event-header">
         <div class="flex items-start justify-between gap-2 sm:gap-4">
             <h1 class="checkin-event-title">
-                <span id="eventName" class=""><%= event && event.name ? event.name : 'Sự kiện' %></span>
+                <span id="eventName" class="text-lg sm:text-xl md:text-2xl"><%= event && event.name ? event.name : 'Sự kiện' %></span>
             </h1>
             <a href="/auth/normal/admin/logout" class="checkin-logout-btn" title="Đăng xuất" aria-label="Đăng xuất">
                 <i class="fas fa-right-from-bracket text-sm sm:text-base" aria-hidden="true"></i>
@@ -159,9 +159,35 @@
                         const bibHtml = bibDisplay
                             ? `<span class="athlete-bib" title="BIB">#${escapeHtml(bibDisplay)}</span>`
                             : '';
+                        const uidVal = String(row.uid || row.code || '').trim();
+                        const gTok = row.group_scan_token != null && String(row.group_scan_token).trim() !== ''
+                            ? String(row.group_scan_token).trim()
+                            : '';
+                        const tokenAttr = gTok
+                            ? ` data-group-token="${escapeHtml(gTok)}"`
+                            : '';
+                        let badgeParts = [];
+                        if (row.group_authorization_id) {
+                            badgeParts.push(
+                                '<span class="checkin-badge checkin-badge--group" title="BIB nhóm — bấm để mở trang nhóm (tab mới)"><i class="fas fa-users" aria-hidden="true"></i></span>'
+                            );
+                        }
+                        if (row.delegation_enabled === true) {
+                            badgeParts.push(
+                                '<span class="checkin-badge checkin-badge--delegation" title="Ủy quyền đơn — đối chiếu người nhận trên trang chi tiết"><i class="fas fa-user-shield" aria-hidden="true"></i></span>'
+                            );
+                        }
+                        const badgesInner = badgeParts.join('');
+                        const badgesWrap = badgesInner
+                            ? `<div class="checkin-type-badges">${badgesInner}</div>`
+                            : '';
+                        const metaInner = bibHtml + badgesWrap;
+                        const metaRow = metaInner.trim()
+                            ? `<div class="athlete-name-meta">${metaInner}</div>`
+                            : '';
                         return `<div class="athlete-name">
-                            <span class="clickable-name" data-uid="${row.uid || row.code || ''}">${escapeHtml(row.fullname || '---')}</span>
-                            ${bibHtml}
+                            <span class="clickable-name athlete-name-title" data-uid="${escapeHtml(uidVal)}"${tokenAttr}>${escapeHtml(row.fullname || '---')}</span>
+                            ${metaRow}
                         </div>`;
                     }
                 },
@@ -253,6 +279,26 @@
         }
         document.querySelector('#checkinForm').submit();
     }
+
+    /** QR mới: chỉ URL /tool-checkin/scan/:token hoặc token hex (cùng tuyến scan). */
+    function routeScanDecoded(decodedText) {
+        var raw = String(decodedText || '').trim();
+        if (!raw) return;
+        try {
+            var u = new URL(raw, window.location.origin);
+            var path = u.pathname || '';
+            var m = path.match(/^\/tool-checkin\/scan\/([^/]+)\/?$/);
+            if (m && m[1]) {
+                window.location.href = '/tool-checkin/scan/' + m[1];
+                return;
+            }
+        } catch (e) {}
+        if (/^[a-f0-9]{40,80}$/i.test(raw)) {
+            window.location.href = '/tool-checkin/scan/' + encodeURIComponent(raw);
+            return;
+        }
+        alert('Mã QR không hợp lệ. Dùng mã QR mới (định dạng scan thống nhất).');
+    }
     
     // ---- QR SCANNER hiện đại ----
     let html5QrCode = null;
@@ -286,10 +332,10 @@
                 qrbox: { width: boxSize, height: boxSize },
                 aspectRatio: 1.0
             }, (decodedText) => {
-                // Khi quét thành công
+                // Khi quét thành công — luôn qua /tool-checkin/scan/:token
                 if (decodedText) {
                     stopScan();
-                    submitForm(decodedText);
+                    routeScanDecoded(decodedText);
                 }
             });
             isScanning = true;
@@ -317,17 +363,36 @@
         if (e.target === scanModal) stopScan();
     });
     
-    // Xử lý click vào tên để xem chi tiết (submit form)
+    function openGroupAuthTab(groupTok) {
+        var url = '/tool-checkin/group-auth/' + encodeURIComponent(String(groupTok).trim());
+        window.open(url, '_blank', 'noopener,noreferrer');
+    }
+    // Badge BIB nhóm: mở tab mới (tab danh sách vẫn giữ nguyên; đóng tab nhóm hoặc xong check-in → về danh sách)
+    $('#participant_tbl').on('click', '.checkin-badge--group', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var row = $(this).closest('tr');
+        var nameEl = row.find('.clickable-name');
+        var groupTok = nameEl.attr('data-group-token');
+        if (groupTok && String(groupTok).trim()) {
+            openGroupAuthTab(groupTok);
+        }
+    });
+    // Click tên: BIB nhóm (có token) → trang nhóm tab mới; còn lại → info VĐV
     $('#participant_tbl').on('click', '.clickable-name', function(e) {
         e.stopPropagation();
-        let uid = $(this).data('uid');
+        var groupTok = $(this).attr('data-group-token');
+        if (groupTok && String(groupTok).trim()) {
+            openGroupAuthTab(groupTok);
+            return;
+        }
+        var uid = $(this).attr('data-uid') || $(this).data('uid');
         if (uid) {
             submitForm(uid);
         } else {
-            // fallback lấy từ row
-            let row = $(this).closest('tr');
-            let uidAttr = row.attr('data-uid');
-            if(uidAttr) submitForm(uidAttr);
+            var row = $(this).closest('tr');
+            var uidAttr = row.attr('data-uid');
+            if (uidAttr) submitForm(uidAttr);
         }
     });
     

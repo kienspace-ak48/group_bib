@@ -1,13 +1,6 @@
 <% 
   var ev = event || {};
   var evId = ev._id ? String(ev._id) : '';
-  function fmtCheckinTime(d) {
-    if (!d) return '—';
-    var x = new Date(d);
-    if (Number.isNaN(x.getTime())) return '—';
-    var pad = function (n) { return String(n).padStart(2, '0'); };
-    return pad(x.getHours()) + ':' + pad(x.getMinutes()) + ' ' + pad(x.getDate()) + '/' + pad(x.getMonth() + 1) + '/' + x.getFullYear();
-  }
   var f = typeof filters !== 'undefined' ? filters : { q: '', staff: '' };
   var hp = typeof historyPagination !== 'undefined' ? historyPagination : null;
   var hasEvent = !!evId;
@@ -30,7 +23,7 @@
 <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
   <div>
     <h4 class="mb-1">Lịch sử check-in sự kiện</h4>
-    <p class="text-body-secondary small mb-0">Chọn sự kiện bên dưới để xem chi tiết. Dữ liệu là các bản ghi <code>checked_in</code> (thời gian, TNV, VĐV, BIB, cự ly, ảnh).</p>
+    <p class="text-body-secondary small mb-0">Chọn sự kiện bên dưới để xem chi tiết. Dữ liệu là các bản ghi <code>checked_in</code> (thời gian, TNV, VĐV, BIB, cự ly, ảnh). Cột <strong>Người nhận hộ</strong>: người đại diện nhóm (BIB nhóm) hoặc người được ủy quyền đơn (khi VĐV bật ủy quyền).</p>
   </div>
   <% if (hasEvent) { %>
   <a href="/admin/event/<%= evId %>" class="btn btn-sm btn-outline-secondary">← Workspace sự kiện</a>
@@ -89,6 +82,7 @@
           <tr>
             <th>Thời gian</th>
             <th>TNV</th>
+            <th>Người nhận hộ</th>
             <th>VĐV</th>
             <th>BIB</th>
             <th>Hạng mục</th>
@@ -98,13 +92,33 @@
         <tbody>
           <% if (!rows || !rows.length) { %>
           <tr>
-            <td colspan="6" class="text-center text-body-secondary py-5">Chưa có bản ghi check-in nào hoặc không khớp bộ lọc.</td>
+            <td colspan="7" class="text-center text-body-secondary py-5">Chưa có bản ghi check-in nào hoặc không khớp bộ lọc.</td>
           </tr>
           <% } else { %>
           <% rows.forEach(function (row) { %>
+          <% var _grp = row.checkin_group_representative; %>
+          <% var _hasGrp = _grp && (_grp.fullname || _grp.phone || _grp.email || _grp.cccd); %>
+          <% var _delegOn = row.delegation_enabled === true && (row.delegate_fullname || row.delegate_email || row.delegate_phone || row.delegate_cccd); %>
+          <% var _repLine = ''; %>
+          <% var _repTitle = ''; %>
+          <% if (_hasGrp) { %>
+          <%   _repLine = (_grp.fullname || '—') + (_grp.cccd ? ' · CCCD ' + _grp.cccd : ''); %>
+          <%   _repTitle = _grp.email ? String(_grp.email) : ''; %>
+          <% } else if (_delegOn) { %>
+          <%   _repLine = (row.delegate_fullname || '—') + (row.delegate_cccd ? ' · CCCD ' + row.delegate_cccd : ''); %>
+          <%   _repTitle = row.delegate_email ? String(row.delegate_email) : ''; %>
+          <% } %>
+          <% var _repTitleEsc = _repTitle ? String(_repTitle).replace(/&/g, '&amp;').replace(/"/g, '&quot;') : ''; %>
           <tr>
-            <td class="small text-nowrap"><%= fmtCheckinTime(row.checkin_time || row.updatedAt) %></td>
+            <td class="small text-nowrap"><%= formatDateTimeVn(row.checkin_time || row.updatedAt) %></td>
             <td class="small"><%= row.checkin_by || '—' %></td>
+            <td class="small">
+              <% if (_repLine) { %>
+              <span title="<%= _repTitleEsc %>"><%= _repLine %></span>
+              <% } else { %>
+              <span class="text-body-secondary">—</span>
+              <% } %>
+            </td>
             <td><%= row.fullname || '—' %></td>
             <td><code class="small"><%= row.bib || '—' %></code></td>
             <td class="small"><%= row.category != null && String(row.category).trim() !== '' ? row.category : '—' %></td>

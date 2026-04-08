@@ -68,9 +68,20 @@ function requirePermission(required) {
     };
 }
 
+/** super_admin hoặc admin có quyền chi tiết (vd admin.system.accounts). */
+function requireSuperOrPermission(permission) {
+    return (req, res, next) => {
+        if (!req.user) return res.redirect(ADMIN_LOGIN_URL);
+        if (req.user.role === 'super_admin') return next();
+        if (userHasPermission(req.user, permission)) return next();
+        return redirectForbidden(req, res, 'Không có quyền truy cập khu vực này.');
+    };
+}
+
 module.exports = {
     requireAdminWeb,
     requireRole,
     requirePermission,
+    requireSuperOrPermission,
     userHasPermission,
 };

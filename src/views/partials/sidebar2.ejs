@@ -27,7 +27,7 @@
         </ul>
       </li>
 
-      <% if (typeof user !== 'undefined' && user && user.role === 'super_admin') { %>
+      <% if (typeof canAccessSystemAccounts !== 'undefined' && canAccessSystemAccounts) { %>
       <li class="nav-title">Hệ thống</li>
       <li class="nav-group"><a class="nav-link nav-group-toggle" href="#">
         <svg class="nav-icon">
@@ -35,8 +35,10 @@
         </svg> Quản trị</a>
         <ul class="nav-group-items compact">
           <li class="nav-item"><a class="nav-link" href="/admin/system/accounts"><span class="nav-icon"><span class="nav-icon-bullet"></span></span> Tài khoản</a></li>
+          <% if (typeof user !== 'undefined' && user && user.role === 'super_admin') { %>
           <li class="nav-item"><a class="nav-link" href="/admin/system/logs/login"><span class="nav-icon"><span class="nav-icon-bullet"></span></span> Đăng nhập</a></li>
           <li class="nav-item"><a class="nav-link" href="/admin/system/logs/audit"><span class="nav-icon"><span class="nav-icon-bullet"></span></span> Audit</a></li>
+          <% } %>
         </ul>
       </li>
       <% } %>

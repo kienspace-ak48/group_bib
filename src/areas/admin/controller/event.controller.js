@@ -4,6 +4,7 @@ const VNAME = 'admin/event';
 
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const myPathConfig = require('../../../config/mypath.config');
 const ATHLETE_IMPORT_TEMPLATE = path.join(myPathConfig.root, 'src/utils/athlete_import_example.xlsx');
 
@@ -20,6 +21,7 @@ const mailBulkJobService = require('../services/mailBulkJob.service');
 const { convertRowCheckinH, generateUID } = require('../../../utils/participantCheckinExcelRow.util');
 const { normalizePickupTimeRange } = require('../../../utils/pickupTimeRange.util');
 const { getPublicBaseUrl } = require('../../../utils/publicBaseUrl.util');
+const { buildCheckinScanAbsoluteUrl } = require('../../../utils/checkinScanUrl.util');
 const participantDelegationLogHService = require('../services/participantDelegationLogH.service');
 const {
     parseDelegationBody,
@@ -95,7 +97,8 @@ function redirectSuffixStep1Athletes(body) {
     const perPage = String(body.ret_perPage || '').trim();
     if (perPage) q.set('perPage', perPage);
     const retTab = String(body.ret_tab || '').trim();
-    if (retTab === 'single' || retTab === 'group') q.set('tab', retTab);
+    const tabNorm = retTab === 'group_members' ? 'group' : retTab;
+    if (tabNorm === 'single' || tabNorm === 'group') q.set('tab', tabNorm);
     const s = q.toString();
     return s ? `?${s}` : '';
 }
@@ -109,11 +112,13 @@ function buildParticipantEditPayload(p) {
         email: p.email || '',
         phone: p.phone || '',
         bib: p.bib || '',
+        chip: p.chip != null ? String(p.chip) : '',
         bib_name: p.bib_name || '',
         category: p.category || '',
         item: p.item || '',
         zone: p.zone || '',
         qr_code: p.qr_code != null && String(p.qr_code) !== '' ? String(p.qr_code) : '',
+        qr_scan_token: p.qr_scan_token != null && String(p.qr_scan_token).trim() !== '' ? String(p.qr_scan_token).trim() : '',
         checkin_method: p.checkin_method || 'import',
         status: p.status || 'registered',
         checkin_by: p.checkin_by || '',
@@ -291,6 +296,7 @@ const adminEventController = () => {
                 let participantPagination = null;
                 let participantFilters = { q_name: '', q_bib: '', q_phone: '', q_cccd: '' };
                 if (n === 1) {
+                    await participantCheckinHService.backfillQrScanTokensForEvent(refreshed._id, { limit: 2000 });
                     const q_name = String(req.query.q_name || '').trim();
                     const q_bib = String(req.query.q_bib || '').trim();
                     const q_phone = String(req.query.q_phone || '').trim();
@@ -358,7 +364,7 @@ const adminEventController = () => {
                 let delegationLogs = [];
                 const tabQ = String(req.query.tab || '').trim();
                 const athletesTab =
-                    tabQ === 'group' || tabQ === 'single' ? tabQ : 'athletes';
+                    tabQ === 'group' || tabQ === 'single' || tabQ === 'group_members' ? (tabQ === 'group_members' ? 'group' : tabQ) : 'athletes';
                 if (n === 1) {
                     delegationLogs = await delegationAuthorizationLogHService.listByEventId(refreshed._id, {
                         limit: 200,
@@ -371,19 +377,24 @@ const adminEventController = () => {
                         || `${req.protocol}://${req.get('host')}`;
                     groupAuthorizations = await Promise.all(
                         rawGroups.map(async (g) => {
-                            const path = `/tool-checkin/group-auth/${encodeURIComponent(g.token)}`;
-                            const toolFullUrl = `${hostBase}${path}`;
+                            const t = g.token ? String(g.token) : '';
+                            const scanPath = t ? `/tool-checkin/scan/${encodeURIComponent(t)}` : '';
+                            const toolFullUrl =
+                                (t && buildCheckinScanAbsoluteUrl(t)) ||
+                                (hostBase && scanPath ? `${String(hostBase).replace(/\/$/, '')}${scanPath}` : '');
                             let qrDataUrl = '';
                             try {
-                                qrDataUrl = await QRCode.toDataURL(toolFullUrl, {
-                                    width: 240,
-                                    margin: 1,
-                                    errorCorrectionLevel: 'M',
-                                });
+                                qrDataUrl = toolFullUrl
+                                    ? await QRCode.toDataURL(toolFullUrl, {
+                                          width: 240,
+                                          margin: 1,
+                                          errorCorrectionLevel: 'M',
+                                      })
+                                    : '';
                             } catch (e) {
                                 /* ignore */
                             }
-                            return { ...g, toolFullUrl, toolPath: path, qrDataUrl };
+                            return { ...g, toolFullUrl, toolPath: scanPath, qrDataUrl };
                         }),
                     );
                     const pids = (participants || []).map((p) => p._id);
@@ -415,6 +426,9 @@ const adminEventController = () => {
                 const flash = req.session.flash;
                 delete req.session.flash;
 
+                const _publicHost = getPublicBaseUrl() || `${req.protocol}://${req.get('host')}`;
+                const publicCheckinScanBase = `${String(_publicHost).replace(/\/$/, '')}/tool-checkin/scan/`;
+
                 return res.render(VNAME + '/workspace', {
                     layout: VLAYOUT,
                     event: refreshed,
@@ -437,6 +451,7 @@ const adminEventController = () => {
                     participantDelegationLogs,
                     delegationLogs,
                     athletesTab,
+                    publicCheckinScanBase,
                     flash: flash || null,
                 });
             } catch (error) {
@@ -660,6 +675,7 @@ const adminEventController = () => {
                         ...base,
                         uid,
                         qr_code: qrFromFile || uid,
+                        qr_scan_token: crypto.randomBytes(24).toString('hex'),
                         checkin_method: base.checkin_method || 'import',
                         status: base.status || 'registered',
                     });
@@ -727,6 +743,8 @@ const adminEventController = () => {
                         p.gender === true ? 'Nam' : p.gender === false ? 'Nữ' : '';
                     const da_checkin = p.status === 'checked_in' ? 'Có' : 'Không';
                     return {
+                        bib: p.bib || '',
+                        chip: p.chip != null ? String(p.chip) : '',
                         uid: p.uid || '',
                         fullname: p.fullname || '',
                         cccd: p.cccd || '',
@@ -735,7 +753,6 @@ const adminEventController = () => {
                         dob: fmtDateYmd(p.dob),
                         gender,
                         zone: p.zone || '',
-                        bib: p.bib || '',
                         bib_name: p.bib_name || '',
                         category: p.category != null && String(p.category) !== '' ? String(p.category) : '',
                         item: p.item || '',
@@ -794,12 +811,15 @@ const adminEventController = () => {
                     req.session.flash = { type: 'danger', message: result.message || 'Không tạo được nhóm.' };
                 } else {
                     req.session.flash = { type: 'success', message: 'Đã tạo nhóm ủy quyền.' };
+                    const gn = String(req.body.group_name || '').trim();
                     await auditLogService.write({
                         actorId: req.user?._id,
                         action: 'create',
                         resource: 'group_authorization_h',
                         documentId: result.doc?._id,
-                        summary: `Tạo nhóm ủy quyền sự kiện ${id}`,
+                        summary: gn
+                            ? `Tạo nhóm ủy quyền "${gn}" sự kiện ${id}`
+                            : `Tạo nhóm ủy quyền sự kiện ${id}`,
                         req,
                     });
                 }
@@ -869,6 +889,40 @@ const adminEventController = () => {
                         resource: 'group_authorization_h',
                         documentId: gaId,
                         summary: `Xóa nhóm ủy quyền sự kiện ${id}`,
+                        req,
+                    });
+                }
+                return res.redirect(`/admin/event/${id}/step/1?tab=group`);
+            } catch (error) {
+                console.log(CNAME, error.message);
+                req.session.flash = { type: 'danger', message: 'Lỗi server.' };
+                return res.redirect(`/admin/event/${id}/step/1?tab=group`);
+            }
+        },
+
+        /** Gửi lại mail nhóm BIB tới email người đại diện */
+        resendGroupAuthorizationMail: async (req, res) => {
+            const { id, gaId } = req.params;
+            try {
+                const event = await eventCheckinHService.getById(id);
+                if (!event) {
+                    req.session.flash = { type: 'warning', message: 'Không tìm thấy sự kiện.' };
+                    return res.redirect('/admin/event');
+                }
+                const result = await groupAuthorizationHService.resendGroupBibMail(id, gaId, {
+                    actorAdminId: req.user?._id,
+                });
+                req.session.flash = {
+                    type: result.ok ? 'success' : 'warning',
+                    message: result.message || (result.ok ? 'Đã gửi.' : 'Không gửi được mail.'),
+                };
+                if (result.ok) {
+                    await auditLogService.write({
+                        actorId: req.user?._id,
+                        action: 'update',
+                        resource: 'group_authorization_h',
+                        documentId: gaId,
+                        summary: `Gửi lại mail nhóm BIB sự kiện ${id}`,
                         req,
                     });
                 }
@@ -1054,7 +1108,9 @@ const adminEventController = () => {
                     gender,
                     zone: str('zone'),
                     qr_code: qrManual || uidVal,
+                    qr_scan_token: crypto.randomBytes(24).toString('hex'),
                     bib: str('bib'),
+                    chip: str('chip'),
                     bib_name: str('bib_name'),
                     category: str('category'),
                     item: str('item'),
@@ -1093,6 +1149,8 @@ const adminEventController = () => {
                 if (!p || String(p.event_id) !== String(event._id)) {
                     return res.status(404).json({ ok: false, message: 'Không tìm thấy người tham dự.' });
                 }
+                await participantCheckinHService.ensureQrScanToken(participantId);
+                p = await participantCheckinHService.getById(participantId);
                 const logsFlat = await participantDelegationLogHService.listByParticipantIds([p._id], {
                     limitPerParticipant: 30,
                 });
@@ -1172,6 +1230,7 @@ const adminEventController = () => {
                     zone: str('zone'),
                     qr_code: qrManual || uidKeep,
                     bib: str('bib'),
+                    chip: str('chip'),
                     bib_name: str('bib_name'),
                     category: str('category'),
                     item: str('item'),

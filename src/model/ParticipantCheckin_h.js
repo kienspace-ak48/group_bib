@@ -1,5 +1,16 @@
 const mongoose = require('mongoose');
 
+/** Snapshot người đại diện nhóm khi check-in BIB nhóm (một lần cho cả nhóm). */
+const CheckinGroupRepresentativeSchema = new mongoose.Schema(
+    {
+        fullname: { type: String, trim: true, default: '' },
+        email: { type: String, trim: true, default: '' },
+        phone: { type: String, trim: true, default: '' },
+        cccd: { type: String, trim: true, default: '' },
+    },
+    { _id: false },
+);
+
 /** Cách thực hiện check-in (ghi nhận sau này; import mặc định `import`) */
 const CHECKIN_METHODS = ['scan', 'manual', 'kiosk', 'import', 'app'];
 
@@ -37,6 +48,8 @@ const ParticipantCheckinSchema = new mongoose.Schema(
         zone: String,
         /** Nội dung in QR; mặc định gán bằng uid khi import nếu trống */
         qr_code: { type: String, index: true },
+        /** Token ngẫu nhiên cho URL thống nhất `/tool-checkin/scan/:token` (không dùng uid làm QR nữa). */
+        qr_scan_token: { type: String, unique: true, sparse: true, index: true },
         checkin_method: {
             type: String,
             enum: CHECKIN_METHODS,
@@ -54,6 +67,8 @@ const ParticipantCheckinSchema = new mongoose.Schema(
         /** Hạng mục / cự ly (import Excel: cột category) */
         category: String,
         item: String,
+        /** Mã chip (RFID timing / gán tay) */
+        chip: { type: String, trim: true, default: '' },
         /** Khung giờ nhận (vd "08:00 - 10:00") — một chuỗi */
         pickup_time_range: { type: String, default: '', maxlength: 120 },
         /** Lần gửi mail QR gần nhất (thủ công hoặc hàng loạt) */
@@ -72,6 +87,11 @@ const ParticipantCheckinSchema = new mongoose.Schema(
         checkin_via_group_id: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'group_authorization_h',
+            default: undefined,
+        },
+        /** Người đại diện nhận hộ (snapshot lúc check-in nhóm — mỗi BIB một dòng lịch sử). */
+        checkin_group_representative: {
+            type: CheckinGroupRepresentativeSchema,
             default: undefined,
         },
         /** Token bí mật cho link ủy quyền đơn trong mail (một VĐV một token) */

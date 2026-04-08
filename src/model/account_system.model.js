@@ -22,7 +22,7 @@ const AccountSystemSchema = new mongoose.Schema(
                 return t || 'user';
             },
         },
-        /** Quyền chi tiết cho role admin (vd: admin.event, admin.system) */
+        /** Quyền chi tiết cho role admin (vd: admin.event, admin.system.accounts) */
         permissions: [{ type: String }],
         last_login_at: Date,
         /** Tăng khi đổi quyền để vô hiệu JWT cũ */

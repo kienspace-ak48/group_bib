@@ -960,6 +960,12 @@
   .max-h-\[220px\] {
     max-height: 220px;
   }
+  .max-h-\[min\(50vh\,220px\)\] {
+    max-height: min(50vh, 220px);
+  }
+  .max-h-\[min\(50vh\,320px\)\] {
+    max-height: min(50vh, 320px);
+  }
   .max-h-\[min\(55vh\,320px\)\] {
     max-height: min(55vh, 320px);
   }
@@ -971,6 +977,9 @@
   }
   .min-h-\[100px\] {
     min-height: 100px;
+  }
+  .min-h-\[160px\] {
+    min-height: 160px;
   }
   .min-h-\[200px\] {
     min-height: 200px;
@@ -1071,11 +1080,11 @@
   .max-w-\[700px\] {
     max-width: 700px;
   }
+  .max-w-\[min\(100\%\,14rem\)\] {
+    max-width: min(100%, 14rem);
+  }
   .max-w-full {
     max-width: 100%;
-  }
-  .max-w-lg {
-    max-width: var(--container-lg);
   }
   .max-w-md {
     max-width: var(--container-md);
@@ -1517,6 +1526,10 @@
     border-top-style: var(--tw-border-style);
     border-top-width: 1px;
   }
+  .border-r {
+    border-right-style: var(--tw-border-style);
+    border-right-width: 1px;
+  }
   .border-b {
     border-bottom-style: var(--tw-border-style);
     border-bottom-width: 1px;
@@ -1589,6 +1602,12 @@
   .border-gray-200 {
     border-color: var(--color-gray-200);
   }
+  .border-gray-200\/80 {
+    border-color: color-mix(in srgb, oklch(92.8% 0.006 264.531) 80%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      border-color: color-mix(in oklab, var(--color-gray-200) 80%, transparent);
+    }
+  }
   .border-gray-300 {
     border-color: var(--color-gray-300);
   }
@@ -1622,9 +1641,6 @@
   .border-slate-200 {
     border-color: var(--color-slate-200);
   }
-  .border-slate-300 {
-    border-color: var(--color-slate-300);
-  }
   .border-transparent {
     border-color: transparent;
   }
@@ -1648,6 +1664,9 @@
   }
   .border-yellow-400 {
     border-color: var(--color-yellow-400);
+  }
+  .border-b-gray-500 {
+    border-bottom-color: var(--color-gray-500);
   }
   .bg-\[\#0a0730\] {
     background-color: #0a0730;
@@ -2090,6 +2109,9 @@
   .pt-6 {
     padding-top: calc(var(--spacing) * 6);
   }
+  .pr-2 {
+    padding-right: calc(var(--spacing) * 2);
+  }
   .pb-0 {
     padding-bottom: calc(var(--spacing) * 0);
   }
@@ -2432,6 +2454,12 @@
     color: color-mix(in srgb, #fff 60%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
       color: color-mix(in oklab, var(--color-white) 60%, transparent);
+    }
+  }
+  .text-white\/90 {
+    color: color-mix(in srgb, #fff 90%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      color: color-mix(in oklab, var(--color-white) 90%, transparent);
     }
   }
   .text-yellow-500 {
@@ -2816,6 +2844,16 @@
       height: calc(var(--spacing) * 9);
     }
   }
+  .sm\:max-h-\[220px\] {
+    @media (width >= 30rem) {
+      max-height: 220px;
+    }
+  }
+  .sm\:min-h-\[200px\] {
+    @media (width >= 30rem) {
+      min-height: 200px;
+    }
+  }
   .sm\:min-h-\[240px\] {
     @media (width >= 30rem) {
       min-height: 240px;
@@ -2849,6 +2887,11 @@
   .sm\:gap-4 {
     @media (width >= 30rem) {
       gap: calc(var(--spacing) * 4);
+    }
+  }
+  .sm\:p-4 {
+    @media (width >= 30rem) {
+      padding: calc(var(--spacing) * 4);
     }
   }
   .sm\:p-5 {
@@ -2886,6 +2929,11 @@
       padding-block: calc(var(--spacing) * 5);
     }
   }
+  .sm\:pr-3 {
+    @media (width >= 30rem) {
+      padding-right: calc(var(--spacing) * 3);
+    }
+  }
   .sm\:pb-5 {
     @media (width >= 30rem) {
       padding-bottom: calc(var(--spacing) * 5);
@@ -2915,6 +2963,11 @@
       line-height: var(--tw-leading, var(--text-xl--line-height));
     }
   }
+  .sm\:text-\[11px\] {
+    @media (width >= 30rem) {
+      font-size: 11px;
+    }
+  }
   .sm\:text-\[13px\] {
     @media (width >= 30rem) {
       font-size: 13px;
@@ -2928,6 +2981,11 @@
   .md\:col-span-9 {
     @media (width >= 48rem) {
       grid-column: span 9 / span 9;
+    }
+  }
+  .md\:min-h-\[240px\] {
+    @media (width >= 48rem) {
+      min-height: 240px;
     }
   }
   .md\:min-w-0 {
@@ -3033,6 +3091,11 @@
   .md\:pt-0 {
     @media (width >= 48rem) {
       padding-top: calc(var(--spacing) * 0);
+    }
+  }
+  .md\:pr-4 {
+    @media (width >= 48rem) {
+      padding-right: calc(var(--spacing) * 4);
     }
   }
   .md\:pl-4 {
@@ -11727,15 +11790,67 @@
     transition-duration: 100ms;
   }
   .checkin-page .athlete-name {
-    display: inline-flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: calc(var(--spacing) * 2);
-    row-gap: calc(var(--spacing) * 1);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: calc(var(--spacing) * 1.5);
     font-size: 0.92rem;
     --tw-font-weight: var(--font-weight-semibold);
     font-weight: var(--font-weight-semibold);
     color: var(--color-slate-800);
+  }
+  .checkin-page .athlete-name-title {
+    display: block;
+    width: 100%;
+    line-height: var(--leading-snug);
+  }
+  .checkin-page .athlete-name-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 0.5rem;
+    width: 100%;
+    row-gap: 0.35rem;
+  }
+  .checkin-page .athlete-name-meta .checkin-type-badges {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+  }
+  .checkin-page .checkin-type-badges {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+  }
+  .checkin-page .checkin-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.28rem;
+    border-radius: 9999px;
+    padding: 0.12rem 0.45rem;
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    line-height: 1.2;
+  }
+  .checkin-page .checkin-badge i {
+    font-size: 0.65rem;
+    opacity: 0.9;
+  }
+  .checkin-page .checkin-badge--group {
+    cursor: pointer;
+    background-color: var(--color-violet-100);
+    color: var(--color-teal-800);
+    border: 1px solid rgb(45 212 191 / 0.55);
+  }
+  .checkin-page .checkin-badge--delegation {
+    background-color: var(--color-violet-100);
+    color: var(--color-violet-800);
+    border: 1px solid rgb(167 139 250 / 0.45);
   }
   .checkin-page .athlete-bib {
     border-radius: var(--radius-lg);
@@ -12126,6 +12241,9 @@
       font-size: 0.7rem;
       --tw-leading: var(--leading-tight);
       line-height: var(--leading-tight);
+    }
+    .checkin-page .athlete-name-meta {
+      gap: 0.3rem 0.4rem;
     }
     .checkin-page .athlete-bib {
       border-radius: 0.25rem;

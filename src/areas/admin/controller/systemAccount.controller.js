@@ -22,6 +22,7 @@ function parseCheckinEventId(body) {
 }
 const loginHistoryService = require('../services/loginHistory.service');
 const auditLogService = require('../services/auditLog.service');
+const { userHasPermission } = require('../../../middleware/rbac.middleware');
 const {
     getSecret,
     safeReturnTo,
@@ -38,15 +39,18 @@ const systemAccountController = () => {
             try {
                 const page = Math.max(1, parseInt(req.query.page, 10) || 1);
                 const skip = (page - 1) * PAGE_SIZE;
-                const [accounts, total] = await Promise.all([
-                    AccountSystem.find({})
-                        .select('-password')
-                        .sort({ updatedAt: -1 })
-                        .skip(skip)
-                        .limit(PAGE_SIZE)
-                        .lean(),
-                    AccountSystem.countDocuments({}),
-                ]);
+                const canManageFullAccounts = req.user.role === 'super_admin';
+                /** Admin chỉ có admin.system.accounts không thấy tài khoản super/admin khác — tránh lộ email/vai trò toàn hệ thống. */
+                const accountFilter = canManageFullAccounts ? {} : { role: 'account_checkin' };
+                let listQuery = AccountSystem.find(accountFilter)
+                    .select('-password')
+                    .sort({ updatedAt: -1 })
+                    .skip(skip)
+                    .limit(PAGE_SIZE);
+                if (!canManageFullAccounts) {
+                    listQuery = listQuery.populate('checkin_event_id', 'name start_date');
+                }
+                const [accounts, total] = await Promise.all([listQuery.lean(), AccountSystem.countDocuments(accountFilter)]);
                 const flash = req.session.flash;
                 delete req.session.flash;
                 return res.render(VNAME + '/accounts', {
@@ -57,6 +61,7 @@ const systemAccountController = () => {
                     pages: Math.ceil(total / PAGE_SIZE) || 1,
                     roles: ROLES,
                     flash: flash || null,
+                    canManageFullAccounts,
                 });
             } catch (e) {
                 console.log(CNAME, e.message);
@@ -75,6 +80,8 @@ const systemAccountController = () => {
                     account: null,
                     events,
                     flash: flash || null,
+                    checkinOnlyEdit: false,
+                    canManageFullAccounts: true,
                 });
             } catch (e) {
                 console.log(CNAME, e.message);
@@ -161,6 +168,15 @@ const systemAccountController = () => {
                     req.session.flash = { type: 'warning', message: 'Không tìm thấy tài khoản.' };
                     return res.redirect('/admin/system/accounts');
                 }
+                const limitedCheckin =
+                    req.user.role !== 'super_admin' && userHasPermission(req.user, 'admin.system.accounts');
+                if (limitedCheckin && account.role !== 'account_checkin') {
+                    req.session.flash = {
+                        type: 'warning',
+                        message: 'Bạn chỉ được chỉnh tài khoản vai trò account_checkin.',
+                    };
+                    return res.redirect('/admin/system/accounts');
+                }
                 const events = await loadEventsForAccountForm();
                 const flash = req.session.flash;
                 delete req.session.flash;
@@ -170,6 +186,8 @@ const systemAccountController = () => {
                     account,
                     events,
                     flash: flash || null,
+                    checkinOnlyEdit: limitedCheckin && account.role === 'account_checkin',
+                    canManageFullAccounts: req.user.role === 'super_admin',
                 });
             } catch (e) {
                 console.log(CNAME, e.message);
@@ -187,6 +205,52 @@ const systemAccountController = () => {
                 const existing = await AccountSystem.findById(id);
                 if (!existing) {
                     req.session.flash = { type: 'warning', message: 'Không tìm thấy tài khoản.' };
+                    return res.redirect('/admin/system/accounts');
+                }
+                const limitedCheckin =
+                    req.user.role !== 'super_admin' && userHasPermission(req.user, 'admin.system.accounts');
+                if (limitedCheckin) {
+                    if (existing.role !== 'account_checkin') {
+                        req.session.flash = {
+                            type: 'danger',
+                            message: 'Chỉ được cập nhật tài khoản check-in.',
+                        };
+                        return res.redirect('/admin/system/accounts');
+                    }
+                    const body = req.body;
+                    let checkin_event_id = parseCheckinEventId(body);
+                    if (!checkin_event_id) {
+                        req.session.flash = { type: 'danger', message: 'Tài khoản check-in phải chọn sự kiện.' };
+                        return res.redirect('/admin/system/accounts/' + id + '/edit');
+                    }
+                    const ev = await EventCheckin.findById(checkin_event_id).select('_id').lean();
+                    if (!ev) {
+                        req.session.flash = { type: 'danger', message: 'Sự kiện không tồn tại.' };
+                        return res.redirect('/admin/system/accounts/' + id + '/edit');
+                    }
+                    const checkinBefore = existing.checkin_event_id ? String(existing.checkin_event_id) : '';
+                    const checkinAfter = String(checkin_event_id);
+                    const statusNew = body.status === 'on' || body.status === 'true';
+                    const authChanged = checkinBefore !== checkinAfter || existing.status !== statusNew;
+                    existing.status = statusNew;
+                    existing.checkin_event_id = checkin_event_id;
+                    const pwd = (body.password || '').trim();
+                    if (pwd) {
+                        existing.password = await bcrypt.hash(pwd, 12);
+                        existing.token_version = (existing.token_version || 0) + 1;
+                    } else if (authChanged) {
+                        existing.token_version = (existing.token_version || 0) + 1;
+                    }
+                    await existing.save();
+                    await auditLogService.write({
+                        actorId: req.user?._id,
+                        action: 'update',
+                        resource: 'account_system',
+                        documentId: existing._id,
+                        summary: `Cập nhật tài khoản check-in ${existing.email}`,
+                        req,
+                    });
+                    req.session.flash = { type: 'success', message: 'Đã lưu tài khoản check-in.' };
                     return res.redirect('/admin/system/accounts');
                 }
                 const body = req.body;

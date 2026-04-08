@@ -22,9 +22,17 @@ require('./middleware/passport.middleware');
 const aixos = require('axios');
 //
 const MongoDBStore = require('connect-mongodb-session')(session);
+const { getMongoUri } = require('./config/mongoEnv');
+const mongoUri = getMongoUri();
+if (!mongoUri) {
+    console.error(
+        'Thiếu MONGO_URI hoặc MONGODB_URI trong .env — cần thiết cho session store và mongoose.',
+    );
+    process.exit(1);
+}
 // Tạo store MongoDB
 const store = new MongoDBStore({
-    uri: process.env.MONGO_URI, // URL MongoDB
+    uri: mongoUri,
     collection: 'sessions', // Tên collection lưu session
 });
 //

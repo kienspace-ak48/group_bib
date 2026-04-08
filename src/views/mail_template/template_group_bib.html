@@ -1,0 +1,47 @@
+<body style="margin: 40px 0; padding: 0; background: #f4f6f8">
+    <table width="100%" cellpadding="0" cellspacing="0" bgcolor="#f4f6f8">
+        <tr>
+            <td align="center">
+                <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 680px; background: #ffffff">
+                    <!-- BANNER_OR_TEXT_PLACEHOLDER -->
+                    <tr>
+                        <td style="padding: 16px 12px; font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #333333">
+                            <h1 style="margin: 0 0 8px 0; font-size: 18px; line-height: 1.25; font-weight: bold" align="center">{{event_name}}</h1>
+                            {{event_summary_block}}
+                            {{group_bib_badge_block}}
+                            <p style="margin: 0 0 12px 0; font-size: 12px">Xin chào / Dear <b>{{greeting_name}}</b>,</p>
+
+                            <div style="font-size: 12px; line-height: 1.45; margin-bottom: 12px">{{content_1}}</div>
+
+                            {{delegation_cta_block}}
+
+                            <p align="center" style="margin: 12px 0">
+                                <img src="cid:qrcode" width="200" alt="QR" style="display: block; margin: 0 auto" />
+                            </p>
+                            {{qr_caption}}
+                            {{group_link_block}}
+
+                            <div style="padding: 8px 0 10px 0; font-size: 12px; line-height: 1.35; color: #555">
+                                <p style="margin: 0 0 8px 0; font-weight: bold; font-size: 12px; color: #1565c0">Người đại diện nhóm / Group representative</p>
+                            </div>
+                            {{representative_section_html}}
+
+                            <div style="padding: 12px 0 6px 0; font-size: 12px; line-height: 1.35; color: #555">
+                                <p style="margin: 0 0 8px 0; font-weight: bold; font-size: 12px; color: #1565c0">Danh sách thành viên nhóm / Group members</p>
+                            </div>
+                            {{group_members_table_html}}
+
+                            <div style="font-size: 12px; line-height: 1.45; margin-top: 10px">{{content_2}}</div>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding: 16px 14px; background-color: {{footer_bg_color}}; color: {{footer_text_color}}; font-family: Arial, Helvetica, sans-serif; font-size: 11px; line-height: 1.5;">
+                            {{footer_body}}
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>

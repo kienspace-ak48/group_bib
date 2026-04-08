@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const rbac = require('../middleware/rbac.middleware');
-const { requireAdminWeb, requirePermission, requireRole } = rbac;
+const { requireAdminWeb, requirePermission, requireRole, requireSuperOrPermission } = rbac;
 
 const adminHomeController = require('../areas/admin/controller/home.controller')();
 const adminEventController = require('../areas/admin/controller/event.controller')();
@@ -33,6 +33,10 @@ function handleMailBannerUpload(req, res, next) {
 }
 
 router.use(requireAdminWeb);
+router.use((req, res, next) => {
+    res.locals.canAccessSystemAccounts = rbac.userHasPermission(req.user, 'admin.system.accounts');
+    next();
+});
 
 const dashPerm = requirePermission('admin.dashboard');
 const evPerm = requirePermission('admin.event');
@@ -67,6 +71,11 @@ router.post(
 );
 router.post('/event/:id/group-authorizations/:gaId/update', evPerm, adminEventController.updateGroupAuthorization);
 router.post('/event/:id/group-authorizations/:gaId/delete', evPerm, adminEventController.deleteGroupAuthorization);
+router.post(
+    '/event/:id/group-authorizations/:gaId/resend-mail',
+    evPerm,
+    adminEventController.resendGroupAuthorizationMail,
+);
 router.post('/event/:id/group-authorizations', evPerm, adminEventController.createGroupAuthorization);
 router.post('/event/:id/update', evPerm, adminEventController.updateEvent);
 router.post('/event/:id/mail-config', evPerm, adminEventController.saveMailConfig);
@@ -88,12 +97,13 @@ router.get('/event/:id/step/:step', evPerm, adminEventController.workspaceStep);
 router.get('/event/:id', evPerm, adminEventController.workspace);
 
 const superOnly = requireRole('super_admin');
+const systemAccountsAccess = requireSuperOrPermission('admin.system.accounts');
 const requireSensitiveLogsUnlock = require('../middleware/sensitiveLogsUnlock.middleware');
-router.get('/system/accounts', superOnly, systemAccountController.listAccounts);
+router.get('/system/accounts', systemAccountsAccess, systemAccountController.listAccounts);
 router.get('/system/accounts/new', superOnly, systemAccountController.newAccountForm);
 router.post('/system/accounts', superOnly, systemAccountController.createAccount);
-router.get('/system/accounts/:id/edit', superOnly, systemAccountController.editAccountForm);
-router.post('/system/accounts/:id', superOnly, systemAccountController.updateAccount);
+router.get('/system/accounts/:id/edit', systemAccountsAccess, systemAccountController.editAccountForm);
+router.post('/system/accounts/:id', systemAccountsAccess, systemAccountController.updateAccount);
 router.post('/system/accounts/:id/delete', superOnly, systemAccountController.deleteAccount);
 router.get('/system/logs/unlock', superOnly, systemAccountController.sensitiveLogsUnlockForm);
 router.post('/system/logs/unlock', superOnly, systemAccountController.sensitiveLogsUnlockPost);
