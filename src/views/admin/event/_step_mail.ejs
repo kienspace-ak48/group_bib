@@ -1,7 +1,10 @@
 <% 
+  var publicBaseUrlHint = typeof publicBaseUrlHint !== 'undefined' ? publicBaseUrlHint : '';
   var ev = typeof event !== 'undefined' ? event : {};
   var mc = typeof mailConfig !== 'undefined' && mailConfig ? mailConfig : {};
   var mailN = typeof mailEligibleCount !== 'undefined' ? mailEligibleCount : 0;
+  var mailWaiverN = typeof mailWaiverPendingCount !== 'undefined' ? mailWaiverPendingCount : 0;
+  var owFlow = ev.online_waiver_first_flow === true;
   var sgOk = typeof sendgridConfigured !== 'undefined' ? sendgridConfigured : false;
   var eventId = ev._id ? String(ev._id) : '';
   var hasMailTitle = mc.title && String(mc.title).trim();
@@ -17,11 +20,18 @@
   </div>
   <div class="card-body border-bottom">
     <p class="small text-body-secondary mb-2">
-      Cấu hình nội dung email và gửi hàng loạt qua <strong>SendGrid</strong>. Mỗi người nhận một email có QR (nội dung mã = <code>qr_code</code> hoặc <code>uid</code>).
-      Chỉ gửi tới bản ghi có <strong>email hợp lệ</strong> trong danh sách người tham dự.
+      Cấu hình nội dung email và gửi hàng loạt qua <strong>SendGrid</strong>.
+      <% if (owFlow) { %>
+      <strong>Luồng miễn trừ online:</strong> dùng nút <em>Gửi mail mời ký miễn trừ</em> trước (không QR). Sau khi VĐV ký trên web, hệ thống gửi mail có QR. Hoặc dùng <em>Gửi mail hàng loạt</em> để gửi QR cho người đã ký / không bật luồng chờ ký.
+      <% } else { %>
+      Mỗi người nhận một email có QR (nội dung mã = token quét). Chỉ gửi tới bản ghi có <strong>email hợp lệ</strong>.
+      <% } %>
     </p>
     <ul class="small mb-0">
-      <li>Người đủ điều kiện nhận (ước lượng): <strong><%= mailN %></strong></li>
+      <li>Người đủ điều kiện nhận mail QR (ước lượng): <strong><%= mailN %></strong></li>
+      <% if (owFlow) { %>
+      <li>Chưa ký miễn trừ online — đủ điều kiện nhận mail <strong>mời ký</strong>: <strong><%= mailWaiverN %></strong></li>
+      <% } %>
       <li>SendGrid: <% if (sgOk) { %><span class="text-success">Đã cấu hình (API key + From)</span><% } else { %><span class="text-danger">Thiếu env: API key <code>SENDGRID_API_KEY</code> hoặc <code>SENDGRID_API_KEY_DOMAIN</code>, và From <code>SENDGRID_FROM_EMAIL</code> / <code>SENDGRID_FROM_DOMAIN</code> / <code>SENDGRID_FROM</code></span><% } %></li>
     </ul>
   </div>
@@ -37,8 +47,13 @@
         Xem preview email
       </button>
       <button type="button" class="btn btn-success btn-sm" id="btn_send_bulk_mail" <%= !sgOk || !mailN ? 'disabled' : '' %>>
-        Gửi mail hàng loạt
+        Gửi mail hàng loạt (QR)
       </button>
+      <% if (owFlow) { %>
+      <button type="button" class="btn btn-outline-success btn-sm" id="btn_send_waiver_bulk_mail" <%= !sgOk || !mailWaiverN ? 'disabled' : '' %>>
+        Gửi mail mời ký miễn trừ (không QR)
+      </button>
+      <% } %>
       <span class="small text-body-secondary d-block" id="send_bulk_status"></span>
       <div id="bulk_mail_progress_wrap" class="w-100 mt-3 <%= showBulkProgress ? '' : 'd-none' %>">
         <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
@@ -63,7 +78,10 @@
       <pre class="small text-danger mt-2 mb-0 d-none text-wrap" id="send_bulk_errors" style="white-space: pre-wrap; max-height: 12rem; overflow: auto;"></pre>
     </div>
     <% if (!mailN) { %>
-    <p class="small text-warning mb-0 mt-2">Không có email hợp lệ — kiểm tra bước 2 (cột email).</p>
+    <p class="small text-warning mb-0 mt-2">Không có email hợp lệ cho mail QR — kiểm tra bước 2 (cột email).</p>
+    <% } %>
+    <% if (owFlow && !mailWaiverN) { %>
+    <p class="small text-body-secondary mb-0 mt-2">Không còn VĐV cần mail mời ký (đã ký hết hoặc thiếu email).</p>
     <% } %>
   </div>
 
@@ -73,17 +91,14 @@
       Thứ tự bên dưới trùng với email nhận được: <strong>trên → dưới</strong> (banner → nội dung → chân email).
     </p>
 
-    <div class="border rounded p-3 mb-3 bg-body-tertiary bg-opacity-25">
-      <div class="fw-semibold small mb-2 text-body-secondary">1. Người gửi &amp; tiêu đề</div>
-      <div class="row g-2">
-        <div class="col-md-6">
-          <label class="form-label small mb-0">Tên người gửi (hiển thị)</label>
-          <input type="text" id="sender_name" class="form-control form-control-sm" value="<%= mc.sender_name || '' %>" maxlength="120" />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label small mb-0">Tiêu đề email</label>
-          <input type="text" id="mail_title" class="form-control form-control-sm" value="<%= mc.title || '' %>" maxlength="200" />
-        </div>
+    <div class="row g-2 mb-3">
+      <div class="col-md-6">
+        <label class="form-label small mb-0 text-body-secondary" for="sender_name">From (tên hiển thị)</label>
+        <input type="text" id="sender_name" class="form-control form-control-sm" value="<%= mc.sender_name || '' %>" maxlength="120" />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label small mb-0 text-body-secondary" for="mail_title">Tiêu đề (subject)</label>
+        <input type="text" id="mail_title" class="form-control form-control-sm" value="<%= mc.title || '' %>" maxlength="200" />
       </div>
     </div>
 
@@ -122,6 +137,14 @@
       <textarea id="event-mail-content-1" class="form-control form-control-sm"><%- mc.content_1 || '' %></textarea>
     </div>
 
+    <div class="border rounded p-3 mb-3 bg-body-tertiary bg-opacity-25">
+      <div class="fw-semibold small mb-1 text-body-secondary">3b. Nội dung 1 — mail ủy quyền</div>
+      <p class="small text-body-secondary mb-2 mb-md-1">
+        Dùng thay khối &quot;Nội dung 1&quot; khi gửi cho <strong>người được ủy quyền</strong> hoặc mail nhóm (đại diện). Để trống = dùng nội dung 1 chung.
+      </p>
+      <textarea id="event-mail-delegation-content-1" class="form-control form-control-sm"><%- mc.delegation_content_1 || '' %></textarea>
+    </div>
+
     <div class="border rounded p-3 mb-3">
       <div class="fw-semibold small mb-2 text-body-secondary">4. Nội dung 2</div>
       <p class="small text-body-secondary mb-2">Hiển thị sau bảng thông tin VĐV (trước chân email).</p>
@@ -156,6 +179,46 @@
 
     <button type="button" class="btn btn-primary btn-sm" id="btn_mail_config_save">Lưu cấu hình</button>
     <span class="small ms-2 text-body-secondary" id="mail_config_save_status"></span>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-4" id="mail_delivery_logs_card">
+  <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <strong>Nhật ký phân phối (SendGrid)</strong>
+    <button type="button" class="btn btn-outline-secondary btn-sm" id="btn_mail_logs_refresh">Làm mới</button>
+  </div>
+  <div class="card-body">
+    <p class="small text-body-secondary mb-2">
+      Hiển thị sự kiện từ <strong>SendGrid Event Webhook</strong> (delivered, bounce, …). Cấu hình URL POST:
+      <code class="user-select-all">/webhooks/sendgrid</code>
+      <% if (typeof publicBaseUrlHint !== 'undefined' && publicBaseUrlHint) { %>
+      — ví dụ: <code class="user-select-all text-break"><%= publicBaseUrlHint %>/webhooks/sendgrid?key=…</code>
+      <% } %>
+      và biến môi trường <code>SENDGRID_WEBHOOK_SECRET</code> (cùng giá trị với <code>?key=</code>).
+    </p>
+    <div class="table-responsive">
+      <table class="table table-sm table-striped align-middle mb-0" id="mail_delivery_logs_table">
+        <thead>
+          <tr>
+            <th>Thời gian</th>
+            <th>Người nhận</th>
+            <th>Loại mail</th>
+            <th>Trạng thái SG</th>
+            <th>Ghi chú</th>
+          </tr>
+        </thead>
+        <tbody id="mail_delivery_logs_tbody">
+          <tr><td colspan="5" class="text-body-secondary small">Đang tải…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2">
+      <span class="small text-body-secondary" id="mail_delivery_logs_meta"></span>
+      <div class="btn-group btn-group-sm">
+        <button type="button" class="btn btn-outline-secondary" id="mail_delivery_logs_prev" disabled>Trước</button>
+        <button type="button" class="btn btn-outline-secondary" id="mail_delivery_logs_next" disabled>Sau</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -217,7 +280,15 @@
 
     if (job.status === 'queued' || job.status === 'running') {
       badge.className = 'badge bg-primary';
-      badge.textContent = job.status === 'queued' ? 'Đang chờ…' : 'Đang gửi…';
+      var isWaiver = job.job_kind === 'waiver_request';
+      badge.textContent =
+        job.status === 'queued'
+          ? isWaiver
+            ? 'Đang chờ (miễn trừ)…'
+            : 'Đang chờ…'
+          : isWaiver
+            ? 'Đang gửi mail miễn trừ…'
+            : 'Đang gửi…';
       if (spin) spin.classList.remove('d-none');
     } else if (job.status === 'completed') {
       badge.className = 'badge bg-success';
@@ -268,6 +339,8 @@
             stopBulkPoll();
             var btn = document.getElementById('btn_send_bulk_mail');
             if (btn) btn.disabled = false;
+            var btnW = document.getElementById('btn_send_waiver_bulk_mail');
+            if (btnW) btnW.disabled = false;
           }
         })
         .catch(function () {});
@@ -281,13 +354,15 @@
     startBulkPoll(initialJob.id);
     var btn0 = document.getElementById('btn_send_bulk_mail');
     if (btn0) btn0.disabled = true;
+    var btnW0 = document.getElementById('btn_send_waiver_bulk_mail');
+    if (btnW0) btnW0.disabled = true;
   }
 
   function initMailTinyMCE() {
     if (typeof tinymce === 'undefined') return;
     tinymce.init({
       height: 280,
-      selector: '#event-mail-content-1, #event-mail-content-2, #footer_body',
+      selector: '#event-mail-content-1, #event-mail-delegation-content-1, #event-mail-content-2, #footer_body',
       setup: function (editor) {
         editor.on('init', function () {
           var promo = document.querySelector('.tox-promotion');
@@ -337,6 +412,7 @@
       sender_name: document.getElementById('sender_name').value,
       title: document.getElementById('mail_title').value,
       content_1: editorContent('event-mail-content-1'),
+      delegation_content_1: editorContent('event-mail-delegation-content-1'),
       content_2: editorContent('event-mail-content-2'),
       banner_option: document.getElementById('banner_option').checked,
       banner_text: document.getElementById('banner_text').value,
@@ -409,6 +485,8 @@
       }
       st.textContent = 'Đang tạo job…';
       btnBulk.disabled = true;
+      var btnWv = document.getElementById('btn_send_waiver_bulk_mail');
+      if (btnWv) btnWv.disabled = true;
       fetch('/admin/event/' + eventId + '/mail/send-bulk', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
         .then(function (r) {
           return r.json().then(function (j) {
@@ -432,12 +510,169 @@
           }
           st.textContent = (j && j.message) ? j.message : 'Lỗi.';
           btnBulk.disabled = false;
+          if (btnWv) btnWv.disabled = false;
         })
         .catch(function () {
           st.textContent = 'Lỗi mạng.';
           btnBulk.disabled = false;
+          if (btnWv) btnWv.disabled = false;
         });
     });
   }
+
+  var btnWaiverBulk = document.getElementById('btn_send_waiver_bulk_mail');
+  if (btnWaiverBulk) {
+    btnWaiverBulk.addEventListener('click', function () {
+      if (!confirm('Gửi email mời ký miễn trừ (không có QR) tới mọi người chưa ký và có email hợp lệ?')) return;
+      var st = document.getElementById('send_bulk_status');
+      var errEl = document.getElementById('send_bulk_errors');
+      if (errEl) {
+        errEl.classList.add('d-none');
+        errEl.textContent = '';
+      }
+      st.textContent = 'Đang tạo job…';
+      btnWaiverBulk.disabled = true;
+      var btnBulkSafe = document.getElementById('btn_send_bulk_mail');
+      if (btnBulkSafe) btnBulkSafe.disabled = true;
+      fetch('/admin/event/' + eventId + '/mail/send-bulk-waiver', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}',
+      })
+        .then(function (r) {
+          return r.json().then(function (j) {
+            return { ok: r.ok, status: r.status, j: j };
+          });
+        })
+        .then(function (ref) {
+          var j = ref.j;
+          if (ref.ok && j.success && j.jobId) {
+            st.textContent = j.message || 'Đã đưa vào hàng đợi.';
+            applyBulkJobUI({
+              id: j.jobId,
+              job_kind: 'waiver_request',
+              status: 'queued',
+              total: j.totalRecipients || 0,
+              sent: 0,
+              failed: 0,
+              errors_sample: [],
+            });
+            startBulkPoll(j.jobId);
+            return;
+          }
+          st.textContent = (j && j.message) ? j.message : 'Lỗi.';
+          btnWaiverBulk.disabled = false;
+          if (btnBulkSafe) btnBulkSafe.disabled = false;
+        })
+        .catch(function () {
+          st.textContent = 'Lỗi mạng.';
+          btnWaiverBulk.disabled = false;
+          if (btnBulkSafe) btnBulkSafe.disabled = false;
+        });
+    });
+  }
+
+  var mailLogsPage = 1;
+  var mailLogsLimit = 25;
+  function escHtml(s) {
+    if (s == null) return '';
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+  function mailKindLabel(k) {
+    var m = { qr: 'Mail QR', waiver_request: 'Mời ký miễn trừ', group_delegate: 'Nhóm (đại diện)', group_bib: 'Nhóm BIB' };
+    return m[k] || k || '—';
+  }
+  function sgEventLabel(ev) {
+    var m = {
+      delivered: 'delivered (đã giao tới MX)',
+      bounce: 'bounce',
+      dropped: 'dropped',
+      deferred: 'deferred',
+      processed: 'processed',
+      open: 'open',
+    };
+    return m[ev] || ev || '—';
+  }
+  function fmtTs(d) {
+    if (!d) return '—';
+    try {
+      return new Date(d).toLocaleString('vi-VN');
+    } catch (e) {
+      return '—';
+    }
+  }
+  function loadMailDeliveryLogs() {
+    var tbody = document.getElementById('mail_delivery_logs_tbody');
+    var meta = document.getElementById('mail_delivery_logs_meta');
+    var prev = document.getElementById('mail_delivery_logs_prev');
+    var next = document.getElementById('mail_delivery_logs_next');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="5" class="text-body-secondary small">Đang tải…</td></tr>';
+    fetch('/admin/event/' + encodeURIComponent(eventId) + '/mail/delivery-logs?page=' + mailLogsPage + '&limit=' + mailLogsLimit)
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data.success) {
+          tbody.innerHTML = '<tr><td colspan="5" class="text-danger small">' + (data.message || 'Lỗi') + '</td></tr>';
+          return;
+        }
+        var rows = data.items || [];
+        if (!rows.length) {
+          tbody.innerHTML = '<tr><td colspan="5" class="text-body-secondary small">Chưa có dữ liệu. Bật Event Webhook trên SendGrid và gửi thử mail — hoặc chờ sự kiện <code>delivered</code> / <code>bounce</code>.</td></tr>';
+        } else {
+          tbody.innerHTML = rows
+            .map(function (row) {
+              return (
+                '<tr><td class="text-nowrap small">' +
+                escHtml(fmtTs(row.ts)) +
+                '</td><td class="small">' +
+                escHtml(row.to_email) +
+                '</td><td class="small">' +
+                escHtml(mailKindLabel(row.mail_kind)) +
+                '</td><td class="small"><code>' +
+                escHtml(row.event_type) +
+                '</code><div class="text-body-secondary" style="font-size:0.75rem">' +
+                escHtml(sgEventLabel(row.event_type)) +
+                '</div></td><td class="small text-break">' +
+                (row.reason ? escHtml(String(row.reason).slice(0, 400)) : '—') +
+                '</td></tr>'
+              );
+            })
+            .join('');
+        }
+        var total = data.total || 0;
+        var pages = Math.max(1, Math.ceil(total / mailLogsLimit));
+        if (meta) {
+          meta.textContent = 'Tổng ' + total + ' dòng · Trang ' + data.page + '/' + pages;
+        }
+        if (prev) prev.disabled = data.page <= 1;
+        if (next) next.disabled = data.page >= pages;
+      })
+      .catch(function () {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-danger small">Lỗi tải nhật ký.</td></tr>';
+      });
+  }
+  var btnLogsRefresh = document.getElementById('btn_mail_logs_refresh');
+  if (btnLogsRefresh) btnLogsRefresh.addEventListener('click', function () { loadMailDeliveryLogs(); });
+  var btnLogsPrev = document.getElementById('mail_delivery_logs_prev');
+  var btnLogsNext = document.getElementById('mail_delivery_logs_next');
+  if (btnLogsPrev) {
+    btnLogsPrev.addEventListener('click', function () {
+      if (mailLogsPage > 1) {
+        mailLogsPage -= 1;
+        loadMailDeliveryLogs();
+      }
+    });
+  }
+  if (btnLogsNext) {
+    btnLogsNext.addEventListener('click', function () {
+      mailLogsPage += 1;
+      loadMailDeliveryLogs();
+    });
+  }
+  loadMailDeliveryLogs();
 })();
 </script>

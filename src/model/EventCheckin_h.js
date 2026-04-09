@@ -62,6 +62,18 @@ const eventSchema = new mongoose.Schema(
             type: Boolean,
             default: true,
         },
+        /**
+         * Luồng: gửi mail ký miễn trừ online trước (không QR) → VĐV ký trên web → sau đó mới gửi mail QR nhận BIB.
+         * Check-in tại quầy: bỏ bắt buộc chữ ký nếu đã ký online (vẫn có thể bắt buộc ảnh theo cấu hình).
+         */
+        online_waiver_first_flow: {
+            type: Boolean,
+            default: false,
+        },
+        /** Nội dung HTML hiển thị trên trang ký miễn trừ (do BTC soạn ở bước Khởi tạo). */
+        waiver_notice_html: { type: String, default: '' },
+        /** Liên kết file miễn trừ (PDF/DOC) để VĐV đọc trước khi ký. */
+        waiver_document_url: { type: String, default: '' },
     },
     { timestamps: true },
 );

@@ -805,7 +805,7 @@
   });
 
   function postSendParticipantMail(participantId, triggerBtn) {
-    if (!participantId || !confirm('Gửi mail QR tới người này? (dùng cấu hình mail bước 3)')) return;
+    if (!participantId || !confirm('Gửi mail tới người này? Nếu sự kiện bật “ký miễn trừ online trước” và VĐV chưa ký, sẽ gửi mail mời ký (không QR); nếu đã ký hoặc không bật luồng đó, gửi mail QR. Dùng cấu hình mail bước 3.')) return;
     var canReenable = !!(triggerBtn && !triggerBtn.disabled);
     if (triggerBtn) triggerBtn.disabled = true;
     fetch('/admin/event/' + eventId + '/participants/' + participantId + '/send-mail', {

@@ -553,6 +553,89 @@ class ParticipantCheckinHService {
         }
     }
 
+    /** Sinh `waiver_token` cho mail ký miễn trừ online (lazy). */
+    async ensureWaiverToken(participantId) {
+        try {
+            if (!mongoose.Types.ObjectId.isValid(String(participantId))) return null;
+            const id = new mongoose.Types.ObjectId(String(participantId));
+            const cur = await ParticipantCheckinH.findById(id).select('waiver_token').lean();
+            if (!cur) return null;
+            if (cur.waiver_token && String(cur.waiver_token).trim()) return String(cur.waiver_token).trim();
+            const token = crypto.randomBytes(24).toString('hex');
+            await ParticipantCheckinH.updateOne(
+                {
+                    _id: id,
+                    $or: [{ waiver_token: { $exists: false } }, { waiver_token: null }, { waiver_token: '' }],
+                },
+                { $set: { waiver_token: token } },
+            );
+            const again = await ParticipantCheckinH.findById(id).select('waiver_token').lean();
+            return again && again.waiver_token ? String(again.waiver_token).trim() : token;
+        } catch (e) {
+            console.log(CNAME, e.message);
+            return null;
+        }
+    }
+
+    async findByWaiverToken(token) {
+        try {
+            const t = String(token || '').trim();
+            if (!t) return null;
+            return await ParticipantCheckinH.findOne({ waiver_token: t }).lean();
+        } catch (e) {
+            console.log(CNAME, e.message);
+            return null;
+        }
+    }
+
+    /** Đủ email + chưa ký miễn trừ — dùng gửi mail mời ký (luồng online waiver trước). */
+    _waiverPendingQuery() {
+        return {
+            $or: [{ waiver_signed_at: { $exists: false } }, { waiver_signed_at: null }],
+        };
+    }
+
+    async countEligibleForWaiverRequestMail(eventId) {
+        try {
+            const q = {
+                $and: [this._eventIdQuery(eventId), this._qrMailRecipientQuery(), this._waiverPendingQuery()],
+            };
+            return await ParticipantCheckinH.countDocuments(q);
+        } catch (e) {
+            console.log(CNAME, e.message);
+            return 0;
+        }
+    }
+
+    async findNextBatchForWaiverRequestMail(eventId, afterId, limit) {
+        try {
+            const q = {
+                $and: [this._eventIdQuery(eventId), this._qrMailRecipientQuery(), this._waiverPendingQuery()],
+            };
+            if (afterId != null && mongoose.Types.ObjectId.isValid(String(afterId))) {
+                q.$and.push({ _id: { $gt: new mongoose.Types.ObjectId(String(afterId)) } });
+            }
+            const lim = Math.min(200, Math.max(1, limit || 50));
+            return await ParticipantCheckinH.find(q).sort({ _id: 1 }).limit(lim).lean();
+        } catch (e) {
+            console.log(CNAME, e.message);
+            return [];
+        }
+    }
+
+    async setWaiverRequestMailSentAt(participantId, eventId, at) {
+        try {
+            if (!mongoose.Types.ObjectId.isValid(String(participantId))) return false;
+            const q = { $and: [{ _id: participantId }, this._eventIdQuery(eventId)] };
+            const t = at instanceof Date ? at : new Date();
+            const r = await ParticipantCheckinH.updateOne(q, { $set: { waiver_request_mail_sent_at: t } });
+            return r.modifiedCount > 0 || r.matchedCount > 0;
+        } catch (e) {
+            console.log(CNAME, e.message);
+            return false;
+        }
+    }
+
     /** Sinh `qr_scan_token` một lần — dùng cho URL `/tool-checkin/scan/:token`. */
     async ensureQrScanToken(participantId) {
         try {

@@ -84,6 +84,29 @@
           </div>
         </div>
       </div>
+      <div class="col-12 border-top pt-3 mt-2">
+        <label class="form-label d-block mb-2">Ký miễn trừ online trước (sau đó mới gửi mail QR)</label>
+        <div class="text-body-secondary small mb-2">
+          Bật khi BTC muốn: gửi mail <strong>mời ký miễn trừ</strong> (không có QR) → VĐV ký trên web → hệ thống gửi mail <strong>QR nhận BIB</strong>.
+          Tại quầy check-in, nếu VĐV đã ký online, hệ thống <strong>không bắt buộc chữ ký</strong> lần nữa (vẫn có thể bắt buộc chụp ảnh theo cấu hình bên trên).
+        </div>
+        <% var _ow = ev.online_waiver_first_flow === true; %>
+        <div class="form-check mb-2">
+          <input class="form-check-input" type="checkbox" name="online_waiver_first_flow" id="online_waiver_first_flow" value="true" <%= _ow ? 'checked' : '' %> />
+          <label class="form-check-label" for="online_waiver_first_flow">Bật luồng ký miễn trừ online trước khi gửi QR</label>
+        </div>
+        <div class="row g-2">
+          <div class="col-12">
+            <label class="form-label small">Link file miễn trừ (PDF/DOC…) hiển thị cho VĐV</label>
+            <input type="url" name="waiver_document_url" class="form-control form-control-sm" value="<%= ev.waiver_document_url || '' %>" placeholder="https://..." />
+          </div>
+          <div class="col-12">
+            <label class="form-label small">Nội dung thông báo trên trang ký (HTML đơn giản)</label>
+            <textarea name="waiver_notice_html" class="form-control form-control-sm" rows="4" placeholder="Đoạn giới thiệu / điều khoản…"><%= ev.waiver_notice_html || '' %></textarea>
+            <div class="form-text">Dùng cho trang công khai sau khi VĐV mở link trong email mời ký.</div>
+          </div>
+        </div>
+      </div>
       <div class="col-12">
         <label class="form-label d-block mb-2">Ủy quyền đơn (link trong mail QR)</label>
         <div class="text-body-secondary small mb-2">

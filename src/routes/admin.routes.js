@@ -81,8 +81,10 @@ router.post('/event/:id/update', evPerm, adminEventController.updateEvent);
 router.post('/event/:id/mail-config', evPerm, adminEventController.saveMailConfig);
 router.post('/event/:id/mail/banner', evPerm, handleMailBannerUpload, adminEventController.uploadMailBanner);
 router.post('/event/:id/mail/send-bulk', evPerm, adminEventController.sendBulkQrMail);
+router.post('/event/:id/mail/send-bulk-waiver', evPerm, adminEventController.sendBulkWaiverRequestMail);
 router.get('/event/:id/mail/bulk-job/latest', evPerm, adminEventController.getLatestBulkMailJob);
 router.get('/event/:id/mail/bulk-job/:jobId', evPerm, adminEventController.getBulkMailJobStatus);
+router.get('/event/:id/mail/delivery-logs', evPerm, adminEventController.getMailDeliveryLogs);
 router.get('/event/:id/mail/preview', evPerm, adminEventController.previewQrMail);
 router.post('/event/:id/step/confirm', evPerm, adminEventController.confirmStep);
 /** Lịch sử check-in chung (chọn sự kiện bằng ?event=); phải đứng trước /event/:id để không bị nuốt bởi :id */

@@ -28,6 +28,13 @@ const MailBulkJobSchema = new mongoose.Schema(
         /** Lỗi toàn job (vd không load được mail config) */
         stop_reason: String,
         created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'account', default: null },
+        /** qr = mail có mã QR; waiver_request = mail mời ký miễn trừ (không QR). */
+        job_kind: {
+            type: String,
+            enum: ['qr', 'waiver_request'],
+            default: 'qr',
+            index: true,
+        },
     },
     { timestamps: true },
 );

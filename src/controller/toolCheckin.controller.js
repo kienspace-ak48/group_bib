@@ -19,8 +19,67 @@ function isValidEmailForQr(s) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(String(s || '').trim());
 }
 
+/** SĐT liên hệ: bắt buộc, chỉ lấy chữ số, 8–15 (VN / quốc tế). */
+function validateDelegationPhone(phone) {
+    const digits = String(phone || '').replace(/\D/g, '');
+    if (!digits) return 'Vui lòng nhập số điện thoại.';
+    if (digits.length < 8 || digits.length > 15) {
+        return 'Số điện thoại không hợp lệ (8–15 chữ số).';
+    }
+    return null;
+}
+
+/** CCCD / CMND / hộ chiếu: bắt buộc, 8–20 ký tự sau bỏ khoảng trắng, chữ/số/gạch. */
+function validateDelegationIdDoc(cccd) {
+    const raw = String(cccd || '').replace(/\s/g, '');
+    if (!raw) return 'Vui lòng nhập số CCCD / hộ chiếu / giấy tờ tùy thân.';
+    if (raw.length < 8 || raw.length > 20) {
+        return 'Số giấy tờ phải từ 8 đến 20 ký tự.';
+    }
+    if (!/^[A-Za-z0-9-]+$/.test(raw)) {
+        return 'Chỉ dùng chữ, số và dấu gạch ngang (-).';
+    }
+    return null;
+}
+
+/** Form công khai ủy quyền đơn — dùng chung validate + giá trị render lại khi lỗi. */
+function validateDelegationPublicForm(body) {
+    const fullname = String(body && body.fullname != null ? body.fullname : '').trim();
+    const email = String(body && body.email != null ? body.email : '').trim();
+    const phone = String(body && body.phone != null ? body.phone : '').trim();
+    const cccd = String(body && body.cccd != null ? body.cccd : '').trim();
+    const errors = {};
+    if (!fullname || fullname.length < 2) {
+        errors.fullname = 'Vui lòng nhập họ tên đầy đủ (ít nhất 2 ký tự).';
+    }
+    if (!email) {
+        errors.email = 'Vui lòng nhập email để nhận mã QR.';
+    } else if (!isValidEmailForQr(email)) {
+        errors.email = 'Email không đúng định dạng.';
+    }
+    const phoneErr = validateDelegationPhone(phone);
+    if (phoneErr) errors.phone = phoneErr;
+    const idErr = validateDelegationIdDoc(cccd);
+    if (idErr) errors.cccd = idErr;
+    const values = { fullname, email, phone, cccd };
+    return { ok: Object.keys(errors).length === 0, errors, values };
+}
+
 function eventId(req) {
     return req.user?.checkin_event_id;
+}
+
+/** Khi đã ký miễn trừ online: bỏ bắt buộc chữ ký tại quầy (vẫn giữ ảnh nếu cấu hình có ảnh). */
+function resolveEffectiveCheckinMode(rawMode, participant, event) {
+    const allowedModes = ['none', 'signature', 'photo', 'both'];
+    const mode = allowedModes.includes(String(rawMode || '').trim()) ? String(rawMode).trim() : 'both';
+    const online = event && event.online_waiver_first_flow === true;
+    const signed = participant && participant.waiver_signed_at;
+    if (online && signed) {
+        if (mode === 'both') return 'photo';
+        if (mode === 'signature') return 'none';
+    }
+    return mode;
 }
 
 /** Khớp participant theo event_id string hoặc ObjectId trong DB */
@@ -247,10 +306,14 @@ const toolCheckinController = () => {
                     };
                 }
             }
+            const capModeRaw = String(event.checkin_capture_mode || 'both').trim();
+            const effectiveCapMode = resolveEffectiveCheckinMode(capModeRaw, pc, event);
             return res.render('tool/info', {
                 layout: false,
                 pc,
                 event,
+                capMode: effectiveCapMode,
+                capModeRaw,
                 returnTo,
                 checkinViaGroupId,
                 groupBibForInfo,
@@ -319,10 +382,9 @@ const toolCheckinController = () => {
                 return res.status(400).json({ success: false, mess: 'Đã check-in trước đó.' });
             }
 
-            const eventDoc = await EventCheckin.findById(eid).select('checkin_capture_mode').lean();
+            const eventDoc = await EventCheckin.findById(eid).select('checkin_capture_mode online_waiver_first_flow').lean();
             const rawMode = String(eventDoc?.checkin_capture_mode || 'both').trim();
-            const allowedModes = ['none', 'signature', 'photo', 'both'];
-            const mode = allowedModes.includes(rawMode) ? rawMode : 'both';
+            const mode = resolveEffectiveCheckinMode(rawMode, participant, eventDoc);
             const sig = req.files?.signature?.[0];
             const photo = req.files?.photo?.[0];
 
@@ -403,10 +465,9 @@ const toolCheckinController = () => {
                 return res.status(404).json({ success: false, mess: 'Không tìm thấy nhóm hoặc không thuộc sự kiện này.' });
             }
 
-            const eventDoc = await EventCheckin.findById(eid).select('checkin_capture_mode').lean();
+            const eventDoc = await EventCheckin.findById(eid).select('checkin_capture_mode online_waiver_first_flow').lean();
             const rawMode = String(eventDoc?.checkin_capture_mode || 'both').trim();
-            const allowedModes = ['none', 'signature', 'photo', 'both'];
-            const mode = allowedModes.includes(rawMode) ? rawMode : 'both';
+            const mode = resolveEffectiveCheckinMode(rawMode, null, eventDoc);
             const sig = req.files?.signature?.[0];
             const photo = req.files?.photo?.[0];
 
@@ -540,6 +601,11 @@ const toolCheckinController = () => {
                 const errQuery = String(req.query.err || '').trim() === '1';
                 const justSaved = String(req.query.saved || '').trim() === '1';
                 const title = `Ủy quyền nhận đồ — ${event.name || 'Sự kiện'}`;
+                let formErrors = {};
+                let formValues = {};
+                if (errQuery && !delegationLocked) {
+                    formErrors = { fullname: 'Vui lòng nhập họ tên người nhận hộ.' };
+                }
                 return res.render('tool/delegate_form', {
                     layout: 'layouts/main',
                     title,
@@ -549,6 +615,8 @@ const toolCheckinController = () => {
                     delegationLocked,
                     errQuery,
                     justSaved,
+                    formErrors,
+                    formValues,
                 });
             } catch (e) {
                 console.error('singleDelegationForm', e);
@@ -586,12 +654,24 @@ const toolCheckinController = () => {
                 if (alreadyDone) {
                     return res.redirect(303, `/tool-checkin/delegate/${encodeURIComponent(token)}`);
                 }
-                const fullname = String(req.body.fullname || '').trim();
-                if (!fullname) {
-                    return res.redirect(303, `/tool-checkin/delegate/${encodeURIComponent(token)}?err=1`);
+                const validation = validateDelegationPublicForm(req.body);
+                if (!validation.ok) {
+                    const title = `Ủy quyền nhận đồ — ${event.name || 'Sự kiện'}`;
+                    return res.status(422).render('tool/delegate_form', {
+                        layout: 'layouts/main',
+                        title,
+                        participant: p,
+                        event,
+                        token,
+                        delegationLocked: false,
+                        errQuery: false,
+                        justSaved: false,
+                        formErrors: validation.errors,
+                        formValues: validation.values,
+                    });
                 }
                 const oldSnap = snapshotFromParticipant(p);
-                const parsed = parseDelegationFromToolBody(req.body);
+                const parsed = parseDelegationFromToolBody(validation.values);
                 const finSnap = finalizeDelegationState(parsed);
                 const action = computeDelegationAction(oldSnap, finSnap);
                 if (!action) {
@@ -638,6 +718,144 @@ const toolCheckinController = () => {
                     return res.status(500).render('tool/delegate_error', {
                         layout: 'layouts/main',
                         title: 'Lỗi — Ủy quyền nhận đồ',
+                        message: 'Lỗi máy chủ. Vui lòng thử lại sau.',
+                    });
+                }
+            }
+        },
+
+        /** Trang công khai: ký miễn trừ online (bước 1 — trước mail QR). */
+        waiverForm: async (req, res) => {
+            try {
+                const token = String(req.params.token || '').trim();
+                const p = await participantCheckinHService.findByWaiverToken(token);
+                if (!p) {
+                    return res.status(404).render('tool/delegate_error', {
+                        layout: 'layouts/main',
+                        title: 'Lỗi — Ký miễn trừ',
+                        message: 'Liên kết không hợp lệ hoặc đã hết hiệu lực.',
+                    });
+                }
+                const event = await eventCheckinHService.getById(p.event_id);
+                if (!event) {
+                    return res.status(404).render('tool/delegate_error', {
+                        layout: 'layouts/main',
+                        title: 'Lỗi — Ký miễn trừ',
+                        message: 'Không tìm thấy sự kiện.',
+                    });
+                }
+                if (!event.online_waiver_first_flow) {
+                    return res.status(403).render('tool/delegate_error', {
+                        layout: 'layouts/main',
+                        title: 'Lỗi — Ký miễn trừ',
+                        message: 'Sự kiện không bật luồng ký miễn trừ online.',
+                    });
+                }
+                const title = `Ký miễn trừ — ${event.name || 'Sự kiện'}`;
+                const alreadySigned = !!p.waiver_signed_at;
+                const justCompleted = String(req.query.done || '').trim() === '1';
+                return res.render('tool/waiver_form', {
+                    layout: 'layouts/main',
+                    title,
+                    participant: p,
+                    event,
+                    token,
+                    alreadySigned,
+                    justCompleted,
+                    formError: null,
+                });
+            } catch (e) {
+                console.error('waiverForm', e);
+                if (!res.headersSent) {
+                    return res.status(500).render('tool/delegate_error', {
+                        layout: 'layouts/main',
+                        title: 'Lỗi — Ký miễn trừ',
+                        message: 'Lỗi máy chủ. Vui lòng thử lại sau.',
+                    });
+                }
+            }
+        },
+
+        waiverSubmit: async (req, res) => {
+            try {
+                const token = String(req.params.token || '').trim();
+                const p0 = req.waiverParticipant || (await participantCheckinHService.findByWaiverToken(token));
+                if (!p0) {
+                    return res.status(404).render('tool/delegate_error', {
+                        layout: 'layouts/main',
+                        title: 'Lỗi — Ký miễn trừ',
+                        message: 'Liên kết không hợp lệ.',
+                    });
+                }
+                const event = await eventCheckinHService.getById(p0.event_id);
+                if (!event || !event.online_waiver_first_flow) {
+                    return res.status(403).render('tool/delegate_error', {
+                        layout: 'layouts/main',
+                        title: 'Lỗi — Ký miễn trừ',
+                        message: 'Không thể gửi biểu mẫu.',
+                    });
+                }
+                if (p0.waiver_signed_at) {
+                    return res.redirect(303, `/tool-checkin/waiver/${encodeURIComponent(token)}`);
+                }
+                const agree = req.body?.agree === '1' || req.body?.agree === 'on' || req.body?.agree === true;
+                const sig = req.file;
+                if (!agree) {
+                    return res.status(422).render('tool/waiver_form', {
+                        layout: 'layouts/main',
+                        title: `Ký miễn trừ — ${event.name || ''}`,
+                        participant: p0,
+                        event,
+                        token,
+                        alreadySigned: false,
+                        justCompleted: false,
+                        formError: 'Vui lòng tick xác nhận đã đọc và đồng ý.',
+                    });
+                }
+                if (!sig) {
+                    return res.status(422).render('tool/waiver_form', {
+                        layout: 'layouts/main',
+                        title: `Ký miễn trừ — ${event.name || ''}`,
+                        participant: p0,
+                        event,
+                        token,
+                        alreadySigned: false,
+                        justCompleted: false,
+                        formError: 'Vui lòng ký tên trên vùng chữ ký.',
+                    });
+                }
+                const eid = String(p0.event_id);
+                const relBase = `/uploads/waiver/${eid}`;
+                const waiverPath = `${relBase}/${sig.filename}`;
+                const updated = await participantCheckinHService.updateByIdAndEvent(p0._id, p0.event_id, {
+                    waiver_signed_at: new Date(),
+                    waiver_signature_path: waiverPath,
+                });
+                if (!updated) {
+                    return res.status(400).render('tool/delegate_error', {
+                        layout: 'layouts/main',
+                        title: 'Lỗi — Ký miễn trừ',
+                        message: 'Không lưu được. Vui lòng thử lại.',
+                    });
+                }
+                await participantCheckinHService.ensureQrScanToken(p0._id);
+                try {
+                    if (eventBulkMailService.isSendGridConfigured()) {
+                        const fresh = await participantCheckinHService.getById(p0._id);
+                        if (fresh) {
+                            await eventBulkMailService.sendQrMailToParticipant(event, fresh);
+                        }
+                    }
+                } catch (mailErr) {
+                    console.error('waiverSubmit sendQrMail', mailErr.message || mailErr);
+                }
+                return res.redirect(303, `/tool-checkin/waiver/${encodeURIComponent(token)}?done=1`);
+            } catch (e) {
+                console.error('waiverSubmit', e);
+                if (!res.headersSent) {
+                    return res.status(500).render('tool/delegate_error', {
+                        layout: 'layouts/main',
+                        title: 'Lỗi — Ký miễn trừ',
                         message: 'Lỗi máy chủ. Vui lòng thử lại sau.',
                     });
                 }

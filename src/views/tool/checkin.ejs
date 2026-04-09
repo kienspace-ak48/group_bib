@@ -179,7 +179,7 @@
                         }
                         const badgesInner = badgeParts.join('');
                         const badgesWrap = badgesInner
-                            ? `<div class="checkin-type-badges">${badgesInner}</div>`
+                            ? `<span class="checkin-type-badges">${badgesInner}</span>`
                             : '';
                         const metaInner = bibHtml + badgesWrap;
                         const metaRow = metaInner.trim()
@@ -280,7 +280,7 @@
         document.querySelector('#checkinForm').submit();
     }
 
-    /** QR mới: chỉ URL /tool-checkin/scan/:token hoặc token hex (cùng tuyến scan). */
+    /** QR: token hex thuần (email/in) hoặc URL đầy đủ /tool-checkin/scan/:token — app luôn điều hướng tới scan. */
     function routeScanDecoded(decodedText) {
         var raw = String(decodedText || '').trim();
         if (!raw) return;

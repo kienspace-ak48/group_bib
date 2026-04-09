@@ -7,6 +7,8 @@ const MailConfigSchema = new mongoose.Schema(
         sender_name: String,
         title: String,
         content_1: String,
+        /** Nội dung 1 dành cho mail gửi tới người được ủy quyền (thay content_1 khi có soạn) */
+        delegation_content_1: { type: String, default: '' },
         content_2: String,
         banner_text: String,
         banner_img: String,

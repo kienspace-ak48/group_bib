@@ -65,6 +65,9 @@ class EventCheckinHService {
                 'max_confirmed_step',
                 'checkin_capture_mode',
                 'single_delegation_enabled',
+                'online_waiver_first_flow',
+                'waiver_notice_html',
+                'waiver_document_url',
             ];
             const $set = {};
             for (const k of allowed) {

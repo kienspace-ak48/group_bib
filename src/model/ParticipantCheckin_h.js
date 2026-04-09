@@ -107,6 +107,19 @@ const ParticipantCheckinSchema = new mongoose.Schema(
         delegate_email: { type: String, trim: true, default: '' },
         delegate_phone: { type: String, trim: true, default: '' },
         delegate_cccd: { type: String, trim: true, default: '' },
+        /** Token bí mật cho link ký miễn trừ online (một VĐV một token). */
+        waiver_token: {
+            type: String,
+            unique: true,
+            sparse: true,
+            index: true,
+        },
+        /** Đã hoàn tất ký miễn trừ trên web (sau đó hệ thống gửi mail QR). */
+        waiver_signed_at: Date,
+        /** Ảnh chữ ký trên form miễn trừ online (đường dẫn public). */
+        waiver_signature_path: String,
+        /** Lần gửi mail mời ký miễn trừ gần nhất. */
+        waiver_request_mail_sent_at: Date,
     },
     { timestamps: true },
 );

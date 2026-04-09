@@ -18,6 +18,7 @@ const auditLogService = require('../services/auditLog.service');
 const eventMailConfigService = require('../services/eventMailConfig.service');
 const eventBulkMailService = require('../services/eventBulkMail.service');
 const mailBulkJobService = require('../services/mailBulkJob.service');
+const sendGridMailEventService = require('../../../services/sendGridMailEvent.service');
 const { convertRowCheckinH, generateUID } = require('../../../utils/participantCheckinExcelRow.util');
 const { normalizePickupTimeRange } = require('../../../utils/pickupTimeRange.util');
 const { getPublicBaseUrl } = require('../../../utils/publicBaseUrl.util');
@@ -346,9 +347,15 @@ const adminEventController = () => {
                 if (n === 1 || n === 2) {
                     sendgridConfigured = eventBulkMailService.isSendGridConfigured();
                 }
+                let mailWaiverPendingCount = 0;
                 if (n === 2) {
                     mailConfig = await eventMailConfigService.findByEventId(refreshed._id);
                     mailEligibleCount = await participantCheckinHService.countWithValidEmailByEventId(refreshed._id);
+                    if (refreshed.online_waiver_first_flow) {
+                        mailWaiverPendingCount = await participantCheckinHService.countEligibleForWaiverRequestMail(
+                            refreshed._id,
+                        );
+                    }
                     const latestJob = await mailBulkJobService.findLatestJobForEvent(refreshed._id);
                     mailBulkJobLatest = latestJob ? eventBulkMailService.serializeBulkJobForApi(latestJob) : null;
                 }
@@ -384,8 +391,9 @@ const adminEventController = () => {
                                 (hostBase && scanPath ? `${String(hostBase).replace(/\/$/, '')}${scanPath}` : '');
                             let qrDataUrl = '';
                             try {
-                                qrDataUrl = toolFullUrl
-                                    ? await QRCode.toDataURL(toolFullUrl, {
+                                /** Ảnh QR: chỉ token (hex), không nhúng URL — trùng logic mail / quét app. */
+                                qrDataUrl = t
+                                    ? await QRCode.toDataURL(t, {
                                           width: 240,
                                           margin: 1,
                                           errorCorrectionLevel: 'M',
@@ -428,6 +436,7 @@ const adminEventController = () => {
 
                 const _publicHost = getPublicBaseUrl() || `${req.protocol}://${req.get('host')}`;
                 const publicCheckinScanBase = `${String(_publicHost).replace(/\/$/, '')}/tool-checkin/scan/`;
+                const publicBaseUrlHint = String(_publicHost).replace(/\/$/, '');
 
                 return res.render(VNAME + '/workspace', {
                     layout: VLAYOUT,
@@ -443,6 +452,7 @@ const adminEventController = () => {
                     participantFilters,
                     mailConfig,
                     mailEligibleCount,
+                    mailWaiverPendingCount,
                     mailBulkJobLatest,
                     sendgridConfigured,
                     checkinStats,
@@ -452,6 +462,7 @@ const adminEventController = () => {
                     delegationLogs,
                     athletesTab,
                     publicCheckinScanBase,
+                    publicBaseUrlHint,
                     flash: flash || null,
                 });
             } catch (error) {
@@ -615,6 +626,16 @@ const adminEventController = () => {
                     body.single_delegation_enabled === true ||
                     body.single_delegation_enabled === 'on'
                 );
+
+                payload.online_waiver_first_flow = !!(
+                    body.online_waiver_first_flow === 'true' ||
+                    body.online_waiver_first_flow === true ||
+                    body.online_waiver_first_flow === 'on'
+                );
+                payload.waiver_notice_html =
+                    body.waiver_notice_html != null ? String(body.waiver_notice_html) : '';
+                payload.waiver_document_url =
+                    body.waiver_document_url != null ? String(body.waiver_document_url).trim() : '';
 
                 const updated = await eventCheckinHService.updateById(id, payload);
                 req.session.flash = {
@@ -1309,6 +1330,7 @@ const adminEventController = () => {
                     sender_name: d('sender_name', ''),
                     title: d('title', ''),
                     content_1: d('content_1', ''),
+                    delegation_content_1: d('delegation_content_1', ''),
                     content_2: d('content_2', ''),
                     banner_text: d('banner_text', ''),
                     banner_img: body.banner_img !== undefined ? String(body.banner_img || '') : existing?.banner_img,
@@ -1456,23 +1478,67 @@ const adminEventController = () => {
                 if (String(p.event_id) !== String(event._id)) {
                     return res.status(400).json({ success: false, message: 'Người tham dự không thuộc sự kiện này.' });
                 }
-                const sent = await eventBulkMailService.sendQrMailToParticipant(event, p);
+                let sent;
+                let mailKind = 'qr';
+                if (event.online_waiver_first_flow && !p.waiver_signed_at) {
+                    sent = await eventBulkMailService.sendWaiverRequestMailToParticipant(event, p);
+                    mailKind = 'waiver_request';
+                } else {
+                    sent = await eventBulkMailService.sendQrMailToParticipant(event, p);
+                }
                 await auditLogService.write({
                     actorId: req.user?._id,
                     action: 'create',
                     resource: 'mail_single',
                     documentId: event._id,
-                    summary: `Gửi mail QR thủ công: participant ${participantId} → ${sent.to} (${sent.recipientType === 'delegate' ? 'người được ủy quyền' : 'VĐV'})`,
+                    summary:
+                        mailKind === 'waiver_request'
+                            ? `Gửi mail mời ký miễn trừ: participant ${participantId} → ${sent.to}`
+                            : `Gửi mail QR thủ công: participant ${participantId} → ${sent.to} (${sent.recipientType === 'delegate' ? 'người được ủy quyền' : 'VĐV'})`,
                     req,
                 });
                 return res.json({
                     success: true,
+                    mailKind,
                     message:
-                        sent.recipientType === 'delegate'
-                            ? `Đã gửi email QR tới người được ủy quyền (${sent.to}).`
-                            : `Đã gửi email QR tới VĐV (${sent.to}).`,
+                        mailKind === 'waiver_request'
+                            ? `Đã gửi email mời ký miễn trừ tới ${sent.to}.`
+                            : sent.recipientType === 'delegate'
+                              ? `Đã gửi email QR tới người được ủy quyền (${sent.to}).`
+                              : `Đã gửi email QR tới VĐV (${sent.to}).`,
                     to: sent.to,
                     recipientType: sent.recipientType,
+                });
+            } catch (error) {
+                console.log(CNAME, error.message);
+                return res.status(500).json({ success: false, message: error.message || 'Lỗi gửi mail.' });
+            }
+        },
+
+        /** Gửi mail mời ký miễn trừ hàng loạt (không QR) — job nền */
+        sendBulkWaiverRequestMail: async (req, res) => {
+            const { id } = req.params;
+            try {
+                const event = await eventCheckinHService.getById(id);
+                if (!event) {
+                    return res.status(404).json({ success: false, message: 'Không tìm thấy sự kiện.' });
+                }
+                if (!eventBulkMailService.isSendGridConfigured()) {
+                    return res.status(503).json({
+                        success: false,
+                        message:
+                            'Chưa cấu hình SendGrid: cần API key (SENDGRID_API_KEY hoặc SENDGRID_API_KEY_DOMAIN) và địa chỉ From đã verify (SENDGRID_FROM_EMAIL hoặc SENDGRID_FROM_DOMAIN hoặc SENDGRID_FROM).',
+                    });
+                }
+                const result = await eventBulkMailService.enqueueBulkWaiverRequestMailJob(event, req.user?._id);
+                if (!result.ok) {
+                    return res.status(400).json({ success: false, message: result.message });
+                }
+                return res.status(202).json({
+                    success: true,
+                    jobId: result.jobId,
+                    totalRecipients: result.totalRecipients,
+                    message: 'Đã đưa vào hàng đợi gửi mail mời ký miễn trừ.',
                 });
             } catch (error) {
                 console.log(CNAME, error.message);
@@ -1527,6 +1593,24 @@ const adminEventController = () => {
                     success: true,
                     job: eventBulkMailService.serializeBulkJobForApi(job),
                 });
+            } catch (error) {
+                console.log(CNAME, error.message);
+                return res.status(500).json({ success: false, message: error.message || 'Lỗi.' });
+            }
+        },
+
+        /** Nhật ký phân phối mail (SendGrid Event Webhook — delivered, bounce, …) */
+        getMailDeliveryLogs: async (req, res) => {
+            const { id } = req.params;
+            try {
+                const event = await eventCheckinHService.getById(id);
+                if (!event) {
+                    return res.status(404).json({ success: false, message: 'Không tìm thấy sự kiện.' });
+                }
+                const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+                const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 30));
+                const data = await sendGridMailEventService.listByEventId(id, { page, limit });
+                return res.json({ success: true, ...data });
             } catch (error) {
                 console.log(CNAME, error.message);
                 return res.status(500).json({ success: false, message: error.message || 'Lỗi.' });

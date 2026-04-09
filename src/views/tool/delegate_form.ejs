@@ -1,13 +1,25 @@
 <% var p = participant || {}; %>
 <% var locked = typeof delegationLocked !== 'undefined' && delegationLocked; %>
 <% var savedFlash = typeof justSaved !== 'undefined' && justSaved; %>
+<% var fe = typeof formErrors !== 'undefined' && formErrors ? formErrors : {}; %>
+<% var fv = typeof formValues !== 'undefined' && formValues ? formValues : {}; %>
+<% var hasFormErr = fe && Object.keys(fe).length > 0; %>
+<% var focusFieldId = ''; if (hasFormErr) { ['fullname','email','phone','cccd'].forEach(function (k) { if (fe[k] && !focusFieldId) focusFieldId = 'deleg-input-' + k; }); } %>
 <% function esc(v) { return (v != null && String(v).trim() !== '') ? String(v) : '—'; } %>
+<% function fvget(key) { var x = fv[key]; return (x != null && String(x) !== '') ? String(x) : ''; } %>
 <style>
   .delegate-tool-wrap {
     max-width: 28rem;
     margin-left: auto;
     margin-right: auto;
     padding-bottom: 2rem;
+  }
+  @media (min-width: 1024px) {
+    .delegate-tool-wrap {
+      max-width: 56rem;
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
   }
   .delegate-tool-hero {
     border-radius: 12px;
@@ -44,6 +56,14 @@
     padding: 1.1rem 1.2rem;
     margin-bottom: 1rem;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  }
+  .delegate-tool-card--form {
+    padding: 0.85rem 1rem 1rem;
+  }
+  @media (min-width: 1024px) {
+    .delegate-tool-card--form {
+      padding: 0.75rem 1.25rem 0.95rem;
+    }
   }
   .delegate-tool-card .label-muted {
     font-size: 0.7rem;
@@ -103,6 +123,11 @@
     font-size: 0.9rem;
     transition: border-color 0.15s, box-shadow 0.15s;
   }
+  .delegate-tool-card--form .delegate-tool-form input[type="text"],
+  .delegate-tool-card--form .delegate-tool-form input[type="email"] {
+    padding: 0.45rem 0.65rem;
+    font-size: 0.875rem;
+  }
   .delegate-tool-form input:focus {
     outline: none;
     border-color: #2563eb;
@@ -110,6 +135,23 @@
   }
   .delegate-tool-form .field {
     margin-bottom: 0.85rem;
+  }
+  .delegate-tool-card--form .delegate-tool-form .field {
+    margin-bottom: 0.5rem;
+  }
+  .delegate-tool-fields {
+    display: block;
+  }
+  @media (min-width: 1024px) {
+    .delegate-tool-fields {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0 1rem;
+      align-items: start;
+    }
+    .delegate-tool-fields .field--full {
+      grid-column: 1 / -1;
+    }
   }
   .delegate-tool-submit {
     width: 100%;
@@ -123,6 +165,11 @@
     cursor: pointer;
     box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
   }
+  .delegate-tool-card--form .delegate-tool-submit {
+    margin-top: 0.35rem;
+    padding: 0.55rem 0.9rem;
+    font-size: 0.9rem;
+  }
   .delegate-tool-submit:hover {
     filter: brightness(1.05);
   }
@@ -132,15 +179,92 @@
     line-height: 1.5;
     margin: 0 0 1rem 0;
   }
+  .delegate-tool-hint--emphasis {
+    color: #334155;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    margin-bottom: 0.65rem !important;
+  }
   .delegate-tool-name-highlight {
     font-size: 1.1rem;
     font-weight: 700;
     color: #1e3a8a;
   }
+  .delegate-tool-input--invalid {
+    border-color: #f87171 !important;
+    box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.25) !important;
+  }
+  .delegate-tool-field-msg {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #b91c1c;
+    margin-top: 0.28rem;
+    line-height: 1.35;
+  }
+  .delegate-tool-err-summary {
+    list-style: none;
+    margin: 0.5rem 0 0 0;
+    padding: 0;
+  }
+  .delegate-tool-err-summary li {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 0 0.4rem 0.35rem 0;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+  }
+  .delegate-tool-err-summary .badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #dc2626;
+  }
+  #delegate-client-error-panel {
+    display: none;
+  }
+  #delegate-client-error-panel.is-visible {
+    display: block;
+  }
+  .delegate-tool-summary-dl {
+    margin: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.65rem 1rem;
+    font-size: 0.875rem;
+    color: #334155;
+  }
+  @media (min-width: 640px) {
+    .delegate-tool-summary-dl {
+      grid-template-columns: 1fr 1fr;
+    }
+    .delegate-tool-summary-dl--full {
+      grid-column: 1 / -1;
+    }
+  }
+  .delegate-tool-summary-dl dt {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    margin-bottom: 0.2rem;
+  }
+  .delegate-tool-summary-dl dd {
+    margin: 0;
+    font-weight: 500;
+    word-break: break-word;
+  }
 </style>
 <div class="delegate-tool-wrap p-4">
   <div class="delegate-tool-hero">
-    <h1><%= locked ? 'Đã ủy quyền nhận hộ' : 'Ủy quyền nhận hộ' %></h1>
+    <h1><%= locked ? 'Đã hoàn tất ủy quyền' : 'Ủy quyền nhận hộ' %></h1>
     <p class="delegate-tool-en"><%= locked ? 'Pickup authorization completed' : 'Pickup authorization — declare who will collect on your behalf' %></p>
     <p class="sub"><%= event && event.name ? event.name : '' %></p>
   </div>
@@ -165,8 +289,6 @@
   <div class="delegate-tool-alert done">
     <% if (savedFlash) { %>
     <strong>Đã ghi nhận thành công.</strong>
-     Làm mới trang (F5) chỉ hiển thị lại thông tin — không gửi lại biểu mẫu.<br />
-    <span style="font-size:0.82rem;color:#047857;">Saved. Refreshing only reloads this page and does not resubmit the form.</span>
     <% } else { %>
     <strong>Đã thực hiện ủy quyền (một lần).</strong><br />
     <span style="font-size:0.82rem;color:#047857;">Authorization is complete (one-time).</span>
@@ -178,41 +300,195 @@
   </div>
   <div class="delegate-tool-card">
     <div class="label-muted">Người được ủy quyền · Authorized representative</div>
-    <p class="delegate-tool-name-highlight"><%= esc(p.delegate_fullname) %></p>
+    <p class="delegate-tool-name-highlight" style="margin-bottom: 0.75rem;"><%= esc(p.delegate_fullname) %></p>
+    <dl class="delegate-tool-summary-dl">
+      <div>
+        <dt>Email</dt>
+        <dd><%= esc(p.delegate_email) %></dd>
+      </div>
+      <div>
+        <dt>Số điện thoại · Phone</dt>
+        <dd><%= esc(p.delegate_phone) %></dd>
+      </div>
+      <div class="delegate-tool-summary-dl--full">
+        <dt>CCCD / Hộ chiếu / ID</dt>
+        <dd><%= esc(p.delegate_cccd) %></dd>
+      </div>
+    </dl>
   </div>
   <% } else { %>
 
-  <% if (typeof errQuery !== 'undefined' && errQuery) { %>
-  <div class="delegate-tool-alert err">
+  <% if (typeof errQuery !== 'undefined' && errQuery && !hasFormErr) { %>
+  <div class="delegate-tool-alert err" role="alert">
     Vui lòng nhập họ tên người nhận hộ. / Please enter the representative’s full name.
   </div>
   <% } %>
-  <form method="POST" action="/tool-checkin/delegate/<%= encodeURIComponent(token) %>" class="delegate-tool-card delegate-tool-form">
-    <p class="delegate-tool-hint" style="margin-top: 0">
+  <form id="delegate-auth-form" method="POST" action="/tool-checkin/delegate/<%= encodeURIComponent(token) %>" class="delegate-tool-card delegate-tool-card--form delegate-tool-form" novalidate>
+    <p class="delegate-tool-hint" style="margin-top: 0; margin-bottom: 0.65rem;">
       Chỉ khai báo <strong>một lần</strong>. Sau khi gửi, không thể sửa tại đây — cần liên hệ BTC nếu cần đổi.<br />
-      <span class="delegate-tool-en" style="display:block;margin-top:0.35rem;color:#475569;">Submit <strong>once</strong>. After saving, changes here are disabled — contact the organizer if you need to update.</span>
+      <span class="delegate-tool-en" style="display:block;margin-top:0.3rem;color:#475569;">Submit <strong>once</strong>. After saving, changes here are disabled — contact the organizer if you need to update.</span>
     </p>
-    <p class="delegate-tool-hint" style="margin-top: 0">
-      Người sẽ <strong>nhận đồ / làm check-in hộ</strong> cho người tham gia trên.<br />
-      <span class="delegate-tool-en" style="display:block;margin-top:0.35rem;color:#475569;">The person who will <strong>pick up materials or check in</strong> on behalf of the participant above.</span>
+    <p class="delegate-tool-hint delegate-tool-hint--emphasis" style="margin-top: 0">
+      Vui lòng nhập thông tin chính xác người được ủy quyền nhận BIB, kiểm tra kĩ thông tin nhập, lỗi chính tả, email.<br />
+      <span class="delegate-tool-en" style="display:block;margin-top:0.35rem;color:#475569;">Please enter accurate details for the authorized BIB recipient; double-check spelling and email.</span>
     </p>
-    <div class="field">
-      <label>Họ tên <span class="req">*</span> <span class="delegate-tool-en" style="font-weight:500;color:#64748b;">Full name</span></label>
-      <input type="text" name="fullname" required maxlength="200" autocomplete="name" value="" />
+    <% if (hasFormErr) { %>
+    <div class="delegate-tool-alert err" role="alert" id="delegate-server-error-banner">
+      <strong>Kiểm tra thông tin / Please fix:</strong>
+      <ul class="delegate-tool-err-summary">
+        <% ['fullname','email','phone','cccd'].forEach(function (k) { if (fe[k]) { %>
+        <li><span class="badge-dot" aria-hidden="true"></span><%= fe[k] %></li>
+        <% } }); %>
+      </ul>
+    </div>
+    <% } %>
+    <div id="delegate-client-error-panel" class="delegate-tool-alert err" role="alert">
+      <strong>Có lỗi cần sửa / Please correct:</strong>
+      <ul class="delegate-tool-err-summary" id="delegate-client-error-list"></ul>
+    </div>
+    <div class="delegate-tool-fields">
+    <div class="field field--full">
+      <label for="deleg-input-fullname">Họ tên <span class="req">*</span> <span class="delegate-tool-en" style="font-weight:500;color:#64748b;">Full name</span></label>
+      <input id="deleg-input-fullname" type="text" name="fullname" maxlength="200" autocomplete="name" value="<%= fvget('fullname') %>" aria-invalid="<%= fe.fullname ? 'true' : 'false' %>" class="<%= fe.fullname ? 'delegate-tool-input--invalid' : '' %>" />
+      <% if (fe.fullname) { %><span class="delegate-tool-field-msg" id="msg-fullname"><%= fe.fullname %></span><% } else { %><span class="delegate-tool-field-msg" id="msg-fullname" hidden></span><% } %>
     </div>
     <div class="field">
-      <label>Email <span class="delegate-tool-en" style="font-weight:500;color:#64748b;">(để nhận mã QR / for QR)</span></label>
-      <input type="email" name="email" maxlength="200" autocomplete="email" value="" placeholder="" />
+      <label for="deleg-input-email">Email <span class="req">*</span> <span class="delegate-tool-en" style="font-weight:500;color:#64748b;">(mã QR / QR)</span></label>
+      <input id="deleg-input-email" type="email" name="email" maxlength="200" autocomplete="email" value="<%= fvget('email') %>" aria-invalid="<%= fe.email ? 'true' : 'false' %>" class="<%= fe.email ? 'delegate-tool-input--invalid' : '' %>" />
+      <% if (fe.email) { %><span class="delegate-tool-field-msg" id="msg-email"><%= fe.email %></span><% } else { %><span class="delegate-tool-field-msg" id="msg-email" hidden></span><% } %>
     </div>
     <div class="field">
-      <label>Số điện thoại / Phone</label>
-      <input type="text" name="phone" maxlength="30" autocomplete="tel" value="" />
+      <label for="deleg-input-phone">Số điện thoại <span class="req">*</span> <span class="delegate-tool-en" style="font-weight:500;color:#64748b;">Phone</span></label>
+      <input id="deleg-input-phone" type="text" name="phone" maxlength="30" inputmode="tel" autocomplete="tel" value="<%= fvget('phone') %>" aria-invalid="<%= fe.phone ? 'true' : 'false' %>" class="<%= fe.phone ? 'delegate-tool-input--invalid' : '' %>" />
+      <% if (fe.phone) { %><span class="delegate-tool-field-msg" id="msg-phone"><%= fe.phone %></span><% } else { %><span class="delegate-tool-field-msg" id="msg-phone" hidden></span><% } %>
     </div>
-    <div class="field">
-      <label>CCCD / Passport / ID</label>
-      <input type="text" name="cccd" maxlength="20" value="" />
+    <div class="field field--full">
+      <label for="deleg-input-cccd">CCCD / Passport / ID <span class="req">*</span></label>
+      <input id="deleg-input-cccd" type="text" name="cccd" maxlength="20" autocomplete="off" value="<%= fvget('cccd') %>" aria-invalid="<%= fe.cccd ? 'true' : 'false' %>" class="<%= fe.cccd ? 'delegate-tool-input--invalid' : '' %>" />
+      <% if (fe.cccd) { %><span class="delegate-tool-field-msg" id="msg-cccd"><%= fe.cccd %></span><% } else { %><span class="delegate-tool-field-msg" id="msg-cccd" hidden></span><% } %>
     </div>
-    <button type="submit" class="delegate-tool-submit">Gửi thông tin · Submit</button>
+    </div>
+    <button type="submit" class="delegate-tool-submit" style="display:block;width:100%;">Gửi thông tin · Submit</button>
   </form>
+  <script>
+  (function () {
+    var ORDER = ['fullname', 'email', 'phone', 'cccd'];
+    var IDS = { fullname: 'deleg-input-fullname', email: 'deleg-input-email', phone: 'deleg-input-phone', cccd: 'deleg-input-cccd' };
+    var MSGS = {
+      fullname: 'Vui lòng nhập họ tên đầy đủ (ít nhất 2 ký tự).',
+      email_required: 'Vui lòng nhập email để nhận mã QR.',
+      email_format: 'Email không đúng định dạng.',
+      phone_empty: 'Vui lòng nhập số điện thoại.',
+      phone_digits: 'Số điện thoại không hợp lệ (8–15 chữ số).',
+      cccd_empty: 'Vui lòng nhập số CCCD / hộ chiếu / giấy tờ tùy thân.',
+      cccd_len: 'Số giấy tờ phải từ 8 đến 20 ký tự.',
+      cccd_chars: 'Chỉ dùng chữ, số và dấu gạch ngang (-).'
+    };
+    function emailOk(s) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(String(s || '').trim());
+    }
+    function validateClient() {
+      var out = [];
+      var fn = document.getElementById('deleg-input-fullname');
+      var em = document.getElementById('deleg-input-email');
+      var ph = document.getElementById('deleg-input-phone');
+      var cc = document.getElementById('deleg-input-cccd');
+      var vFn = (fn && fn.value) ? String(fn.value).trim() : '';
+      var vEm = (em && em.value) ? String(em.value).trim() : '';
+      var vPh = (ph && ph.value) ? String(ph.value).trim() : '';
+      var vCc = (cc && cc.value) ? String(cc.value).trim() : '';
+      if (!vFn || vFn.length < 2) out.push({ key: 'fullname', msg: MSGS.fullname });
+      if (!vEm) out.push({ key: 'email', msg: MSGS.email_required });
+      else if (!emailOk(vEm)) out.push({ key: 'email', msg: MSGS.email_format });
+      var phDigits = vPh.replace(/\D/g, '');
+      if (!phDigits) out.push({ key: 'phone', msg: MSGS.phone_empty });
+      else if (phDigits.length < 8 || phDigits.length > 15) out.push({ key: 'phone', msg: MSGS.phone_digits });
+      var idRaw = vCc.replace(/\s/g, '');
+      if (!idRaw) out.push({ key: 'cccd', msg: MSGS.cccd_empty });
+      else if (idRaw.length < 8 || idRaw.length > 20) out.push({ key: 'cccd', msg: MSGS.cccd_len });
+      else if (!/^[A-Za-z0-9-]+$/.test(idRaw)) out.push({ key: 'cccd', msg: MSGS.cccd_chars });
+      return out;
+    }
+    function clearClientUi() {
+      ORDER.forEach(function (k) {
+        var el = document.getElementById(IDS[k]);
+        var m = document.getElementById('msg-' + k);
+        if (el) { el.classList.remove('delegate-tool-input--invalid'); el.setAttribute('aria-invalid', 'false'); }
+        if (m) { m.textContent = ''; m.setAttribute('hidden', 'hidden'); }
+      });
+      var panel = document.getElementById('delegate-client-error-panel');
+      var list = document.getElementById('delegate-client-error-list');
+      if (panel) { panel.classList.remove('is-visible'); }
+      if (list) list.innerHTML = '';
+    }
+    function showClientErrors(items) {
+      var panel = document.getElementById('delegate-client-error-panel');
+      var list = document.getElementById('delegate-client-error-list');
+      if (!panel || !list) return;
+      list.innerHTML = '';
+      items.forEach(function (it) {
+        var li = document.createElement('li');
+        li.innerHTML = '<span class="badge-dot" aria-hidden="true"></span>' + it.msg;
+        list.appendChild(li);
+        var inp = document.getElementById(IDS[it.key]);
+        var m = document.getElementById('msg-' + it.key);
+        if (inp) { inp.classList.add('delegate-tool-input--invalid'); inp.setAttribute('aria-invalid', 'true'); }
+        if (m) { m.textContent = it.msg; m.removeAttribute('hidden'); }
+      });
+      panel.classList.add('is-visible');
+      panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    function focusFirst(items) {
+      if (!items.length) return;
+      var first = items[0].key;
+      var el = document.getElementById(IDS[first]);
+      if (el) { el.focus(); el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+    }
+    var form = document.getElementById('delegate-auth-form');
+    if (form) {
+      form.addEventListener('submit', function (ev) {
+        clearClientUi();
+        var bad = validateClient();
+        if (bad.length) {
+          ev.preventDefault();
+          showClientErrors(bad);
+          focusFirst(bad);
+        }
+      });
+      ORDER.forEach(function (k) {
+        var el = document.getElementById(IDS[k]);
+        if (el) {
+          el.addEventListener('input', function () {
+            el.classList.remove('delegate-tool-input--invalid');
+            el.setAttribute('aria-invalid', 'false');
+            var m = document.getElementById('msg-' + k);
+            if (m) {
+              m.textContent = '';
+              m.setAttribute('hidden', 'hidden');
+            }
+            var srv = document.getElementById('delegate-server-error-banner');
+            if (srv) srv.style.display = 'none';
+            var cp = document.getElementById('delegate-client-error-panel');
+            if (cp) {
+              cp.classList.remove('is-visible');
+              var lst = document.getElementById('delegate-client-error-list');
+              if (lst) lst.innerHTML = '';
+            }
+          });
+        }
+      });
+    }
+    var srvFocus = <%- JSON.stringify(focusFieldId || '') %>;
+    if (srvFocus) {
+      document.addEventListener('DOMContentLoaded', function () {
+        var el = document.getElementById(srvFocus);
+        if (el) {
+          el.focus();
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      });
+    }
+  })();
+  </script>
   <% } %>
 </div>

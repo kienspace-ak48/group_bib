@@ -31,6 +31,7 @@ class EventMailConfigService {
             copy('sender_name');
             copy('title');
             copy('content_1');
+            copy('delegation_content_1');
             copy('content_2');
             copy('banner_text');
             copy('banner_img');

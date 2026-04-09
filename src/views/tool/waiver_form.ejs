@@ -1,0 +1,298 @@
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  .waiver-tw { font-family: Inter, system-ui, sans-serif; }
+  .waiver-notice-admin img { max-width: 100%; height: auto; }
+  /* Gradient đậm, bão hòa — tránh tông nhạt / xám khi dùng CDN Tailwind */
+  .waiver-hero.waiver-hero--individual {
+    background: linear-gradient(135deg, #312e81 0%, #5b21b6 42%, #1e1b4b 100%);
+  }
+  .waiver-hero.waiver-hero--delegation {
+    background: linear-gradient(135deg, #c2410c 0%, #ea580c 45%, #7f1d1d 100%);
+  }
+  .waiver-hero.waiver-hero--group {
+    background: linear-gradient(135deg, #0f766e 0%, #0d9488 48%, #134e4a 100%);
+  }
+</style>
+<% var ev = event || {}; %>
+<% var p = participant || {}; %>
+<% function _w(v) { return (v != null && String(v).trim() !== '') ? String(v).trim() : '—'; } %>
+<% var docUrl = ev.waiver_document_url && String(ev.waiver_document_url).trim() ? String(ev.waiver_document_url).trim() : ''; %>
+<% var _deleg = p.delegation_enabled === true; %>
+<% var _grp = p.group_authorization_id != null && String(p.group_authorization_id).trim() !== ''; %>
+<% var kind = _grp ? 'group' : (_deleg ? 'delegation' : 'individual'); %>
+<% var _themes = {
+  individual: {
+    badge: 'bg-white/15 text-white border-white/25',
+    card: 'border-indigo-200/80 bg-white ring-1 ring-indigo-100/80',
+    accent: 'text-indigo-700',
+    btn: 'bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500',
+    link: 'border-indigo-300 text-indigo-800 hover:bg-indigo-50',
+    pill: 'bg-indigo-50 text-indigo-900 border border-indigo-100',
+    dlDt: 'text-indigo-800/80',
+  },
+  delegation: {
+    badge: 'bg-white/15 text-white border-white/25',
+    card: 'border-amber-200/90 bg-white ring-1 ring-amber-100/90',
+    accent: 'text-amber-800',
+    btn: 'bg-amber-600 hover:bg-amber-700 focus:ring-amber-500',
+    link: 'border-amber-300 text-amber-900 hover:bg-amber-50',
+    pill: 'bg-amber-50 text-amber-950 border border-amber-200',
+    dlDt: 'text-amber-900/80',
+  },
+  group: {
+    badge: 'bg-white/15 text-white border-white/25',
+    card: 'border-teal-200/90 bg-white ring-1 ring-teal-100/80',
+    accent: 'text-teal-800',
+    btn: 'bg-teal-600 hover:bg-teal-700 focus:ring-teal-500',
+    link: 'border-teal-300 text-teal-900 hover:bg-teal-50',
+    pill: 'bg-teal-50 text-teal-950 border border-teal-200',
+    dlDt: 'text-teal-900/80',
+  },
+}; %>
+<% var T = _themes[kind] || _themes.individual; %>
+<% var kindLabel = kind === 'group' ? 'BIB nhóm' : (kind === 'delegation' ? 'BIB ủy quyền' : 'BIB cá nhân'); %>
+
+<div class="waiver-tw mx-auto w-full max-w-[min(100%,28rem)] px-3 pb-10 pt-2 sm:px-4 md:max-w-5xl lg:max-w-6xl md:px-6">
+  <%# Không dùng <header>: CSS global (my-style.css) gán position:fixed cho mọi header — sẽ chồng lên nav %>
+  <section class="waiver-hero waiver-hero--<%= kind %> rounded-2xl ring-1 ring-inset ring-white/15 px-4 py-5 text-white shadow-lg shadow-slate-900/25 sm:px-6 sm:py-6" role="banner" aria-label="Ký miễn trừ">
+    <p class="text-[10px] font-semibold uppercase tracking-widest <%= T.badge %> inline-flex rounded-full border px-2.5 py-0.5 sm:text-[11px]"><%= kindLabel %></p>
+    <h1 class="mt-2.5 text-lg font-bold leading-snug tracking-tight drop-shadow-sm sm:text-xl">Ký miễn trừ · Waiver</h1>
+    <p class="mt-0.5 text-xs text-white sm:text-sm">Online waiver signature</p>
+    <p class="mt-2.5 text-sm font-medium leading-relaxed text-white line-clamp-4 sm:line-clamp-none"><%= ev.name || '' %></p>
+  </section>
+
+  <% if (typeof justCompleted !== 'undefined' && justCompleted) { %>
+  <div class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-emerald-950 shadow-sm sm:mt-5" role="status">
+    <p class="font-semibold">Đã gửi.</p>
+    <p class="mt-1 text-sm text-emerald-900/90">Vui lòng kiểm tra email (mã QR nhận BIB). Kiểm tra cả mục spam nếu không thấy.</p>
+    <p class="mt-1 text-xs text-emerald-800/80">Submitted. Check your email for the QR code.</p>
+  </div>
+  <% } else if (typeof alreadySigned !== 'undefined' && alreadySigned) { %>
+  <div class="mt-4 rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm sm:mt-5" role="status">
+    <p class="font-semibold text-slate-900">Đã hoàn tất ký miễn trừ.</p>
+    <p class="mt-1 text-sm text-slate-600">Waiver already signed. Check your email for the QR code.</p>
+  </div>
+  <% } else { %>
+
+  <div class="mt-4 grid grid-cols-1 gap-4 md:mt-6 md:grid-cols-2 md:items-stretch md:gap-6 lg:gap-8">
+    <!-- Cột trái: thông tin VĐV — cùng chiều cao cột phải (md+) -->
+    <div class="flex h-full min-h-0 flex-col">
+      <div class="flex h-full min-h-0 flex-col rounded-2xl border <%= T.card %> p-4 shadow-sm sm:p-5">
+        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Người tham gia</p>
+        <p class="mt-1 text-base font-semibold leading-snug text-slate-900 sm:text-lg"><%= _w(p.fullname) %></p>
+        <% if (p.bib != null && String(p.bib).trim() !== '') { %>
+        <p class="mt-1 font-mono text-sm font-bold <%= T.accent %>">BIB <%= p.bib %></p>
+        <% } %>
+        <p class="mt-3 inline-flex max-w-full rounded-lg px-2 py-1 text-[11px] font-medium leading-snug <%= T.pill %>">
+          <% if (kind === 'individual') { %>Đăng ký cá nhân — ký xác nhận miễn trừ cho chính bạn.<% } %>
+          <% if (kind === 'delegation') { %>Có ủy quyền nhận BIB — ký theo quy định BTC.<% } %>
+          <% if (kind === 'group') { %>BIB nhóm — ký theo hướng dẫn BTC.<% } %>
+        </p>
+
+        <dl class="mt-4 grid grid-cols-1 gap-x-4 gap-y-3 border-t border-slate-100 pt-4 text-sm sm:grid-cols-2">
+          <div class="min-w-0">
+            <dt class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">CCCD / ID</dt>
+            <dd class="mt-0.5 font-medium text-slate-900 break-words"><%= _w(p.cccd) %></dd>
+          </div>
+          <div class="min-w-0">
+            <dt class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Cự ly / Hạng mục</dt>
+            <dd class="mt-0.5 font-medium text-slate-900 break-words"><%= _w(p.category) %></dd>
+          </div>
+          <div class="min-w-0 sm:col-span-2">
+            <dt class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Email</dt>
+            <dd class="mt-0.5 font-medium text-slate-900 break-all"><%= _w(p.email) %></dd>
+          </div>
+          <div class="min-w-0">
+            <dt class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Vật phẩm / Item</dt>
+            <dd class="mt-0.5 font-medium text-slate-900 break-words"><%= _w(p.item) %></dd>
+          </div>
+          <div class="min-w-0">
+            <dt class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Điện thoại</dt>
+            <dd class="mt-0.5 font-medium text-slate-900 break-words"><%= _w(p.phone) %></dd>
+          </div>
+        </dl>
+        <!-- Chỉ desktop: kéo card trái cao bằng card phải -->
+        <div class="min-h-0 flex-1 max-md:hidden" aria-hidden="true"></div>
+      </div>
+    </div>
+
+    <!-- Cột phải: nội dung + form -->
+    <div class="flex h-full min-h-0 flex-col">
+      <div class="flex h-full min-h-0 flex-col rounded-2xl border <%= T.card %> p-4 shadow-sm sm:p-5 md:py-4 md:pl-5 md:pr-4">
+      <% if (ev.waiver_notice_html && String(ev.waiver_notice_html).trim()) { %>
+      <div class="waiver-notice-admin max-h-[40vh] shrink-0 overflow-y-auto text-sm leading-relaxed text-slate-800 md:max-h-[min(50vh,280px)]">
+        <%- ev.waiver_notice_html %>
+      </div>
+      <% } else { %>
+      <p class="shrink-0 text-sm leading-relaxed text-slate-700">
+        Đọc nội dung miễn trừ, ký và gửi. Sau đó bạn nhận email kèm mã QR nhận BIB.
+        <span class="mt-1.5 block text-xs text-slate-500">Read the waiver, sign and submit. You will receive an email with your QR code.</span>
+      </p>
+      <% } %>
+
+      <% if (docUrl) { %>
+      <a href="<%= docUrl %>" target="_blank" rel="noopener noreferrer" class="mt-3 inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-xl border-2 bg-white px-3 py-2.5 text-center text-sm font-semibold transition sm:mt-4 <%= T.link %>">
+        <i class="fas fa-file-pdf shrink-0"></i> File miễn trừ / Waiver PDF
+      </a>
+      <% } %>
+
+      <% if (typeof formError !== 'undefined' && formError) { %>
+      <div class="mt-3 shrink-0 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900" role="alert"><%= formError %></div>
+      <% } %>
+
+      <form id="waiver_form_main" class="mt-4 flex min-h-0 flex-col space-y-4 md:mt-5 md:flex-1" action="#" method="post">
+        <label class="flex cursor-pointer items-start gap-2.5 text-xs text-slate-800 sm:text-sm">
+          <input type="checkbox" name="agree" id="waiver_agree" value="1" required class="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+          <span>Đã đọc và đồng ý miễn trừ / I agree to the waiver</span>
+        </label>
+
+        <div>
+          <p class="mb-1 text-[11px] font-medium text-slate-500">Chữ ký</p>
+          <div class="rounded-xl border border-slate-200 bg-white overflow-hidden h-[min(42vw,200px)] w-full min-h-[160px] max-h-[220px] shadow-inner md:h-[180px] md:max-h-[200px]">
+            <canvas id="waiver-signature-pad" class="w-full h-full touch-none block cursor-crosshair"></canvas>
+          </div>
+          <button type="button" id="waiver_btn_clear_sig" class="mt-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 sm:text-sm">Xóa chữ ký</button>
+        </div>
+
+        <p id="waiver_form_err" class="hidden text-sm text-red-600"></p>
+
+        <button type="submit" id="waiver_btn_submit" class="mt-auto w-full shrink-0 rounded-xl px-4 py-3 text-sm font-bold text-white shadow-md transition focus:outline-none focus:ring-2 focus:ring-offset-2 <%= T.btn %>">
+          Gửi · Submit
+        </button>
+      </form>
+      </div>
+    </div>
+  </div>
+  <% } %>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+<script>
+(function () {
+  var form = document.getElementById('waiver_form_main');
+  var sigCanvas = document.getElementById('waiver-signature-pad');
+  var btnClear = document.getElementById('waiver_btn_clear_sig');
+  var errEl = document.getElementById('waiver_form_err');
+  var token = <%- JSON.stringify(token || '') %>;
+  if (!form || !sigCanvas || typeof SignaturePad === 'undefined') return;
+
+  var signaturePad = new SignaturePad(sigCanvas, {
+    backgroundColor: 'rgb(255, 255, 255)',
+    penColor: 'rgb(0, 0, 0)',
+  });
+
+  function resizeSig() {
+    var ratio = Math.max(window.devicePixelRatio || 1, 1);
+    var w = sigCanvas.offsetWidth;
+    var h = sigCanvas.offsetHeight;
+    if (!w || !h) return;
+    var strokeData = signaturePad.toData();
+    sigCanvas.width = w * ratio;
+    sigCanvas.height = h * ratio;
+    sigCanvas.getContext('2d').scale(ratio, ratio);
+    signaturePad.clear();
+    if (strokeData && strokeData.length) {
+      try { signaturePad.fromData(strokeData); } catch (e) {}
+    }
+  }
+  window.addEventListener('resize', function () {
+    setTimeout(resizeSig, 100);
+  });
+  resizeSig();
+  window.addEventListener('load', resizeSig);
+
+  if (btnClear) {
+    btnClear.addEventListener('click', function () { signaturePad.clear(); });
+  }
+
+  function dataURLToBlob(dataUrl) {
+    try {
+      var parts = dataUrl.split(',');
+      var mime = (parts[0].match(/:(.*?);/) || [null, 'image/png'])[1];
+      var bstr = atob(parts[1] || '');
+      var n = bstr.length;
+      var u8 = new Uint8Array(n);
+      while (n--) u8[n] = bstr.charCodeAt(n);
+      return new Blob([u8], { type: mime });
+    } catch (e) { return null; }
+  }
+
+  function getSignatureBlob(cb) {
+    if (!signaturePad) { cb(null); return; }
+    try {
+      signaturePad.toBlob(function (blob) {
+        if (blob && blob.size > 0) { cb(blob); return; }
+        var url = signaturePad.toDataURL('image/png');
+        var b = dataURLToBlob(url);
+        cb(b && b.size > 0 ? b : null);
+      }, 'image/png');
+    } catch (e) {
+      try {
+        var url2 = signaturePad.toDataURL('image/png');
+        var b2 = dataURLToBlob(url2);
+        cb(b2 && b2.size > 0 ? b2 : null);
+      } catch (e2) { cb(null); }
+    }
+  }
+
+  form.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    if (errEl) { errEl.classList.add('hidden'); errEl.textContent = ''; }
+    var agree = document.getElementById('waiver_agree');
+    if (!agree || !agree.checked) {
+      if (errEl) { errEl.textContent = 'Vui lòng tick xác nhận đã đọc và đồng ý.'; errEl.classList.remove('hidden'); }
+      return;
+    }
+    if (signaturePad.isEmpty()) {
+      if (errEl) { errEl.textContent = 'Vui lòng ký tên trên vùng chữ ký.'; errEl.classList.remove('hidden'); }
+      return;
+    }
+    getSignatureBlob(function (blob) {
+      if (!blob) {
+        if (errEl) { errEl.textContent = 'Không xuất được chữ ký. Thử lại.'; errEl.classList.remove('hidden'); }
+        return;
+      }
+      var fd = new FormData();
+      fd.append('agree', '1');
+      fd.append('signature', blob, 'waiver_sig.png');
+      var btn = document.getElementById('waiver_btn_submit');
+      if (btn) { btn.disabled = true; btn.textContent = 'Đang gửi…'; }
+      fetch('/tool-checkin/waiver/' + encodeURIComponent(token), {
+        method: 'POST',
+        body: fd,
+        credentials: 'same-origin',
+        redirect: 'follow',
+      })
+        .then(function (r) {
+          if (r.redirected && r.url) {
+            window.location.href = r.url;
+            return;
+          }
+          if (r.ok) {
+            window.location.reload();
+            return;
+          }
+          if (r.status === 422) {
+            return r.text().then(function (html) {
+              document.open();
+              document.write(html);
+              document.close();
+            });
+          }
+          return r.text().then(function (t) {
+            throw new Error(t || 'Lỗi');
+          });
+        })
+        .catch(function () {
+          if (errEl) {
+            errEl.textContent = 'Gửi không thành công. Thử lại hoặc tải lại trang.';
+            errEl.classList.remove('hidden');
+          }
+          if (btn) { btn.disabled = false; btn.textContent = 'Gửi · Submit'; }
+        });
+    });
+  });
+})();
+</script>

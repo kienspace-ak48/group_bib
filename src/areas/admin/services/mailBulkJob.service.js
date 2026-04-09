@@ -42,6 +42,7 @@ async function getJobById(jobId) {
  * @param {import('mongoose').Types.ObjectId|null} [data.created_by]
  */
 async function createQueuedJob(data) {
+    const kind = data.job_kind === 'waiver_request' ? 'waiver_request' : 'qr';
     const doc = await MailBulkJob.create({
         event_id: data.event_id,
         status: 'queued',
@@ -51,6 +52,7 @@ async function createQueuedJob(data) {
         last_participant_id: null,
         errors_sample: [],
         created_by: data.created_by || undefined,
+        job_kind: kind,
     });
     return doc.toObject();
 }
